@@ -50,6 +50,8 @@
 //! [`docs/json-schema.md`](../../../docs/json-schema.md).
 
 pub mod advice;
+pub mod budget;
+pub mod playbook;
 mod error;
 pub mod rakaly;
 

@@ -129,6 +129,11 @@ fn plaintext_fixture_loads() {
     assert_eq!(ger.budget.credit, Some(500.0));
     assert_eq!(ger.budget.principal, Some(0.0));
     assert_eq!(ger.budget.weekly_income, vec![0.0, 100.0]);
+    assert_eq!(ger.budget.weekly_balance(), Some(50.0));
+    let lines = ger.budget.country_building_budget.as_ref().expect("building budget");
+    assert_eq!(lines.expenses["military_wages"].values["building_barrack"], 30.0);
+    assert!(lines.expenses["government_slaves"].values.is_empty());
+    assert_eq!(lines.incomes["poll_taxes"].values["building_subsistence_farm"], 90.0);
     assert_eq!(ger.budget.credit_headroom(), Some(500.0));
     assert!(ger.budget.is_solvent());
     assert_eq!(ger.market, Some(1));

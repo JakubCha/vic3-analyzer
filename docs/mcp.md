@@ -179,6 +179,12 @@ After binding a newer save, reports which earlier suggestions were carried out.
 
 - **Output:** `{ done: [bool] }` in the same order.
 
+### 9. `budget`
+The played country's budget straight from the save, no market solve. Takes `{}`.
+
+- **Output:** `risk` (`safe` | `deficit` | `danger` | `critical`), `treasury`, `weekly_balance` / `weekly_income` / `weekly_expenses`, `debt`, `credit_limit`, `weeks_to_debt`, `weeks_to_default`, and `expenses` / `incomes` per budget category with their largest buildings. `null` when the save has no budget.
+- `advice` carries the same report as `budget`, plus budget-guard and playbook items; every item may have a `why` explaining the game mechanism.
+
 ---
 
 ## Resources & Prompts

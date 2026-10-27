@@ -1,0 +1,198 @@
+# France (FRA). Research: tmp/playbook-fra.md (game files 1.13.9, vic3 wiki
+# France (strategy section 1.11)). Journal entries here need Voice of the People.
+
+[[rule]]
+id = "fra.iron"
+countries = ["FRA"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Dig iron in Alsace-Lorraine, Lorraine and Burgundy"
+detail = "France has only 6 iron mine levels but tooling, steel and construction all use iron: build mines until iron is back at base price."
+why = "When an input is short, every building that uses it pays more, so construction and factories both get dearer. Domestic mines turn that import bill into wages you can tax. Found Mines d'Anzin at once: the coal is already there."
+sources = ["game files: common/history/buildings/00_west_europe.txt", "https://vic3.paradoxwikis.com/France"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1845
+price_above_base = { iron = 0.15 }
+levels_below = { building_iron_mine = 15.0 }
+
+[[rule]]
+id = "fra.engines"
+countries = ["FRA"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Make your own engines, then drop the engine import subsidy"
+detail = "Build a motor industry; the state pays part of the price of every imported engine."
+why = "France starts with import subventions on engines. Railways and mechanised production need engines, Britain supplies almost all of them and can rival or embargo you. A home motor industry ends both the subsidy and the dependence."
+sources = ["game files: common/history/countries/fra - france.txt", "https://vic3.paradoxwikis.com/France"]
+patch = "1.13.9"
+[rule.when]
+techs = ["atmospheric_engine"]
+levels_below = { building_motor_industry = 1.0 }
+price_above_base = { engines = 0.1 }
+
+[[rule]]
+id = "fra.haiti-margin"
+countries = ["FRA"]
+domain = "economy"
+goal = "budget"
+phase = "opening"
+title = "Your surplus is smaller than it looks"
+detail = "Keep a margin before adding permanent costs: part of your tax income is the Haitian indemnity."
+why = "The Haitian independence payments modifier adds tax income that shrinks in steps as Haiti pays and vanishes if Haiti cancels the debt. A barely positive budget can flip negative overnight while army wages and construction costs stay where they are."
+sources = ["game files: common/static_modifiers/agitators_2_modifiers.txt, common/scripted_buttons/00_hispaniola_buttons.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1850
+balance_at_least = 0.0
+balance_share_of_income_below = 0.1
+
+[[rule]]
+id = "fra.proportional-tax"
+countries = ["FRA"]
+domain = "laws"
+goal = "reforms"
+phase = "opening"
+title = "Enact Proportional Taxation while the liberals hold power"
+detail = "It is unlocked from day one and the Intelligentsia govern."
+why = "Per-capita taxation is a flat head tax that hits poor peasants hardest and does not grow with industry; proportional taxation taxes income, so revenue rises with wages and profits. Check the expected income in the law tooltip: if poll tax is most of your revenue, the switch can cost money at first."
+sources = ["game files: common/laws/00_taxation.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_proportional_taxation" }
+[rule.when]
+laws = ["law_per_capita_based_taxation"]
+techs = ["egalitarianism"]
+igs_in_government = ["ig_intelligentsia"]
+income_share_below = { poll_taxes = 0.45 }
+
+[[rule]]
+id = "fra.census-before-1848"
+countries = ["FRA"]
+domain = "laws"
+priority = 1
+goal = "reforms"
+phase = "early"
+title = "Pass Census Voting before 1848"
+detail = "Enact Census Voting while the Intelligentsia are in government; the 200-franc amendment survives it."
+why = "Owning Egalitarianism draws France into the Springtime of the Peoples, which adds 25–35% to radicalism and to liberal and radical movement support. You get through it without a revolution if a liberal group governs and Census Voting or Universal Suffrage is in force."
+sources = ["game files: common/journal_entries/00_peoples_springtime_je.txt, common/amendments/00_amendments_historical_04.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_census_voting" }
+[rule.when]
+from_year = 1840
+until_year = 1848
+laws = ["law_wealth_voting"]
+techs = ["democracy"]
+
+[[rule]]
+id = "fra.orleanists"
+countries = ["FRA"]
+domain = "laws"
+goal = "divided_monarchists"
+phase = "early"
+title = "Keep the Orléanists in front: bring the Industrialists back into government"
+detail = "And keep factories profitable."
+why = "The Orléanist bar grows with profitable manufacturing levels, Orléanist characters' popularity and the clout of Orléanist-led groups (doubled in government), plus legitimacy because Louis-Philippe is Orléanist. Reaching 480 first lets you cement the dynasty, which removes the Legacy of the French Revolution malus (revolution clock +12.5%, radicals from low legitimacy ×2)."
+sources = ["game files: common/scripted_effects/00_victoria_scripted_effects.txt, common/journal_entries/01_french_monarchism.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1855
+laws = ["law_monarchy"]
+igs_not_in_government = ["ig_industrialists"]
+
+[[rule]]
+id = "fra.algeria"
+countries = ["FRA"]
+domain = "war"
+goal = "algeria"
+phase = "early"
+title = "Conquer Algeria one principality at a time"
+detail = "Take Mascara, Constantine and Ait Abbas, then Touggourt, with single-target plays, mobilising only the formations you need."
+why = "The Conquest of Algeria has no deadline and fails only if you lose all three footholds. Completing it gives Saharan and Tunisian claims, double incorporation speed and follow-up journals. Mobilising the whole army against small unrecognised principalities raises military spending for weeks for nothing."
+sources = ["game files: common/journal_entries/01_algeria.txt", "https://vic3.paradoxwikis.com/France"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1850
+balance_at_least = 0.0
+
+[[rule]]
+id = "fra.schneider"
+countries = ["FRA"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Build steel in Burgundy and found Schneider-Creusot"
+detail = "Five steel mill levels in Burgundy unlock the company, once iron and coal are not short."
+why = "In 1.13.9 Schneider-Creusot needs 5 steel mill levels in Burgundy. Its buildings are steel, artillery and motor industry, exactly the chain France lacks, and companies add productivity to their buildings. Build the mills only when iron and coal are cheap, or they run at a loss."
+sources = ["game files: common/company_types/00_companies_france.txt"]
+patch = "1.13.9"
+[rule.when]
+techs = ["steelworking"]
+levels_below = { building_steel_mill = 5.0 }
+price_ratio_at_most = { iron = 1.1, coal = 1.1 }
+
+[[rule]]
+id = "fra.vineyards"
+countries = ["FRA"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Stop expanding vineyards"
+detail = "Wine sells below 85% of base: put construction into industry or food processing instead."
+why = "France starts with 78 vineyard levels and taxes wine consumption. Extra supply pushes the price down, which cuts the profits and wages of every vineyard."
+sources = ["game files: common/history/buildings/00_west_europe.txt"]
+patch = "1.13.9"
+[rule.when]
+levels_at_least = { building_vineyard = 60.0 }
+price_ratio_at_most = { wine = 0.85 }
+
+[[rule]]
+id = "fra.egypt-treaty"
+countries = ["FRA"]
+domain = "war"
+goal = "military"
+phase = "early"
+title = "Drop the Egypt treaty's arms shipments"
+detail = "Its 20-year binding period has ended: renegotiate or let lapse the free arms shipments and the military assistance."
+why = "The treaty ships 10 small arms and 5 artillery to Egypt on top of your own army's needs and obliges France to fight in Egypt's wars. After about November 1844 both are optional costs."
+sources = ["game files: common/history/treaties/00_historical_treaties.txt", "https://vic3.paradoxwikis.com/France"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1845
+until_year = 1860
+any_price_above_base = { small_arms = 0.1, artillery = 0.1 }
+
+[[rule]]
+id = "fra.natural-borders"
+countries = ["FRA"]
+domain = "war"
+priority = 1
+goal = "natural_borders"
+phase = "mid"
+title = "Not now: Natural Borders needs a sound budget"
+detail = "Do not start the push for the Rhine and Belgium while losing money or carrying heavy debt."
+why = "Natural Borders targets Belgium and Prussia's Rhineland: major wars and heavy infamy. Mobilisation multiplies military spending, so starting it in deficit is a fast way to default."
+sources = ["game files: common/journal_entries/01_natural_borders_of_france.txt", "https://vic3.paradoxwikis.com/France"]
+patch = "1.13.9"
+[rule.when]
+techs = ["nationalism"]
+balance_below = 0.0
+
+[[rule]]
+id = "fra.abolition"
+countries = ["FRA"]
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Abolish colonial slavery while the liberals govern"
+detail = "Enact Slavery Banned after taxation and census voting."
+why = "France abolished colonial slavery in 1848. Liberal groups favour it, and enslaved pops earn no wages and buy little, so they add little to the market. It is far easier to pass during a liberal government."
+sources = ["game files: common/laws"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_slavery_banned" }
+[rule.when]
+from_year = 1845
+laws = ["law_colonial_slavery"]
+igs_in_government = ["ig_intelligentsia"]

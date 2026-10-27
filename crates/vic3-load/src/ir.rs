@@ -372,11 +372,50 @@ pub struct Budget {
     /// Outstanding debt principal when present.
     #[serde(default)]
     pub principal: Option<f64>,
+    /// Per budget category (game enum order, not a time series).
     #[serde(default)]
     pub weekly_income: Vec<f64>,
+    #[serde(default)]
+    pub weekly_expenses: Vec<f64>,
+    /// The game's own weekly balance.
+    #[serde(default)]
+    pub balance_trend: Option<Trend>,
+    /// Labelled per-building breakdown (`expenses.military_wages.values.building_barrack`).
+    #[serde(default)]
+    pub country_building_budget: Option<BuildingBudget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct Trend {
+    #[serde(default)]
+    pub current: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct BuildingBudget {
+    #[serde(default)]
+    pub expenses: BTreeMap<String, BudgetValues>,
+    #[serde(default)]
+    pub incomes: BTreeMap<String, BudgetValues>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct BudgetValues {
+    #[serde(default)]
+    pub values: BTreeMap<String, f64>,
 }
 
 impl Budget {
+    /// Weekly balance: the game's trend, else income minus expenses.
+    pub fn weekly_balance(&self) -> Option<f64> {
+        let total = |v: &[f64]| (!v.is_empty()).then(|| v.iter().sum::<f64>());
+        self.balance_trend
+            .as_ref()
+            .and_then(|t| t.current)
+            .or_else(|| Some(total(&self.weekly_income)? - total(&self.weekly_expenses)?))
+            .filter(|v| v.is_finite())
+    }
+
     /// Best-effort cash on hand (`gold_reserves`, then `gold`, then `money`).
     pub fn treasury(&self) -> Option<f64> {
         self.gold_reserves.or(self.gold).or(self.money)

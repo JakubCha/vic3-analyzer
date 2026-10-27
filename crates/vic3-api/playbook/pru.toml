@@ -1,0 +1,144 @@
+# Prussia (PRU), later North German Federation (NGF) and Germany (GER).
+# Research: tmp/prussia-playbook-research.md (game files 1.13.9 + vic3 wiki).
+
+[[rule]]
+id = "pru.opening-army"
+countries = ["PRU"]
+domain = "war"
+priority = 1
+goal = "military"
+phase = "opening"
+title = "Prussia's opening: the army is the deficit"
+detail = "The 1836 army is 81 skirmish infantry plus heavy cavalry and mobile artillery, about 70% of income. Cut lancers, cuirassiers and dragoons, move rear skirmish battalions to line infantry (or disband part), and keep the conscription centers as the wartime reserve."
+why = "At base prices the skirmish infantry alone cost about 13.8K a week in small arms and ammunition; as line infantry the same 81 battalions would cost about 4.9K, roughly the whole starting deficit. Conscripts cost almost nothing until raised. Treat the cut as temporary: rebuild a modern army on cheap domestic arms before the leadership war with Austria in the 1850s–60s."
+sources = ["game files: common/history/military_formations/00_military_formations_europe.txt, common/combat_unit_types/00_land_combat_unit_types.txt", "https://vic3.paradoxwikis.com/Prussia"]
+patch = "1.13.9"
+done = { type = "weekly_balance", at_least = 0.0 }
+[rule.when]
+until_year = 1840
+expense_share_at_least = { military = 0.45 }
+
+[[rule]]
+id = "pru.opening-plan"
+countries = ["PRU"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Prussia's first two years: stop the bleeding, then compound"
+detail = "In order: cut the army bill, build paper mills (paper is most of the 16K government-goods bill), build arms industry in Brandenburg and logging camps for wood, then add construction sectors one at a time, funded by the treasury, not by debt."
+why = "The treasury lasts about 15 months at the starting deficit. That is enough to fund construction that pays back, but not a permanently oversized army. Factories that employ peasants turn poll-tax subsistence farmers into wage earners who pay income tax."
+sources = ["https://vic3.paradoxwikis.com/Prussia", "https://vic3.paradoxwikis.com/Budget", "game files: common/production_methods/07_government.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1838
+
+[[rule]]
+id = "pru.industry-chain"
+countries = ["PRU", "NGF", "GER"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Build the Ruhr–Silesia heavy-industry chain"
+detail = "Coal and iron mines (Rhineland/Ruhr, Silesia), then tooling workshops, then steel mills once steelworking is researched, then railways in the industrial states."
+why = "Prussia's coal and iron lie in the Rhineland and Silesia. Each link feeds the next inside your own market, so input prices stay low and the wages stay taxable at home; tools and steel later make construction itself cheaper (Iron Frame, then steel methods)."
+sources = ["https://vic3.paradoxwikis.com/Prussia"]
+patch = "1.13"
+[rule.when]
+from_year = 1837
+until_year = 1855
+levels_below = { building_steel_mill = 5.0 }
+
+[[rule]]
+id = "pru.public-schools"
+countries = ["PRU", "NGF"]
+domain = "laws"
+goal = "unification"
+phase = "early"
+title = "Keep Public Schools and avoid Multiculturalism until Germany is formed"
+detail = "German unification starts from cultural fervor: north German fervor must reach 40 and south German 30."
+why = "je_german_unification_idea needs north_german fervor ≥ 40 and south_german ≥ 30. Fervor rises with literacy, Public Schools, academics, nationalism techs and war casualties, and it falls under Multiculturalism."
+sources = ["game files: common/journal_entries/00_german_unification.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_public_schools" }
+[rule.when]
+laws_missing = ["law_public_schools"]
+
+[[rule]]
+id = "pru.nationalism"
+countries = ["PRU"]
+domain = "war"
+goal = "unification"
+phase = "early"
+title = "Research nationalism early"
+detail = "Put nationalism high in the research queue."
+why = "nationalism is required by je_north_german_unification and by dp_leadership_germany, the leadership war against Austria. It also raises fervor among your German pops (+5 at full coverage)."
+sources = ["game files: common/journal_entries/00_german_unification.txt, common/diplomatic_plays/00_diplomatic_plays.txt"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1838
+techs_missing = ["nationalism"]
+
+[[rule]]
+id = "pru.schleswig-holstein"
+countries = ["PRU"]
+domain = "war"
+goal = "unification"
+phase = "early"
+title = "Plan how the Schleswig-Holstein question gets solved"
+detail = "By war with Denmark or by backing Holstein's independence: both German unification journal entries require it."
+why = "Both the North and the South German unification JEs need the global flag schleswig_holstein_question_solved, set when the Schleswig-Holstein state region is held by German-culture owners that are not Danish subjects. Without it the North German Federation cannot form, however strong you are."
+sources = ["game files: common/journal_entries/00_german_unification.txt (je_schleswig_holstein_question)"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1840
+until_year = 1865
+techs = ["nationalism"]
+
+[[rule]]
+id = "pru.leadership-war"
+countries = ["PRU"]
+domain = "war"
+goal = "unification"
+phase = "mid"
+title = "Prepare the leadership war against Austria"
+detail = "Build arms industry and a cash buffer of about 20 weeks of military cost, find a Great Power ally, and keep the north German minors in your Zollverein bloc."
+why = "je_north_german_unification completes only when Prussia is the sole German unification candidate, normally by winning dp_leadership_germany against Austria. When it completes, every AI north German country in your customs union or backing your candidacy is annexed at once, the cheapest territorial jump in the game. War raises the goods bill by about 1.5× and cuts income, so enter it with money in hand."
+sources = ["game files: common/country_formation/00_major_formables.txt, events/german_unification.txt", "https://steamcommunity.com/app/529340/discussions/0/4356744224515950098 (older)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["nationalism"]
+balance_at_least = 0.0
+debt_share_of_limit_below = 0.3
+
+[[rule]]
+id = "pru.war-chest"
+countries = ["PRU", "NGF"]
+domain = "war"
+priority = 1
+goal = "unification"
+phase = "mid"
+title = "Do not start a unification war with this much debt"
+detail = "Debt is over 30% of the credit limit: first rebuild a buffer of about 20 weeks of military cost."
+why = "Mobilisation multiplies weapon and ammunition upkeep by 1.5 and adds grain, occupied states pay no tax, and war exhaustion grows. Entering a long war with debt already high is the classic way to default mid-war, and default also costs -5% to -50% offense and defense."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/mobilization_options/00_mobilization_option.txt"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1845
+until_year = 1871
+debt_share_of_limit_at_least = 0.3
+
+[[rule]]
+id = "ngf.pan-nationalism"
+countries = ["PRU", "NGF"]
+domain = "war"
+goal = "unification"
+phase = "mid"
+title = "Research pan-nationalism for the final unification"
+detail = "pan-nationalism unlocks the play that forms Germany."
+why = "je_german_unification and dp_unify_germany both need pan-nationalism, Major Power rank and independence. Forming GER needs 73% of the states of greater Germany."
+sources = ["game files: common/journal_entries/00_german_unification.txt, common/country_formation/00_major_formables.txt"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1855
+techs = ["nationalism"]
+techs_missing = ["pan-nationalism"]

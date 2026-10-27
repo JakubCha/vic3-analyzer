@@ -196,6 +196,22 @@ pub struct WorldCountry {
     pub infamy: Option<f64>,
     /// This country's interest groups (empty when the save has none).
     pub interest_groups: Vec<WorldInterestGroup>,
+    /// Sum of the save's weekly income / expense categories (`None` when absent).
+    pub weekly_income: Option<f64>,
+    pub weekly_expenses: Option<f64>,
+    /// Labelled per-building budget lines; their sum is less than the totals
+    /// (interest, diplomacy, consumption taxes etc. are not per building).
+    pub budget_lines: Vec<BudgetLine>,
+}
+
+/// One `country_building_budget` entry, e.g. military wages of barracks.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct BudgetLine {
+    pub income: bool,
+    /// Save key such as `military_wages` or `poll_taxes`.
+    pub group: String,
+    pub building_type: String,
+    pub amount: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -391,11 +407,32 @@ impl World {
                     subject_type: country.subject_type.clone(),
                     states: country.states.clone(),
                     treasury: budget.treasury().unwrap_or(0.0),
-                    weekly_balance: budget
-                        .weekly_income
-                        .last()
-                        .copied()
-                        .filter(|value| value.is_finite()),
+                    weekly_balance: budget.weekly_balance(),
+                    weekly_income: (!budget.weekly_income.is_empty())
+                        .then(|| budget.weekly_income.iter().sum()),
+                    weekly_expenses: (!budget.weekly_expenses.is_empty())
+                        .then(|| budget.weekly_expenses.iter().sum()),
+                    budget_lines: budget
+                        .country_building_budget
+                        .iter()
+                        .flat_map(|b| {
+                            b.expenses
+                                .iter()
+                                .map(|g| (false, g))
+                                .chain(b.incomes.iter().map(|g| (true, g)))
+                        })
+                        .flat_map(|(income, (group, v))| {
+                            v.values
+                                .iter()
+                                .filter(|(_, a)| a.is_finite() && **a != 0.0)
+                                .map(move |(building, amount)| BudgetLine {
+                                    income,
+                                    group: group.clone(),
+                                    building_type: building.clone(),
+                                    amount: *amount,
+                                })
+                        })
+                        .collect(),
                     debt_principal: budget.principal.filter(|value| value.is_finite()),
                     credit_limit: budget.credit.filter(|value| value.is_finite()),
                     credit_headroom: budget.credit_headroom(),

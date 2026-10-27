@@ -1,0 +1,205 @@
+# Sardinia-Piedmont (SAR) toward Italy (ITA). Research: tmp/playbook-ita.md
+# (game files 1.13.9, vic3 wiki Sardinia-Piedmont (1.12) and Formable nations (1.13)).
+
+[[rule]]
+id = "sar.construction"
+countries = ["SAR"]
+domain = "economy"
+priority = 1
+goal = "industry"
+phase = "opening"
+title = "Queue two more construction sector levels in Piedmont first"
+detail = "Sardinia-Piedmont starts with a single construction sector, so every other project waits in line. Use Iron Frame Buildings: iron is cheap at the start."
+why = "A construction sector is a state building: its wages and its iron, tools and wood show up as government spending. Add levels only while the weekly balance stays positive, or a bigger queue just drains the treasury faster."
+sources = ["https://vic3.paradoxwikis.com/Sardinia-Piedmont", "game files: common/history/buildings/01_south_europe.txt"]
+patch = "1.12"
+[rule.when]
+until_year = 1838
+levels_below = { building_construction_sector = 3.0 }
+balance_at_least = 0.0
+
+[[rule]]
+id = "sar.coal"
+countries = ["SAR", "ITA"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Open coal mines in Piedmont"
+detail = "You start with no coal mines; Piedmont can hold 28 levels."
+why = "Atmospheric Engine is already researched: its steam production methods burn coal, and so do railways. Importing all of it keeps the price high and pushes up input costs across the economy."
+sources = ["https://vic3.paradoxwikis.com/Sardinia-Piedmont", "game files: map_data/state_regions/01_south_europe.txt"]
+patch = "1.12"
+[rule.when]
+techs = ["atmospheric_engine"]
+levels_below = { building_coal_mine = 1.0 }
+
+[[rule]]
+id = "sar.railways-research"
+countries = ["SAR"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Research railways now"
+detail = "Both prerequisites are owned at the start, so railways is one step away."
+why = "Railways raise infrastructure and market access; without them Piedmont's goods cannot reach the rest of your market and new buildings run below capacity. The wiki calls early railways a priority for Sardinia-Piedmont."
+sources = ["game files: common/technology/technologies/10_production.txt", "https://vic3.paradoxwikis.com/Sardinia-Piedmont"]
+patch = "1.12"
+[rule.when]
+techs = ["mechanical_tools", "atmospheric_engine"]
+techs_missing = ["railways"]
+
+[[rule]]
+id = "sar.sulfur"
+countries = ["SAR", "ITA"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Open a sulfur mine in Sardinia"
+detail = "Sulfur is over 10% above base price; Sardinia can hold 20 sulfur mine levels."
+why = "Sardinian sulfur is the main reason to invest outside Piedmont. Sulfur later feeds explosives and fertilizer, and keeping it cheap stops Two Sicilies' sulfur companies from gaining the prestige good."
+sources = ["https://vic3.paradoxwikis.com/Sardinia-Piedmont", "https://steamcommunity.com/app/529340/discussions/0/604168947372498524/"]
+patch = "1.12"
+[rule.when]
+price_above_base = { sulfur = 0.1 }
+levels_below = { building_sulfur_mine = 1.0 }
+
+[[rule]]
+id = "sar.subventions"
+countries = ["SAR"]
+domain = "war"
+goal = "budget"
+phase = "opening"
+title = "Drop the import subventions on small arms and artillery"
+detail = "In the trade panel, remove the high import subventions on small arms and artillery unless you are at war."
+why = "The 1836 setup subsidises imported small arms and artillery: the state pays part of the import price, so every musket the army buys costs the treasury twice. In peacetime that is money spent for nothing."
+sources = ["game files: common/history/countries/sar - sardinia.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1840
+balance_below = 0.0
+
+[[rule]]
+id = "sar.proportional-tax"
+countries = ["SAR", "ITA"]
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Start enacting Proportional Taxation"
+detail = "It is already unlocked (Egalitarianism) and poll tax is not your main income line."
+why = "Poll taxes take the same from every pop, fall hardest on poor peasants and barely grow with industry. Proportional Taxation taxes income, so revenue scales with the factories you build. Expect Landowner opposition: check interest-group approval first."
+sources = ["game files: common/laws/00_taxation.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_proportional_taxation" }
+[rule.when]
+from_year = 1838
+laws = ["law_per_capita_based_taxation"]
+techs = ["egalitarianism"]
+balance_below = 0.0
+income_share_below = { poll_taxes = 0.45 }
+
+[[rule]]
+id = "sar.no-early-wars"
+countries = ["SAR"]
+domain = "war"
+goal = "military"
+phase = "early"
+title = "No wars under the Austrian umbrella before 1850: stop growing the army"
+detail = "Put the money into construction instead."
+why = "Austria guarantees Two Sicilies and Tuscany by treaty until about 1850, and Modena, Tuscany, Parma and Two Sicilies sit in its power bloc. An early war against a neighbour means war with Austria, while soldiers' wages and goods are a fixed weekly cost that earns nothing."
+sources = ["game files: common/history/treaties, common/history/power_blocs", "https://vic3.paradoxwikis.com/Sardinia-Piedmont"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1850
+expense_share_at_least = { military = 0.3 }
+
+[[rule]]
+id = "sar.nationalism"
+countries = ["SAR"]
+domain = "war"
+goal = "unification"
+phase = "early"
+title = "Research nationalism after railways"
+detail = "Nationalism gates the Risorgimento journal, Italian candidacy, both unification plays and the Treaty of Turin."
+why = "Candidacy also requires every Italian country to know nationalism; researching it early lets tech spread carry it to the minors sooner."
+sources = ["game files: common/journal_entries/00_italian_unification.txt, common/country_formation/00_major_formables.txt", "https://vic3.paradoxwikis.com/Formable_nations"]
+patch = "1.13"
+[rule.when]
+from_year = 1837
+techs_missing = ["nationalism"]
+
+[[rule]]
+id = "sar.risorgimento"
+countries = ["SAR"]
+domain = "laws"
+goal = "unification"
+phase = "early"
+title = "Back the Risorgimento and bring a liberal or patriotic group into government"
+detail = "Choose \"Italy must be restored\" in Whispers of Risorgimento; only conservative groups govern now."
+why = "The pro option sets the stance that peaceful absorption of the minors requires and gives liberal and patriotic groups +25% political strength. With only conservatives ruling, the Italian national movement turns radical, and while the journal is active a revolution can hand your country to a higher-ranked Italian state."
+sources = ["game files: events/italian_unification.txt"]
+patch = "1.13.9"
+[rule.when]
+techs = ["nationalism"]
+until_year = 1860
+igs_in_government = ["ig_devout", "ig_landowners"]
+
+[[rule]]
+id = "sar.two-sicilies"
+countries = ["SAR"]
+domain = "war"
+goal = "unification"
+phase = "mid"
+title = "Two Sicilies, not Austria, decides a peaceful Italy"
+detail = "Keep relations with every Italian minor at Friendly (treaties help) and stay the highest-ranked Italian state."
+why = "Italy needs 12 of the 17 Italian states, and the independent Italian states own exactly 12, so a war-free Italy needs every minor including Two Sicilies (5 states). Peaceful absorption fires about 10% a month when you are the sole candidate and a Friendly neighbouring minor also backs unification."
+sources = ["game files: common/country_formation/00_major_formables.txt, events/italian_unification.txt", "https://steamcommunity.com/app/529340/discussions/0/604168947372498524/"]
+patch = "1.13.9"
+[rule.when]
+techs = ["nationalism"]
+
+[[rule]]
+id = "sar.war-chest"
+countries = ["SAR"]
+domain = "war"
+priority = 1
+goal = "unification"
+phase = "mid"
+title = "Build a reserve before any war with Austria"
+detail = "Debt is over 30% of the credit limit: do not start the unification play or a war with Austria yet."
+why = "Mobilisation raises military wages and goods sharply while war exhaustion and blockades cut income. A debt-funded war against Austria is the fastest route to bankruptcy."
+sources = ["https://vic3.paradoxwikis.com/Budget"]
+patch = "1.13"
+[rule.when]
+from_year = 1848
+techs = ["nationalism"]
+debt_share_of_limit_at_least = 0.3
+
+[[rule]]
+id = "sar.turin"
+countries = ["SAR"]
+domain = "war"
+goal = "unification"
+phase = "mid"
+title = "Consider the Treaty of Turin before attacking Austria"
+detail = "Ceding Savoy and Nice to France buys a French obligation."
+why = "Savoy is not one of the 17 Italian formation states, so ceding it costs no progress, and France owing you makes French support against Austria likelier. The decision needs peace, cordial relations with France and France owning all of Rhône."
+sources = ["game files: common/decisions/france_savoy.txt", "https://vic3.paradoxwikis.com/Sardinia-Piedmont"]
+patch = "1.12"
+[rule.when]
+from_year = 1850
+techs = ["nationalism"]
+
+[[rule]]
+id = "ita.integrate"
+countries = ["ITA"]
+domain = "economy"
+priority = 1
+goal = "reforms"
+phase = "late"
+title = "Absorb Italy before expanding further"
+detail = "Pause new expansion and fix shortages, production methods, infrastructure and bureaucracy in the new states, Emilia first."
+why = "Formation multiplies your size 4–6 times overnight. The new states bring unemployed pops, missing bureaucracy and old production methods, so the administrative and wage bill jumps before their taxes arrive."
+sources = ["https://vic3.paradoxwikis.com/Sardinia-Piedmont", "https://vic3.paradoxwikis.com/Two_Sicilies"]
+patch = "1.12"
+[rule.when]
+balance_below = 0.0

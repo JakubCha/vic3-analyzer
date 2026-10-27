@@ -35,6 +35,9 @@ pub struct Advice {
     /// Which goal this serves; `None` = shown for every goal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub goal: Option<Goal>,
+    /// The game mechanism behind the advice, for players learning the game.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub why: Option<String>,
     /// `None` → the player marks it done by hand.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub check: Option<Check>,
@@ -45,6 +48,9 @@ pub struct Advice {
 pub struct AdviceResult {
     pub advice: Vec<Advice>,
     pub limitations: Vec<String>,
+    /// Budget guard for the played country.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub budget: Option<crate::budget::BudgetReport>,
 }
 
 /// Condition on a later save that means the suggestion was carried out.
@@ -66,6 +72,8 @@ pub enum Check {
     LawActive { law: String },
     /// The player's country has credit headroom again.
     Solvent,
+    /// The player's weekly balance is at least `at_least`.
+    WeeklyBalance { at_least: f64 },
 }
 
 
@@ -259,6 +267,7 @@ fn law_advice(defs: &GameDefs, country: &WorldCountry, education_short: bool, ou
                 Support::list(&support.against)
             ),
             goal: Some(Goal::Law(goal)),
+            why: None,
             check: Some(Check::LawActive { law: next.to_string() }),
         });
     }
@@ -278,7 +287,7 @@ pub(crate) fn player(world: &World) -> Option<(&WorldCountry, BTreeSet<u32>)> {
     Some((country, states))
 }
 
-fn building_levels(
+pub(crate) fn building_levels(
     world: &World,
     defs: &GameDefs,
     states: &BTreeSet<u32>,
@@ -595,6 +604,7 @@ impl<'a> Market<'a> {
                 priority: if rank < 2 { 1 } else { 2 },
                 title: format!("Expand {} in {}", site.type_label, self.state_label(site.state_id)),
                 detail,
+                why: None,
                 check: Some(Check::BuildingLevels {
                     building_type: site.type_name.clone(),
                     state_id: Some(site.state_id),
@@ -658,6 +668,7 @@ impl<'a> Market<'a> {
                             site.type_label,
                             site.profit_per_level()
                         ),
+                        why: None,
                         check: Some(Check::BuildingLevels {
                             building_type: site.type_name.clone(),
                             state_id: Some(site.state_id),
@@ -690,6 +701,7 @@ impl<'a> Market<'a> {
                         detail: format!(
                             "{why} None of your states has a {type_label} yet; pick a state with the resource and idle workers."
                         ),
+                        why: None,
                         check: Some(Check::BuildingLevels {
                             building_type: type_name.to_string(),
                             state_id: None,
@@ -726,6 +738,7 @@ impl<'a> Market<'a> {
                 site.staffed() * 100.0,
                 if self.idle_states.contains(&site.state_id) { " and workers are idle" } else { "" }
             ),
+            why: None,
             check: Some(Check::BuildingLevels {
                 building_type: site.type_name.clone(),
                 state_id: Some(site.state_id),
@@ -759,6 +772,7 @@ impl<'a> Market<'a> {
                     "It loses about {:.0} per level.{inputs} Switch to a cheaper production method, secure its inputs, or stop expanding it.",
                     -site.profit_per_level()
                 ),
+                why: None,
                 check: None,
             });
         }
@@ -784,6 +798,7 @@ impl<'a> Market<'a> {
                     l.sell,
                     l.buy
                 ),
+                why: None,
                 check: None,
             });
         }
@@ -823,12 +838,14 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
         "Law support sums each interest group's ideology stances (its own and its leader's) weighted by clout; it ignores legitimacy, movements and enactment events.".to_string(),
         "Economy prices are one whole-save solve: \"your states buy/produce\" is local demand and output, not trade routes.".to_string(),
         "War advice covers military-goods supply and finances only, not enemy strength.".to_string(),
+        "Playbook items (\"Playbook · …\") are rules written from strategy guides and the 1.13.9 game files for Prussia, Britain, France, Austria, Sardinia/Italy and the USA plus general ones; their thresholds are judgement calls, and journal-entry choices, relations and radicals are not read from the save.".to_string(),
     ];
     let Some((country, states)) = player(world) else {
         limitations.push("No played country in this save; nothing to advise.".into());
         return AdviceResult {
             advice: Vec::new(),
             limitations,
+            budget: None,
         };
     };
 
@@ -878,6 +895,7 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
             detail: format!(
                 "{total} of your buildings can't fill skilled jobs (engineers, clerks, machinists) for lack of literate pops, most of them ({count}) in {label}. A university there and a schooling law raise qualifications."
             ),
+            why: None,
             check: Some(Check::BuildingLevels {
                 building_type: "building_university".into(),
                 state_id: Some(state_id),
@@ -888,37 +906,31 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
 
     law_advice(defs, country, education_short, &mut advice);
 
-    // Unknown credit (missing from the save) is not insolvency.
-    if country.credit_headroom.is_some_and(|h| h <= 0.0) {
-        let headroom = country
-            .credit_headroom
-            .map_or_else(|| "unknown".to_string(), |h| format!("{h:.0}"));
-        for (domain, title, why) in [
-            (
-                Domain::Economy,
-                "Restore credit headroom",
-                "You are at or over your credit limit. Raise taxes, cut spending or build profitable state-owned industry before defaulting.",
-            ),
-            (
-                Domain::War,
-                "Do not start a war yet",
-                "Mobilisation costs money and you have no credit left, so a war would push you into default.",
-            ),
-        ] {
-            advice.push(Advice {
-                goal: None,
-                id: format!("solvent:{domain:?}"),
-                domain,
-                priority: 1,
-                title: title.into(),
-                detail: format!("{why} Credit headroom: {headroom}."),
-                check: Some(Check::Solvent),
-            });
-        }
+    // Budget guard first: its ids ("budget:…") sort ahead within each priority.
+    let budget = crate::budget::report(defs, country);
+    if let Some(report) = &budget {
+        crate::budget::budget_advice(report, &mut advice);
     }
+    crate::playbook::playbook_advice(
+        &crate::playbook::Facts {
+            world,
+            defs,
+            prices,
+            country,
+            states: &states,
+            budget: budget.as_ref(),
+        },
+        &mut advice,
+    );
 
-    advice.sort_by(|a, b| a.priority.cmp(&b.priority).then_with(|| a.id.cmp(&b.id)));
-    AdviceResult { advice, limitations }
+    // Within a priority: budget guard, then playbook, then market advice.
+    let rank = |a: &Advice| match a.id.split(':').next() {
+        Some("budget") => 0,
+        Some("playbook") => 1,
+        _ => 2,
+    };
+    advice.sort_by(|a, b| (a.priority, rank(a), &a.id).cmp(&(b.priority, rank(b), &b.id)));
+    AdviceResult { advice, limitations, budget }
 }
 
 /// Whether each check holds on the loaded save. `false` when there is no player.
@@ -944,6 +956,7 @@ pub fn checks_done(world: &World, defs: &GameDefs, checks: &[Check]) -> Vec<bool
             Check::LawInactive { law } => !country.laws.iter().any(|active| active == law),
             Check::LawActive { law } => country.laws.iter().any(|active| active == law),
             Check::Solvent => country.credit_headroom.is_none_or(|h| h > 0.0),
+            Check::WeeklyBalance { at_least } => country.weekly_balance.is_some_and(|b| b >= *at_least),
         })
         .collect()
 }

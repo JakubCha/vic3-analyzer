@@ -71,6 +71,7 @@ async fn tool_schemas_match_mcp_contract() {
             "preview_delta",
             "advice",
             "check_advice",
+            "budget",
         ])
     );
 
@@ -221,6 +222,9 @@ async fn query_and_use_save_tools_end_to_end() {
     // Advisor over the same binding; the fixture's GER has law_autocracy etc., not flagged laws.
     let all = runtime.advice(None).await.expect("advice");
     assert!(!all.limitations.is_empty());
+    let budget = runtime.budget().await.expect("budget").expect("fixture budget");
+    assert_eq!(budget.weekly_balance, Some(50.0));
+    assert_eq!(all.budget, Some(budget));
     let laws = runtime
         .advice(Some(vic3_api::advice::Domain::Laws))
         .await

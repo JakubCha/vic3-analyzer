@@ -364,6 +364,7 @@ export type AdviceCheck =
   | { type: 'law_inactive'; law: string }
   | { type: 'law_active'; law: string }
   | { type: 'solvent' }
+  | { type: 'weekly_balance'; at_least: number }
 
 /** What the laws should achieve (`vic3_api::advice::LawGoal`). */
 export type LawGoal = 'economy' | 'authority' | 'democracy'
@@ -382,12 +383,39 @@ export interface Advice {
   priority: number
   title: string
   detail: string
+  /** The game mechanism behind the advice. */
+  why?: string
   check?: AdviceCheck
+}
+
+/** Budget category with its largest buildings (`vic3_api::budget::BudgetGroup`). */
+export interface BudgetGroup {
+  group: string
+  label: string
+  amount: number
+  share: number
+  top: [string, number][]
+}
+
+/** Budget guard (`vic3_api::budget::BudgetReport`). */
+export interface BudgetReport {
+  risk: 'safe' | 'deficit' | 'danger' | 'critical'
+  treasury: number
+  weekly_balance?: number | null
+  weekly_income?: number | null
+  weekly_expenses?: number | null
+  debt: number
+  credit_limit?: number | null
+  weeks_to_debt?: number | null
+  weeks_to_default?: number | null
+  expenses: BudgetGroup[]
+  incomes: BudgetGroup[]
 }
 
 export interface AdviceResult {
   advice: Advice[]
   limitations: string[]
+  budget?: BudgetReport
 }
 
 export type AnalysisResult = PricesResult | GapsResult | PlanResult

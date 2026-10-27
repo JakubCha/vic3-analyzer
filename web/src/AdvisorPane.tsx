@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
-import type { Advice, AdviceDomain, AdviceGoal, AdviceResult } from './types'
+import type { Advice, AdviceDomain, AdviceGoal, AdviceResult, BudgetReport } from './types'
 import type { WasmApi } from './wasm'
 
-const DOMAINS: readonly { id: AdviceDomain; label: string }[] = [
+/** `now`: the few most important items across every domain. */
+type View = AdviceDomain | 'now'
+
+/** How many items the Now tab shows: a short session's worth. */
+const NOW_LIMIT = 5
+
+const DOMAINS: readonly { id: View; label: string }[] = [
+  { id: 'now', label: 'Now' },
   { id: 'economy', label: 'Economy' },
   { id: 'laws', label: 'Laws' },
   { id: 'war', label: 'War' },
@@ -84,7 +91,7 @@ interface Props {
 
 /** Advisor: per-domain suggestions plus a tracked list confirmed by later saves. */
 export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
-  const [domain, setDomain] = useState<AdviceDomain>('economy')
+  const [domain, setDomain] = useState<View>('now')
   const [goals, setGoals] = useState<Record<GoalDomain, AdviceGoal>>(() => ({
     economy: loadGoal('economy'),
     laws: loadGoal('laws'),
@@ -132,8 +139,16 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
   // Goal-tagged advice shows only under its tab's chosen goal; untagged always.
   const inView = (item: Advice) =>
     !item.goal || (item.domain !== 'war' && item.goal === goals[item.domain])
-  const list = (result?.advice ?? []).filter((item) => item.domain === domain && inView(item))
-  const goalDomain: GoalDomain | undefined = domain === 'war' ? undefined : domain
+  // Advice arrives sorted by priority (budget, playbook, market within each);
+  // Now lifts the budget verdict to the top even when it is only "worthwhile".
+  const inTab = (tab: View) => {
+    const items = (result?.advice ?? []).filter((item) => (tab === 'now' || item.domain === tab) && inView(item))
+    if (tab !== 'now') return items
+    const budgetFirst = (item: Advice) => (item.id === 'budget:balance' ? 0 : 1)
+    return [...items].sort((a, b) => budgetFirst(a) - budgetFirst(b)).slice(0, NOW_LIMIT)
+  }
+  const list = inTab(domain)
+  const goalDomain: GoalDomain | undefined = domain === 'war' || domain === 'now' ? undefined : domain
   const pickGoal = (target: GoalDomain, next: AdviceGoal) => {
     setGoals((current) => ({ ...current, [target]: next }))
     try {
@@ -150,9 +165,11 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
 
   return (
     <div className="advisor">
+      {result?.budget && <BudgetBanner budget={result.budget} />}
+
       <div className="advisor-domains" role="tablist" aria-label="Advisor domain">
         {DOMAINS.map((item) => {
-          const count = (result?.advice ?? []).filter((a) => a.domain === item.id && inView(a)).length
+          const count = inTab(item.id).length
           return (
             <button
               key={item.id}
@@ -184,6 +201,12 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
           <span className="alert-severity">{GOALS[goalDomain].hint}</span>
         </label>
       )}
+      {domain === 'now' && (
+        <p className="alert-severity">
+          The {NOW_LIMIT} most important decisions right now, budget first. Uses the goals chosen in the Economy and
+          Laws tabs.
+        </p>
+      )}
 
       {error && <p role="alert">{error}</p>}
       {!result && !error && <p>Preparing advice…</p>}
@@ -195,6 +218,12 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
             <span className="alert-severity">{item.priority === 1 ? 'Urgent' : 'Worthwhile'}</span>{' '}
             <strong>{item.title}</strong>
             <p>{item.detail}</p>
+            {item.why && (
+              <details className="advisor-why" open>
+                <summary>How it works</summary>
+                <p>{item.why}</p>
+              </details>
+            )}
             <button type="button" disabled={isTracked(item.id)} onClick={() => track(item)}>
               {isTracked(item.id) ? 'Tracked' : 'Do this'}
             </button>
@@ -238,5 +267,52 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
         </details>
       )}
     </div>
+  )
+}
+
+/** Short money figure: 7.2K, 17.1M (same as `vic3_api::budget::money`). */
+export function money(x: number): string {
+  const a = Math.abs(x)
+  const sign = x < 0 ? '−' : ''
+  if (a >= 1e6) return `${sign}${(a / 1e6).toFixed(1)}M`
+  if (a >= 1e3) return `${sign}${(a / 1e3).toFixed(1)}K`
+  return `${sign}${a.toFixed(0)}`
+}
+
+const RISK_LABEL: Record<BudgetReport['risk'], string> = {
+  safe: 'Budget OK',
+  deficit: 'Deficit',
+  danger: 'Danger: heading for default',
+  critical: 'Critical: default is imminent',
+}
+
+/** Budget guard: balance, runway and where the money goes. */
+function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
+  const weeks = (w: number) => (w >= 104 ? `${(w / 52).toFixed(1)} years` : `${w.toFixed(0)} weeks`)
+  const runway =
+    b.debt > 0
+      ? `debt ${money(b.debt)}${b.credit_limit != null ? ` of ${money(b.credit_limit)} credit` : ''}`
+      : b.weeks_to_debt != null
+        ? `treasury lasts ~${weeks(b.weeks_to_debt)}`
+        : null
+  return (
+    <section className={`advisor-budget risk-${b.risk}`} aria-label="Budget">
+      <p>
+        <strong>{RISK_LABEL[b.risk]}</strong> · balance {b.weekly_balance != null ? money(b.weekly_balance) : '?'}/week ·
+        treasury {money(b.treasury)}
+        {runway && <> · {runway}</>}
+        {b.weeks_to_default != null && <> · credit limit in ~{weeks(b.weeks_to_default)}</>}
+      </p>
+      {b.expenses.length > 0 && (
+        <ul className="budget-bars" aria-label="Weekly expenses">
+          {b.expenses.slice(0, 5).map((g) => (
+            <li key={g.group} title={g.top.map(([name, amount]) => `${name} ${money(amount)}`).join(', ')}>
+              <span className="budget-bar" style={{ width: `${Math.round(g.share * 100)}%` }} />
+              {g.label} {money(g.amount)} ({Math.round(g.share * 100)}%)
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }

@@ -75,7 +75,8 @@ pub use export::{export_save, ExportError, ExtraLevelsPatch, ProductionMethodPat
 pub use ir::{
     all_constructions, army_power_projection_for, constructions_for, declared_interest_for,
     hydrate_country_techs, navy_power_projection_for, normalize_interest_ids, queued_building_for,
-    queued_tech_for, researched_techs_for, Budget, Building, BuildingGoods, ConstructionOrder,
+    queued_tech_for, researched_techs_for, Budget, BudgetValues, Building, BuildingBudget,
+    BuildingGoods, ConstructionOrder, Trend,
     Character, ConstructionQueueEntry, ConstructionQueueKind, Country, Culture, DeclaredInterest,
     IndexQtyMap, InterestGroup,
     InterestMarker, Manager, Market, Meta, MilitaryFormation, MilitaryHq, MilitaryUnit,

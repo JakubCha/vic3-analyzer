@@ -22,6 +22,7 @@ use vic3_sql::{
 };
 
 use vic3_api::advice::{advice, checks_done, AdviceResult, Check, Domain};
+use vic3_api::budget::BudgetReport;
 
 use crate::brief::campaign_brief_json;
 
@@ -241,6 +242,21 @@ impl McpRuntime {
             result.advice.retain(|item| item.domain == domain);
         }
         Ok(result)
+    }
+
+    /// Budget guard for the played country (`None` without a player or budget).
+    ///
+    /// # Errors
+    ///
+    /// [`SqlError::Unbound`] when no save is bound.
+    pub async fn budget(&self) -> Result<Option<BudgetReport>, SqlError> {
+        let binding = self.engine.lock().await.active_binding().ok_or(SqlError::Unbound)?;
+        let world = &binding.world;
+        Ok(world
+            .player_tag
+            .as_deref()
+            .and_then(|tag| world.country_by_tag(tag))
+            .and_then(|country| vic3_api::budget::report(&binding.defs, country)))
     }
 
     /// Whether each advisor check holds on the bound save.

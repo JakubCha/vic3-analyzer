@@ -1,0 +1,212 @@
+# United Kingdom (GBR). Research: tmp/playbook-gbr.md (game files 1.13.9,
+# vic3 wiki Great Britain (1.13) and Patch 1.13).
+
+[[rule]]
+id = "gbr.no-new-navy"
+countries = ["GBR"]
+domain = "war"
+goal = "military"
+phase = "opening"
+title = "No new ships or naval administration in the opening"
+detail = "Spend construction on sectors and industry instead: nobody can contest the Royal Navy in the 1830s."
+why = "Each naval administration level puts 1,000 soldiers and officers on the military wage bill, and Britain's 136 levels already crew about 124,000 sailors for 196 ships. New hulls add grain, hardwood and wage upkeep with no strategic return."
+sources = ["game files: common/buildings/05_military.txt, common/ship_types/00_ship_types.txt", "https://vic3.paradoxwikis.com/Patch_1.13"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1840
+balance_below = 0.0
+levels_at_least = { building_naval_administration = 100.0 }
+
+[[rule]]
+id = "gbr.assistance-clauses"
+countries = ["GBR"]
+domain = "war"
+goal = "military"
+phase = "opening"
+title = "Renegotiate the military-assistance clauses with Portugal and Spain"
+detail = "Remove Britain's military-assistance articles from the two Quadruple Alliance treaties."
+why = "Each article where you are the source adds +10% to your military goods cost and ties up 25 influence. Both starting treaties are binding for 10 years, so renegotiation is the only way out before about 1846."
+sources = ["game files: common/history/treaties/00_historical_treaties.txt, common/treaty_articles/12_military_assistance.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
+patch = "1.13"
+[rule.when]
+until_year = 1846
+balance_below = 0.0
+expense_share_at_least = { military_goods = 0.15 }
+
+[[rule]]
+id = "gbr.construction"
+countries = ["GBR"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Add construction sectors in Lancashire and Yorkshire"
+detail = "Britain starts with only 9 construction sector levels for the world's richest economy: add levels until the weekly surplus is close to zero."
+why = "Construction capacity is the bottleneck for every other plan. Lancashire and Yorkshire hold the coal (45 of 59 levels) and the tools, so sectors there keep their input chain short."
+sources = ["game files: common/history/buildings/00_west_europe.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1840
+levels_below = { building_construction_sector = 20.0 }
+balance_at_least = 0.0
+
+[[rule]]
+id = "gbr.proportional-tax"
+countries = ["GBR"]
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Proportional Taxation pays off now"
+detail = "Income tax is a large share of revenue and poll tax a small one: enact Proportional Taxation (already unlocked)."
+why = "At Medium tax, per-capita taxation takes 0.70 per head, 0.35 on land and 0.10 on income. Proportional Taxation drops poll and land tax entirely but doubles income tax to 0.20 and adds dividend tax, so the switch gains about your current income tax and loses your poll and land tax. Britain's large Irish rural population makes that loss bigger than it looks."
+sources = ["game files: common/laws/00_taxation.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_proportional_taxation" }
+[rule.when]
+laws = ["law_per_capita_based_taxation"]
+techs = ["egalitarianism"]
+income_share_at_least = { income_taxes = 0.4 }
+income_share_below = { poll_taxes = 0.4 }
+
+[[rule]]
+id = "gbr.corn-laws"
+countries = ["GBR"]
+domain = "laws"
+goal = "corn_laws"
+phase = "early"
+title = "Repeal the Corn Laws: enact Free Trade while the Landowners are out"
+detail = "Free Trade needs no research for Britain; pass it while the Landowners sit in opposition."
+why = "Free Trade removes tariffs but gives +25% trade advantage, which suits the world's top exporter. Passing it completes the Corn Laws journal and gives labourer loyalists; the Landowners' approval penalty only applies if they are in government, so passing it while they are in opposition avoids it."
+sources = ["game files: common/journal_entries/00_corn_laws.txt, common/laws/00_trade_policy.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_free_trade" }
+[rule.when]
+laws = ["law_protectionism"]
+techs = ["international_trade"]
+igs_not_in_government = ["ig_landowners"]
+
+[[rule]]
+id = "gbr.grain-warning"
+countries = ["GBR"]
+domain = "economy"
+priority = 1
+goal = "corn_laws"
+phase = "early"
+title = "Grain is over 25% above base: defuse the Corn Laws crisis"
+detail = "Cut the grain import tariff or build rye farms in the Irish states."
+why = "The Corn Laws journal activates when grain is more than 25% above base and the Landowners are powerful and in government, and its events include a bread-starvation event. Ship upkeep also consumes grain, so a big navy pushes the price up."
+sources = ["game files: common/journal_entries/00_corn_laws.txt, common/ship_types/00_ship_types.txt"]
+patch = "1.13.9"
+[rule.when]
+laws = ["law_protectionism"]
+price_above_base = { grain = 0.25 }
+
+[[rule]]
+id = "gbr.fabric-glut"
+countries = ["GBR"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Stop expanding textiles"
+detail = "Fabric sells below 80% of base price: build goods that are above base price instead."
+why = "A building's profit falls with its output price. With fabric far below base, new mills spread wages and dividends thinner across the whole sector and lower tax income. The exception is ship construction, which needs 390 fabric per ship of the line."
+sources = ["game files: common/history/buildings/00_west_europe.txt"]
+patch = "1.13.9"
+[rule.when]
+levels_at_least = { building_textile_mill = 40.0 }
+price_ratio_at_most = { fabric = 0.8 }
+
+[[rule]]
+id = "gbr.chartism"
+countries = ["GBR"]
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Answer the Chartists: enact Census Voting"
+detail = "Widen the franchise one step before radicalism grows."
+why = "Britain's radical party is the Chartist Party for as long as universal suffrage is missing. Widening the vote cuts radicals among the newly enfranchised middle classes, and Census Voting is a smaller jump than universal suffrage, so the Landowners resist it less."
+sources = ["game files: common/parties/radical_party.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_census_voting" }
+[rule.when]
+laws = ["law_wealth_voting"]
+techs = ["democracy"]
+ig_clout_at_least = { ig_trade_unions = 0.1 }
+
+[[rule]]
+id = "gbr.labour-laws"
+countries = ["GBR"]
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Move from Anti-Strike Laws to Right to Associate"
+detail = "Then Regulatory Bodies: the Trade Unions are growing in the most industrial country on earth."
+why = "Britain alone starts with Labor Movement and its Trade Unions can start non-marginal. A strong union group opposed to anti-strike laws produces radicals and movements; giving them legal room keeps the workforce loyal."
+sources = ["game files: common/laws/00_labor_rights.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
+patch = "1.13"
+[rule.when]
+laws = ["law_anti_strike_laws"]
+techs = ["labor_movement"]
+ig_clout_at_least = { ig_trade_unions = 0.12 }
+
+[[rule]]
+id = "gbr.brazil-slave-trade"
+countries = ["GBR"]
+domain = "war"
+goal = "prestige"
+phase = "early"
+title = "Pressure Brazil to drop the slave trade"
+detail = "Ideally while Brazil is in a civil war."
+why = "Britain carries −100 prestige and −10% influence until Brazil drops the slave trade; fixing it frees influence for managing the many subjects. The journal fails if Britain itself legalises slavery."
+sources = ["game files: common/journal_entries/02_brazilian_slavery.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
+patch = "1.13"
+[rule.when]
+from_year = 1840
+until_year = 1886
+balance_at_least = 0.0
+
+[[rule]]
+id = "gbr.raj"
+countries = ["GBR"]
+domain = "war"
+goal = "empire"
+phase = "mid"
+title = "Raise colonial affairs to 5 and proclaim the British Raj"
+detail = "Take \"Proclaim the British Raj\" while at peace."
+why = "The decision ends East India Company rule (21 states) and moves India under the crown. It needs Civilizing Mission, colonial affairs at level 5, peace, and the Company as a non-player subject."
+sources = ["game files: common/decisions/british_raj_decisions.txt"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1850
+techs = ["civilizing_mission"]
+balance_at_least = 0.0
+
+[[rule]]
+id = "gbr.ironclads"
+countries = ["GBR"]
+domain = "war"
+goal = "military"
+phase = "mid"
+title = "Build shipyards before researching ironclads"
+detail = "Expand shipyards and hardwood and steel supply first."
+why = "Ships of the line and frigates turn obsolete the moment you have Ironclad tech, which weakens the whole 196-ship fleet at once. Replacements are limited by shipyard construction points, so build the capacity first and replace ships gradually."
+sources = ["game files: common/ship_types/00_ship_types.txt", "https://vic3.paradoxwikis.com/Patch_1.13"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1850
+techs_missing = ["ironclad_tech"]
+levels_below = { building_shipyard = 25.0 }
+
+[[rule]]
+id = "gbr.dominions"
+countries = ["GBR"]
+domain = "war"
+goal = "empire"
+phase = "mid"
+title = "Unite Canada and Australia"
+detail = "Use the Canada and Australia journal buttons to merge the colonies."
+why = "Britain starts with 4 Canadian and 4 Australian colonies, each costing influence as a separate subject. Merging them cuts the subject count and the number of independent liberty-desire risks."
+sources = ["game files: common/journal_entries/00_canada_australia.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
+patch = "1.13"
+[rule.when]
+techs = ["nationalism"]
+until_year = 1880

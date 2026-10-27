@@ -41,9 +41,10 @@ const FLOW_MARKDOWN: &str = r#"# Vic3 Analyzer MCP flow
 1. Discover saves: tool `query` on `saves`, or read resource `vic3://saves`.
 2. Bind session: tool `use_save` with `{ "name": "autosave" }` or `{ "selector": "latest_autosave" }`.
 3. Prefer tool `campaign_brief` for a compact session overview, then query / `preview_delta` as needed (`alerts()` is player-scoped; use `alerts('all')` for the full save).
-4. For "what should I do next": tool `advice` (optionally `{ "domain": "economy" | "laws" | "war" }`). After the player acts and a newer save is bound, pass the items' `check` objects to `check_advice` to see which are done.
+4. Money, debt or bankruptcy: tool `budget` first. For "what should I do next": tool `advice` (optionally `{ "domain": "economy" | "laws" | "war" }`). After the player acts and a newer save is bound, pass the items' `check` objects to `check_advice` to see which are done.
 
 Rules:
+- Answer about this campaign from these tools, not from memory: Victoria 3 mechanics changed across patches. Explain with the items' `why` text.
 - Filename **stubs** only (no filesystem paths).
 - SQL is **read-only** (`SELECT` / `WITH` / `EXPLAIN`).
 - Call `use_save` before `campaign_brief` / unqualified fact tables; do not use `SELECT set_active_save(...)`.
@@ -285,7 +286,7 @@ impl Vic3McpServer {
 
     /// Ranked advisor suggestions for the played country.
     #[tool(
-        description = "After use_save: ranked suggestions for the played country ({advice:[{id, domain, priority (1 urgent, 2 worthwhile), title, detail, check?}], limitations}). Optional domain filter: economy | laws | war. Keep each item's `check` to verify it later with check_advice."
+        description = "After use_save: ranked suggestions for the played country ({advice:[{id, domain, priority (1 urgent, 2 worthwhile), title, detail, why?, check?}], limitations, budget?}); `why` explains the game mechanism, use it when the player wants to understand. Optional domain filter: economy | laws | war. Keep each item's `check` to verify it later with check_advice."
     )]
     async fn advice(
         &self,
@@ -298,6 +299,20 @@ impl Vic3McpServer {
         };
         match self.runtime.advice(domain).await {
             Ok(result) => Ok(tool_ok_json(&json!(result))),
+            Err(e) => Ok(sql_to_tool_result(e)),
+        }
+    }
+
+    /// Budget guard for the played country.
+    #[tool(
+        description = "After use_save: the played country's budget straight from the save: risk (safe | deficit | danger | critical), treasury, weekly_balance/income/expenses, debt, credit_limit, weeks_to_debt, weeks_to_default, and expenses/incomes per category with their largest buildings. Call it first when the player asks about money, debt or bankruptcy; null when the save has no budget."
+    )]
+    async fn budget(
+        &self,
+        Parameters(_args): Parameters<CampaignBriefArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        match self.runtime.budget().await {
+            Ok(report) => Ok(tool_ok_json(&json!(report))),
             Err(e) => Ok(sql_to_tool_result(e)),
         }
     }
@@ -447,8 +462,8 @@ impl ServerHandler for Vic3McpServer {
                 .build(),
         )
         .with_instructions(
-            "Vic3 Analyzer MCP: discover saves → use_save → campaign_brief / advice / query / preview_delta; check_advice confirms done suggestions on a newer save. \
-             Stubs only (no paths). Resources: vic3://schema|saves|session|docs/*."
+            "Vic3 Analyzer MCP: discover saves → use_save → campaign_brief / budget / advice / query / preview_delta; check_advice confirms done suggestions on a newer save. \
+             Stubs only (no paths). Answer about the campaign from these tools, not from memory: Victoria 3 mechanics changed across patches; explain with each advice item's `why`. Resources: vic3://schema|saves|session|docs/*."
                 .to_string(),
         )
     }

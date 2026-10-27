@@ -1,0 +1,253 @@
+# Austria (AUS). Research: tmp/playbook-aus.md (game files 1.13.9, vic3 wiki
+# Austria and Strategy: Austria (1.13)). Metternich and Neo-absolutism need National Awakening.
+
+[[rule]]
+id = "aus.per-capita"
+countries = ["AUS"]
+domain = "laws"
+priority = 1
+goal = "budget"
+phase = "opening"
+title = "First law: switch to Per-Capita Taxation"
+detail = "Land-based taxation leaves 20 million pops paying almost no direct tax."
+why = "Land-based taxation only taxes land rents and consumption: no poll tax and no income tax. Per-capita taxation adds a poll tax on every pop plus a small income tax, Austria's single biggest revenue lever, and it is unlocked from day one. The Geheime Staatskonferenz slows every enactment by 20%, so pass laws one at a time and start with this one."
+sources = ["game files: common/laws/00_taxation.txt, common/amendments/00_amendments_historical_04.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_per_capita_based_taxation" }
+[rule.when]
+laws = ["law_land_based_taxation"]
+techs = ["currency_standards"]
+
+[[rule]]
+id = "aus.tax-capacity"
+countries = ["AUS"]
+domain = "economy"
+priority = 1
+goal = "budget"
+phase = "opening"
+title = "Build government administrations in Bohemia, Moravia, the Galicias and Lombardy"
+detail = "Before new factories there: these states are far over their tax capacity."
+why = "A state taxes only 10,000 pops per point of tax capacity: 100 base points plus about 10 per administration level. Bohemia (4.15M pops), Moravia (2.1M with 1 level), both Galicias and Lombardy are well over that, so every tax there is cut proportionally. Administrations cost wages and paper but raise the yield of taxes you already levy."
+sources = ["game files: common/defines/00_defines.txt, common/production_methods/07_government.txt", "https://vic3.paradoxwikis.com/Strategy:_Austria"]
+patch = "1.13"
+[rule.when]
+until_year = 1850
+levels_below = { building_government_administration = 60.0 }
+
+[[rule]]
+id = "aus.construction"
+countries = ["AUS"]
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Add construction sectors in Austria and Bohemia, one at a time"
+detail = "Seven levels are slow for an empire of 20 million; grow only while the balance stays positive."
+why = "Construction sectors are state buildings: their wages and their wood, iron and tools are government expenses, so grow them only as far as current income covers. Bohemia combines iron 45, coal 48 and the largest workforce for the inputs."
+sources = ["https://vic3.paradoxwikis.com/Strategy:_Austria"]
+patch = "1.13"
+[rule.when]
+until_year = 1840
+levels_below = { building_construction_sector = 12.0 }
+balance_at_least = 0.0
+in_debt = false
+
+[[rule]]
+id = "aus.engines-first"
+countries = ["AUS"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Steel and engines before railways"
+detail = "Build steel mills and a motor industry in Bohemia before laying more railways."
+why = "Austria starts with the railways tech but no steel or engine production. Early trains consume engines and coal, and railways running on imported, overpriced engines lose money, a loss their owners or the state carry."
+sources = ["game files: common/production_methods/11_private_infrastructure.txt, common/history/countries/aus - austria.txt"]
+patch = "1.13.9"
+[rule.when]
+techs = ["railways"]
+levels_below = { building_motor_industry = 1.0 }
+
+[[rule]]
+id = "aus.coal"
+countries = ["AUS"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Open coal mines in West Galicia and Moravia"
+detail = "Coal is over 15% above base and you have only 4 coal mines."
+why = "Steel, engines, railways and steam methods all eat coal. West Galicia (cap 140) and Moravia (56) are the deep deposits, and Galicia's spare peasant labour turns into taxable wages."
+sources = ["game files: map_data/state_regions"]
+patch = "1.13.9"
+[rule.when]
+price_above_base = { coal = 0.15 }
+
+[[rule]]
+id = "aus.arms-out-of-lombardy"
+countries = ["AUS"]
+domain = "war"
+goal = "military"
+phase = "early"
+title = "Build new arms capacity in Bohemia or Austria, not Lombardy"
+detail = "Small arms or artillery are over 15% above base price."
+why = "Five of 7 arms levels and both artillery foundries sit in Lombardy, an Italian homeland the Risorgimento targets first. If you lose it, army supply suddenly becomes imports bought at market price by the logistics centers."
+sources = ["game files: common/history/buildings, common/journal_entries/00_italian_unification.txt"]
+patch = "1.13.9"
+[rule.when]
+any_price_above_base = { small_arms = 0.15, artillery = 0.15 }
+
+[[rule]]
+id = "aus.no-army-growth"
+countries = ["AUS"]
+domain = "war"
+goal = "military"
+phase = "early"
+title = "Don't grow the army before 1850"
+detail = "Put the money into construction instead."
+why = "Austria's 129 battalions already match Prussia's, and the Holy Alliance pacts with Russia and Prussia plus your Italian guarantees run until about 1850. A standing army is paid every week whether or not there is a war, and does not compound the way industry does."
+sources = ["game files: common/history/military_formations, common/history/treaties/00_historical_treaties.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1850
+expense_share_at_least = { military = 0.35 }
+
+[[rule]]
+id = "aus.metternich"
+countries = ["AUS"]
+domain = "laws"
+priority = 1
+goal = "metternich"
+phase = "early"
+title = "Bring the Landowners back into government within six months"
+detail = "The Age of Metternich fails after 6 months without them."
+why = "je_metternich fails once the Landowners have been out of government for more than 6 consecutive months, and Metternich resigns and flees. Keep them in until Franz Joseph takes the throne for the orderly retirement instead."
+sources = ["game files: common/journal_entries/05_metternich.txt"]
+patch = "1.13.9"
+[rule.when]
+until_year = 1850
+igs_not_in_government = ["ig_landowners"]
+
+[[rule]]
+id = "aus.before-1848"
+countries = ["AUS"]
+domain = "economy"
+priority = 1
+goal = "stability"
+phase = "early"
+title = "Get solvent before the 1848 wave"
+detail = "Pay down debt and get the weekly balance positive."
+why = "The Springtime of the Peoples starts as soon as any European great power has a 25% revolution, and Austria's Egalitarianism pulls it in. A revolution takes states and their taxes away and forces mobilisation, so income falls as costs rise; entering it in deficit means bankruptcy. A 25% revolution also fails the Metternich journal."
+sources = ["game files: common/on_actions/00_code_on_actions.txt, common/journal_entries/00_peoples_springtime_je.txt"]
+patch = "1.13.9"
+done = { type = "weekly_balance", at_least = 0.0 }
+[rule.when]
+from_year = 1845
+until_year = 1849
+balance_below = 0.0
+
+[[rule]]
+id = "aus.appointed-bureaucrats"
+countries = ["AUS"]
+domain = "laws"
+goal = "budget"
+phase = "early"
+title = "Replace Crownland Diets with Appointed Bureaucrats"
+detail = "Have the new administrations in place first: bureaucracy use will rise."
+why = "Crownland Diets make bureaucracy 25% cheaper and strengthen aristocrats but add no tax capacity. Appointed Bureaucrats add +25% tax capacity in every state and are required to abolish crown-land autonomy later."
+sources = ["game files: common/laws/00_bureaucracy.txt, common/scripted_buttons/05_austria_buttons.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_appointed_bureaucrats" }
+[rule.when]
+from_year = 1840
+laws = ["law_crownland_diets"]
+balance_at_least = 0.0
+
+[[rule]]
+id = "aus.hungary-later"
+countries = ["AUS"]
+domain = "laws"
+goal = "hungary"
+phase = "early"
+title = "Leave Hungary, Transylvania and Croatia as crown lands until after 1848"
+detail = "Integrate them after the Springtime, once every crown land is at liberty desire 25 or below."
+why = "Integration adds Hungarian, Polish and Croat radicals and −10% authority just when the Springtime is most likely. As crown lands they already fight your wars without needing your tax capacity."
+sources = ["game files: common/decisions/austria_decisions.txt", "https://vic3.paradoxwikis.com/Strategy:_Austria"]
+patch = "1.13"
+[rule.when]
+until_year = 1848
+laws = ["law_crownland_diets"]
+
+[[rule]]
+id = "aus.dual-monarchy-blocks-germany"
+countries = ["AUS"]
+domain = "laws"
+priority = 1
+goal = "unification"
+phase = "mid"
+title = "Do not establish the Dual Monarchy if you want Germany"
+detail = "The button is now available; choose your track: Greater Germany or a Habsburg empire."
+why = "Germany cannot be formed by a dual or triple monarchy, and the button's own tooltip says so. Clicking it rules out Greater Germany for good; choose it only for the Habsburg track (Dual Monarchy, then the Federal Solution)."
+sources = ["game files: common/scripted_buttons/05_austria_buttons.txt, common/country_formation/00_major_formables.txt"]
+patch = "1.13.9"
+[rule.when]
+techs = ["philosophical_pragmatism", "nationalism"]
+laws = ["law_monarchy"]
+
+[[rule]]
+id = "aus.pan-nationalism"
+countries = ["AUS"]
+domain = "war"
+goal = "unification"
+phase = "mid"
+title = "Research pan-nationalism to contest the German leadership"
+detail = "Then court Bavaria and Saxony, keep Britain and Russia neutral, and raise relations with Prussia."
+why = "Germany can only be formed with pan-nationalism by a major power, and je_german_unification needs it too. Until then you cannot contest Prussia's leadership play. Release or puppet non-German lands before forming to avoid 70–84 infamy."
+sources = ["game files: common/country_formation/00_major_formables.txt", "https://vic3.paradoxwikis.com/Strategy:_Austria"]
+patch = "1.13"
+[rule.when]
+from_year = 1850
+techs = ["nationalism"]
+techs_missing = ["pan-nationalism"]
+
+[[rule]]
+id = "aus.no-war-on-credit"
+countries = ["AUS"]
+domain = "war"
+priority = 1
+goal = "unification"
+phase = "mid"
+title = "No leadership war against Prussia on credit"
+detail = "Clear debt before you start or accept the German leadership play."
+why = "Mobilising pulls workers out of factories, cutting taxes, while military goods spending jumps and interest compounds. Prussia's army is about the size of yours and Austria's infantry-heavy army does better defending, so expect a long war a deficit cannot carry."
+sources = ["https://vic3.paradoxwikis.com/Strategy:_Austria"]
+patch = "1.13"
+[rule.when]
+techs = ["pan-nationalism"]
+debt_share_of_limit_at_least = 0.25
+
+[[rule]]
+id = "aus.venetia-sulfur"
+countries = ["AUS"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Build sulfur mines in Venetia and hold it"
+detail = "Sulfur is over 15% above base; Venetia is your only deposit."
+why = "Venetia (cap 36) is Austria's only sulfur. Sulfur feeds explosives and later fertiliser, so losing Venetia to Italian unification makes those industries import-dependent; concede Lombardy before Venetia."
+sources = ["game files: map_data/state_regions", "https://vic3.paradoxwikis.com/Strategy:_Austria"]
+patch = "1.13"
+[rule.when]
+price_above_base = { sulfur = 0.15 }
+
+[[rule]]
+id = "aus.citizenship"
+countries = ["AUS"]
+domain = "laws"
+goal = "reforms"
+phase = "any"
+title = "Drop National Supremacy: return to Subjecthood or go Multicultural"
+detail = "About three quarters of your pops are not south German."
+why = "Discriminated pops earn less, radicalise faster and feed secession movements. The Federal Solution rejects National Supremacy and Ethnostate, and Austria-Hungary needs Subjecthood or Multiculturalism."
+sources = ["game files: common/journal_entries/05_danubian_federation.txt, common/country_formation/00_formable_countries.txt"]
+patch = "1.13.9"
+done = { type = "law_inactive", law = "law_national_supremacy" }
+[rule.when]
+laws = ["law_national_supremacy"]

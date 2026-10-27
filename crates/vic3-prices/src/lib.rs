@@ -101,7 +101,7 @@ pub use shop_cache::{BuildingIo, ShopCache, StateShop};
 pub use solve::{equilibrate, equilibrate_cached, solve, what_if};
 pub use world::{
     reconstruct_non_pop_orders, ConstructionQueueKind, Intern, World, WorldBuilding,
-    WorldConstruction, WorldCountry, WorldInterestGroup, WorldPop, WorldState, WorldStatePop,
+    BudgetLine, WorldConstruction, WorldCountry, WorldInterestGroup, WorldPop, WorldState, WorldStatePop,
     WorldStateTrade,
     POP_SCALE,
 };

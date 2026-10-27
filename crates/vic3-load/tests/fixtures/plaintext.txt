@@ -22,6 +22,28 @@ country_manager={
 				credit=500
 				principal=0
 				weekly_income={ 0.0 100.0 }
+				weekly_expenses={ 30.0 20.0 }
+				balance_trend={
+					current=50
+				}
+				country_building_budget={
+					expense=50
+					expenses={
+						military_wages={
+							values={
+								building_barrack=30
+							}
+						}
+						government_slaves={ }
+					}
+					incomes={
+						poll_taxes={
+							values={
+								building_subsistence_farm=90
+							}
+						}
+					}
+				}
 			}
 		}
 	}

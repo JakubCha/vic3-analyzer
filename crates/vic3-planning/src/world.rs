@@ -843,12 +843,7 @@ impl PlanningState {
             .find(|(_, country)| country.definition == country_tag)
             .ok_or_else(|| WorldError::UnknownCountry(country_tag.to_string()))?;
         let treasury = country.budget.treasury().unwrap_or(0.0);
-        let weekly_balance = country
-            .budget
-            .weekly_income
-            .last()
-            .copied()
-            .filter(|value| value.is_finite());
+        let weekly_balance = country.budget.weekly_balance();
         let debt_principal = country.budget.principal.filter(|value| value.is_finite());
         let credit_limit = country.budget.credit.filter(|value| value.is_finite());
         let credit_headroom = country.budget.credit_headroom();
@@ -1161,7 +1156,9 @@ mod tests {
                 gold_reserves: Some(treasury),
                 credit: Some(500.0),
                 principal: Some(0.0),
+                // Per-category arrays: balance 150 − 50 = 100.
                 weekly_income: vec![50.0, 100.0],
+                weekly_expenses: vec![30.0, 20.0],
                 ..Budget::default()
             },
         )

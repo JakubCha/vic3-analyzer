@@ -1,0 +1,344 @@
+# Playbook rules for every country. Written in our own words from strategy
+# guides and the 1.13.9 game files; each rule names its sources and patch.
+# Schema: crates/vic3-api/src/playbook.rs (`Rule`, `When`). Unknown keys fail the tests.
+
+# --- Budget and bankruptcy ---------------------------------------------------
+
+[[rule]]
+id = "gen.debt-unhealthy"
+domain = "economy"
+goal = "budget"
+phase = "any"
+title = "Debt is over half the credit limit: freeze new state spending"
+detail = "Start no new government construction or military units until debt is back under half the credit limit."
+why = "The game treats debt at or above 50% of the credit limit as an unhealthy economy. The credit limit is about 100K plus building cash reserves plus half of GDP, so a recession shrinks it at the same moment interest grows. That is how a slow deficit turns into a sudden default."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/defines (CREDIT_RATIO_HEALTH_THRESHOLD = 0.5)"]
+patch = "1.13"
+[rule.when]
+debt_share_of_limit_at_least = 0.5
+debt_share_of_limit_below = 0.85
+
+[[rule]]
+id = "gen.near-default"
+domain = "economy"
+priority = 1
+goal = "budget"
+phase = "any"
+title = "Default is close: act this week"
+detail = "Raise the tax level one step, lower government and military wages one step, and pause the most expensive construction."
+why = "At the credit limit the country defaults. Construction stops, and throughput, offense and defense take -5% at once, worsening by -1% a week down to -50%. Declaring bankruptcy wipes the debt, but it resets institutions, empties building cash, radicalises 10% of pops, and adds -75% prestige and +50% interest that decay over 10 years. Avoiding default is always cheaper than recovering from it."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/defines (DECLARE_BANKRUPTCY_*)"]
+patch = "1.13"
+done = { type = "weekly_balance", at_least = 0.0 }
+[rule.when]
+debt_share_of_limit_at_least = 0.85
+balance_below = 0.0
+
+[[rule]]
+id = "gen.tax-bridge"
+domain = "economy"
+priority = 1
+goal = "budget"
+phase = "any"
+title = "Treasury lasts under half a year: raise taxes one level as a bridge"
+detail = "Raise the tax level one step in the Budget panel now, and plan to lower it again once spending is cut or new industry pays taxes."
+why = "Under per-capita taxation, going from Medium to High raises the per-capita rate from 0.70 to 0.85 and the land rate from 0.35 to 0.425, about +20% on poll taxes. It costs -10% legitimacy, +50% radicals from movements and squeezes the poorest pops, so it is a bridge, not a policy."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/laws/00_taxation.txt"]
+patch = "1.13"
+done = { type = "weekly_balance", at_least = 0.0 }
+[rule.when]
+runway_weeks_below = 26.0
+
+[[rule]]
+id = "gen.keep-per-capita"
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Do not switch to Proportional Taxation yet"
+detail = "Most of your income is poll tax; Proportional Taxation would delete that line. Switch only once wage income outweighs subsistence pops."
+why = "law_proportional_taxation has no per-capita or land tax at all; it only taxes consumption, income (20% at Medium instead of 10%) and dividends. While poll tax is your largest income line, switching roughly doubles income tax but loses the whole poll tax."
+sources = ["game files: common/laws/00_taxation.txt", "https://vic3.paradoxwikis.com/Budget"]
+patch = "1.13"
+[rule.when]
+laws = ["law_per_capita_based_taxation"]
+income_share_at_least = { poll_taxes = 0.45 }
+
+[[rule]]
+id = "gen.lower-taxes-when-rich"
+domain = "economy"
+goal = "reforms"
+phase = "any"
+title = "Lower the tax level instead of hoarding gold"
+detail = "You have no debt and a large surplus: lower the tax level one step."
+why = "A lower tax level leaves money with pops, which raises their standard of living, gives +5% legitimacy at Low (+10% at Very Low) and -10%/-20% radicals from movements. A treasury above about 20% of annual GDP has diminishing returns anyway; if you still have unused money, build instead."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/defines (GOLD_RESERVE_LIMIT_FACTOR = 0.2)"]
+patch = "1.13"
+[rule.when]
+in_debt = false
+balance_share_of_income_at_least = 0.15
+
+# --- Military without bankruptcy --------------------------------------------
+
+[[rule]]
+id = "gen.army-share"
+domain = "war"
+goal = "military"
+phase = "any"
+title = "The standing army eats the budget"
+detail = "Bring the army's running cost under about 40% of income in peacetime: fewer regular battalions, cheaper unit types, conscripts as the reserve."
+why = "In 1.13 every battalion pays wages through its barracks and buys upkeep goods (small arms, ammunition, artillery, grain, iron) through the Army Logistics Center in its HQ state, all the time, even in peace. Conscription centers cost almost nothing until conscripts are raised, so they are the cheap reserve; regular battalions are the expensive standing force."
+sources = ["game files: common/combat_unit_types/00_land_combat_unit_types.txt, common/buildings/05_military.txt"]
+patch = "1.13.9"
+[rule.when]
+expense_share_at_least = { military = 0.45 }
+balance_below = 0.0
+
+[[rule]]
+id = "gen.goods-hungry-units"
+domain = "war"
+goal = "military"
+phase = "any"
+title = "Disband or convert goods-hungry battalions first"
+detail = "Your army spends far more on goods than on wages: cut lancers first, then cuirassiers and dragoons, then mobile artillery, then skirmish infantry in rear armies."
+why = "Weekly upkeep per battalion at base prices: lancers about 240, skirmish infantry 170 (2 small arms + 1 ammunition), cuirassiers and dragoons 140, mobile artillery 140, but line infantry only 60, cannon artillery 70 and hussars 20. Converting the units that will not fight soon trades a little combat power for most of the goods bill. If the formation screen will not change a unit type, disband and recruit the cheaper type."
+sources = ["game files: common/combat_unit_types/00_land_combat_unit_types.txt (upkeep_modifier), common/goods"]
+patch = "1.13.9"
+[rule.when]
+expense_ratio_at_least = { "military_goods/military_wages" = 1.4 }
+expense_share_at_least = { military = 0.3 }
+
+[[rule]]
+id = "gen.small-arms"
+domain = "war"
+goal = "military"
+phase = "any"
+title = "Make small arms cheap: build arms industry"
+detail = "Small arms cost over 10% above base price; add arms industry levels in your main market until they are at or below base."
+why = "The Army Logistics Center buys small arms at market price, so a 25% markup costs 25% more every week. Domestic arms production lowers the price, employs workers who pay income tax, and pays dividends on state-owned levels."
+sources = ["game files: building_arms_industry (unlocked by gunsmithing)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["gunsmithing"]
+price_above_base = { small_arms = 0.1 }
+
+[[rule]]
+id = "gen.ammunition"
+domain = "war"
+goal = "military"
+phase = "early"
+title = "Make ammunition cheap: build munition plants"
+detail = "Ammunition costs over 10% above base price; every skirmish battalion uses one a week and trench infantry later uses two."
+why = "Ammunition shortages put input-shortage penalties on supply, and since 1.13.5 formations also take production-shortage penalties. Cheap ammunition also prepares the move to better infantry."
+sources = ["game files: building_munition_plant (unlocked by percussion_cap)", "https://vic3.paradoxwikis.com/Patch_1.13.X"]
+patch = "1.13.9"
+[rule.when]
+techs = ["percussion_cap"]
+price_above_base = { ammunition = 0.1 }
+
+[[rule]]
+id = "gen.grain"
+domain = "economy"
+goal = "military"
+phase = "any"
+title = "Grain is expensive: build wheat or rye farms"
+detail = "Grain costs over 15% above base price. It feeds cavalry, mobilised units and your pops."
+why = "Every cavalry type eats grain and each mobilised unit adds 0.75 grain. Grain is also the staple pop food, so an expensive grain price raises military cost and lowers standard of living at the same time."
+sources = ["game files: combat unit upkeep, common/mobilization_options/00_mobilization_option.txt"]
+patch = "1.13.9"
+[rule.when]
+price_above_base = { grain = 0.15 }
+
+[[rule]]
+id = "gen.military-wages"
+domain = "war"
+goal = "military"
+phase = "any"
+title = "Set military wages to Low while the Armed Forces are out of government"
+detail = "You are losing money and the Armed Forces are not in government: lower military wages one step in the Budget panel."
+why = "Low wages cut the military wage bill by 15% (Very Low by 30%) but cost Armed Forces approval, army prestige and training rate. With the Armed Forces out of government their displeasure does not destabilise your coalition; with them in government, keep Normal."
+sources = ["https://vic3.paradoxwikis.com/Budget"]
+patch = "1.13"
+[rule.when]
+balance_below = 0.0
+igs_not_in_government = ["ig_armed_forces"]
+expense_share_at_least = { military_wages = 0.15 }
+
+# --- Industry ----------------------------------------------------------------
+
+[[rule]]
+id = "gen.paper"
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Cut the cost of the state itself: build paper mills"
+detail = "Government goods are over a fifth of spending and they are almost all paper. Build paper mills (and logging camps to feed them) until paper is at or below base price."
+why = "Government administrations with Horizontal Drawer Cabinets use 10 paper per level, bought at market price. Cheaper paper cuts a fixed state cost directly; downgrading the production method would cost bureaucracy instead."
+sources = ["game files: common/production_methods/07_government.txt, building_paper_mill"]
+patch = "1.13.9"
+[rule.when]
+expense_share_at_least = { government_goods = 0.2 }
+
+[[rule]]
+id = "gen.construction-inputs"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Make construction inputs cheap"
+detail = "Wood, fabric, iron or tools are over 15% above base price: build logging camps, iron mines or tooling workshops for whichever is dear."
+why = "Construction sectors burn wood and fabric (Wooden Buildings) or wood, fabric, iron and tools (Iron Frame) for every construction point, at market price. Cheaper inputs mean more buildings for the same money."
+sources = ["game files: common/production_methods/13_construction.txt", "https://steamcommunity.com/app/529340/discussions/0/3717188807309600790 (older)"]
+patch = "1.13.9"
+[rule.when]
+levels_at_least = { building_construction_sector = 1.0 }
+any_price_above_base = { wood = 0.15, fabric = 0.15, iron = 0.15, tools = 0.15 }
+
+[[rule]]
+id = "gen.iron-frame"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Switch construction sectors to Iron Frame Buildings"
+detail = "Iron and tools are cheap now: Iron Frame Buildings give more construction per sector."
+why = "Iron Frame needs iron and tools on top of wood and fabric. Switching while those goods are expensive raises the construction bill more than the extra speed is worth; with them at base price it is a clear gain."
+sources = ["game files: pm_iron_frame_buildings (unlocked by urban_planning)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["urban_planning"]
+price_ratio_at_most = { iron = 1.0, tools = 1.1 }
+
+[[rule]]
+id = "gen.steel"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Build steel mills next to your coal and iron"
+detail = "Steel is over 10% above base price: build steel mills in the states that already have coal and iron mines."
+why = "Steel feeds railways, tools and later construction methods. Producing it next to its inputs inside your market keeps input prices low and the wages taxed at home."
+sources = ["game files: building_steel_mill (unlocked by steelworking)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["steelworking"]
+levels_at_least = { building_coal_mine = 1.0, building_iron_mine = 1.0 }
+price_above_base = { steel = 0.1 }
+
+[[rule]]
+id = "gen.tax-base-shift"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Industrialisation is lagging behind"
+detail = "Income tax is still small next to poll tax: build factories that employ peasants rather than more military or luxury projects."
+why = "Income tax is charged on wages, not on subsistence output. While most taxes come from subsistence farmers, revenue only grows with population. Every peasant who becomes a factory worker pays more tax and buys more goods, which also pay consumption tax."
+sources = ["https://vic3.paradoxwikis.com/Budget"]
+patch = "1.13"
+[rule.when]
+from_year = 1845
+income_share_below = { income_taxes = 0.25 }
+
+[[rule]]
+id = "gen.sector-pacing"
+domain = "economy"
+goal = "industry"
+phase = "any"
+title = "Add construction sectors one at a time"
+detail = "You have a surplus and little debt: add one construction sector, then check the balance again a few weeks later."
+why = "Each sector adds wages and goods (wood and fabric, later iron and tools) every week, costs 25 construction itself and needs 1,000 workers since 1.12. Adding many at once is how players overshoot into debt before the new factories pay back."
+sources = ["https://vic3.paradoxwikis.com/Patch_1.12", "https://vic3.paradoxwikis.com/Construction"]
+patch = "1.13"
+[rule.when]
+balance_share_of_income_at_least = 0.05
+debt_share_of_limit_below = 0.25
+
+[[rule]]
+id = "gen.laissez-faire"
+domain = "laws"
+goal = "industry"
+phase = "mid"
+title = "Consider Laissez-Faire once private investment can carry construction"
+detail = "The Industrialists are strong enough to back it: Laissez-Faire moves building costs off the state budget."
+why = "Laissez-Faire gives -25% loan interest, a larger private construction share and +25% investment efficiency for shopkeepers and capitalists. The price is less direct control over what gets built."
+sources = ["game files: common/laws/00_economic_system.txt (unlocked by international_trade)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_laissez_faire" }
+[rule.when]
+laws = ["law_interventionism"]
+techs = ["international_trade"]
+ig_clout_at_least = { ig_industrialists = 0.15 }
+
+# --- Reforms and stability ---------------------------------------------------
+
+[[rule]]
+id = "gen.industrialists-in"
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Bring the Industrialists into government"
+detail = "The Industrialists have clout but no seat: add them to the government."
+why = "A law's base chance to pass is the clout of the government interest groups that endorse it, plus movements and the ruler. Landowners and the Armed Forces back few economic reforms; the Industrialists back the market reforms your industry needs."
+sources = ["https://vic3.paradoxwikis.com/Laws"]
+patch = "1.13"
+[rule.when]
+ig_clout_at_least = { ig_industrialists = 0.15 }
+igs_not_in_government = ["ig_industrialists"]
+
+[[rule]]
+id = "gen.free-the-peasants"
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Move land reform from Tenant Farmers to Commercialized Agriculture"
+detail = "Tenant Farmers keeps peasants on the land and your taxes on the poorest pops."
+why = "Tenant Farmers forbids peasants from migrating inside the country and reserves 25% of arable land for subsistence, so factories cannot draw on the rural labour pool. Landowners will oppose the change, so pass it with the Industrialists or Petty Bourgeoisie in government."
+sources = ["game files: common/laws/00_land_reform.txt"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_commercialized_agriculture" }
+[rule.when]
+laws = ["law_tenant_farmers"]
+techs = ["mutual_funds"]
+
+[[rule]]
+id = "gen.voting"
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Plan the move off Autocracy to a limited franchise"
+detail = "Democracy is researched: move to Census or Wealth Voting once Industrialists or Petty Bourgeoisie can carry it."
+why = "Census and Wealth Voting let the middle classes count in elections and are a stable halfway house before universal suffrage. Since 1.13 coups need a reason and enacting a law is one, so do not start it while the Armed Forces are angry."
+sources = ["https://vic3.paradoxwikis.com/Patch_1.13", "game files: law unlocks"]
+patch = "1.13"
+[rule.when]
+laws = ["law_autocracy"]
+techs = ["democracy"]
+
+[[rule]]
+id = "gen.assembly"
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Liberalise speech to Right of Assembly"
+detail = "Censorship is in force and the Intelligentsia have clout: move to Right of Assembly."
+why = "Liberal interest groups and movements push for it. Passing it removes a source of radicalism and opens the way to the labour and welfare laws that raise standard of living."
+sources = ["game files: law_right_of_assembly (unlocked by human_rights)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_right_of_assembly" }
+[rule.when]
+laws = ["law_censorship"]
+techs = ["human_rights"]
+ig_clout_at_least = { ig_intelligentsia = 0.1 }
+
+[[rule]]
+id = "gen.welfare-when-solvent"
+domain = "laws"
+goal = "reforms"
+phase = "late"
+title = "Enact Poor Laws now that the budget can carry them"
+detail = "You have a solid surplus and little debt: Poor Laws raise standard of living and lower radicalism."
+why = "Welfare pays pops below a standard-of-living threshold directly from the budget, an open-ended expense that grows in recessions. Enacted in deficit it is a common route to bankruptcy; enacted with a surplus it buys stability."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: law_poor_laws (unlocked by democracy)"]
+patch = "1.13"
+done = { type = "law_active", law = "law_poor_laws" }
+[rule.when]
+laws = ["law_no_social_security"]
+techs = ["democracy"]
+balance_share_of_income_at_least = 0.1
+debt_share_of_limit_below = 0.2

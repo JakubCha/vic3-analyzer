@@ -45,6 +45,7 @@ describe('AdvisorPane', () => {
       <AdvisorPane api={first} analysisKey={1} tag="PRU" date="1840.1.1" />,
     )
     expect(await screen.findByText('Build an iron mine in Silesia')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /Economy/ }))
     expect(screen.queryByText('Abolish serfdom')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Do this' }))
@@ -100,6 +101,7 @@ describe('AdvisorPane', () => {
       loaded_checks: vi.fn(async () => '[]'),
     } as unknown as WasmApi
     render(<AdvisorPane api={api} analysisKey={1} tag="PRU" />)
+    await user.click(await screen.findByRole('tab', { name: /Economy/ }))
     expect(await screen.findByText('Expand Coal Mines')).toBeInTheDocument()
     expect(screen.queryByText('Build more Wheat Farms')).not.toBeInTheDocument()
     await user.selectOptions(screen.getByRole('combobox'), 'living_standards')
@@ -116,5 +118,60 @@ describe('AdvisorPane', () => {
     render(<AdvisorPane api={fakeApi([])} analysisKey={1} tag="PRU" />)
     await screen.findByText('Build an iron mine in Silesia')
     expect(screen.queryByText('Your to-do list')).not.toBeInTheDocument()
+  })
+
+  it('shows the budget guard and the top items across domains in Now', async () => {
+    const many: AdviceResult = {
+      advice: Array.from({ length: 7 }, (_, i) => ({
+        id: `budget:${i}`,
+        domain: i % 2 ? ('war' as const) : ('economy' as const),
+        priority: 1,
+        title: `Item ${i}`,
+        detail: '',
+        why: i === 0 ? 'Debt grows with interest.' : undefined,
+      })),
+      limitations: [],
+      budget: {
+        risk: 'deficit',
+        treasury: 486_803,
+        weekly_balance: -7_231,
+        debt: 0,
+        credit_limit: 17_058_032,
+        weeks_to_debt: 67.3,
+        weeks_to_default: 2426,
+        expenses: [{ group: 'military_goods', label: 'Military goods', amount: 24_769, share: 0.38, top: [] }],
+        incomes: [],
+      },
+    }
+    const api = {
+      loaded_advice: vi.fn(async () => JSON.stringify(many)),
+      loaded_checks: vi.fn(async () => '[]'),
+    } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" />)
+    expect(await screen.findByText('Deficit')).toBeInTheDocument()
+    expect(screen.getByLabelText('Budget')).toHaveTextContent(/−7\.2K\/week.*treasury lasts ~67 weeks/)
+    expect(screen.getByText(/Military goods 24\.8K \(38%\)/)).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Now (5)' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Item 4')).toBeInTheDocument()
+    expect(screen.queryByText('Item 5')).not.toBeInTheDocument()
+    expect(screen.getByText('Debt grows with interest.')).toBeInTheDocument()
+  })
+
+  it('puts a worthwhile budget verdict at the top of Now', async () => {
+    const mixed: AdviceResult = {
+      advice: [
+        ...Array.from({ length: 6 }, (_, i) => ({ id: `growth:${i}`, domain: 'economy' as const, priority: 1, title: `Market ${i}`, detail: '' })),
+        { id: 'budget:balance', domain: 'economy', priority: 2, title: 'Budget deficit', detail: '' },
+      ],
+      limitations: [],
+    }
+    const api = {
+      loaded_advice: vi.fn(async () => JSON.stringify(mixed)),
+      loaded_checks: vi.fn(async () => '[]'),
+    } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" />)
+    const items = await screen.findAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('Budget deficit')
+    expect(items).toHaveLength(5)
   })
 })

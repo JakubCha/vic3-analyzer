@@ -1,0 +1,415 @@
+//! Budget guard: where the money goes, how long the treasury lasts, and the
+//! levers that close a deficit. Read straight from the save's budget block
+//! (`balance_trend`, `country_building_budget`), no market solve.
+
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+use vic3_defs::GameDefs;
+use vic3_prices::WorldCountry;
+
+use crate::advice::{Advice, Check, Domain};
+
+/// How close the country is to default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Risk {
+    /// Balance is positive or unknown.
+    Safe,
+    /// Losing money, but default is more than two years away.
+    Deficit,
+    /// In debt and still losing money, or default within two years.
+    Danger,
+    /// Over the credit limit, or default within half a year.
+    Critical,
+}
+
+/// One budget category, e.g. military wages, with its largest buildings.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BudgetGroup {
+    pub group: String,
+    pub label: String,
+    pub amount: f64,
+    /// Share of total weekly income or expenses.
+    pub share: f64,
+    /// Largest buildings in the group: (label, weekly amount).
+    pub top: Vec<(String, f64)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BudgetReport {
+    pub risk: Risk,
+    pub treasury: f64,
+    pub weekly_balance: Option<f64>,
+    pub weekly_income: Option<f64>,
+    pub weekly_expenses: Option<f64>,
+    pub debt: f64,
+    pub credit_limit: Option<f64>,
+    /// Weeks until the treasury is empty and borrowing starts (deficit only).
+    pub weeks_to_debt: Option<f64>,
+    /// Weeks until debt passes the credit limit (deficit only).
+    pub weeks_to_default: Option<f64>,
+    pub expenses: Vec<BudgetGroup>,
+    pub incomes: Vec<BudgetGroup>,
+}
+
+impl BudgetReport {
+    fn expense(&self, groups: &[&str]) -> f64 {
+        self.expenses.iter().filter(|g| groups.contains(&g.group.as_str())).map(|g| g.amount).sum()
+    }
+}
+
+/// Short money figure: 7.2K, 17.1M.
+pub fn money(x: f64) -> String {
+    let a = x.abs();
+    let sign = if x < 0.0 { "−" } else { "" };
+    if a >= 1e6 {
+        format!("{sign}{:.1}M", a / 1e6)
+    } else if a >= 1e3 {
+        format!("{sign}{:.1}K", a / 1e3)
+    } else {
+        format!("{sign}{a:.0}")
+    }
+}
+
+fn weeks(w: f64) -> String {
+    if w >= 104.0 {
+        format!("{w:.0} weeks (~{:.1} years)", w / 52.0)
+    } else {
+        format!("{w:.0} weeks")
+    }
+}
+
+fn group_label(key: &str) -> String {
+    match key {
+        "government_goods" => "Government goods".into(),
+        "government_wages" => "Government wages".into(),
+        "military_goods" => "Military goods".into(),
+        "military_wages" => "Military wages".into(),
+        "construction_goods" => "Construction".into(),
+        "subsidies" => "Subsidies".into(),
+        "government_share_losses" => "State-owned building losses".into(),
+        "income_taxes" => "Income tax".into(),
+        "poll_taxes" => "Poll tax".into(),
+        "dividends_taxes" => "Dividends tax".into(),
+        "government_share_dividends" => "State-owned dividends".into(),
+        "tariffs" => "Tariffs".into(),
+        other => vic3_defs::pretty_id(other),
+    }
+}
+
+fn groups(defs: &GameDefs, country: &WorldCountry, income: bool, total: Option<f64>) -> Vec<BudgetGroup> {
+    let mut by_group: BTreeMap<&str, Vec<(&str, f64)>> = BTreeMap::new();
+    for line in country.budget_lines.iter().filter(|l| l.income == income) {
+        by_group.entry(&line.group).or_default().push((&line.building_type, line.amount));
+    }
+    let listed: f64 = by_group.values().flatten().map(|(_, a)| a).sum();
+    let total = total.unwrap_or(listed).max(listed);
+    let share = |a: f64| if total > 0.0 { a / total } else { 0.0 };
+    let mut out: Vec<BudgetGroup> = by_group
+        .into_iter()
+        .map(|(group, mut items)| {
+            items.sort_by(|a, b| b.1.total_cmp(&a.1));
+            let amount = items.iter().map(|(_, a)| a).sum();
+            BudgetGroup {
+                group: group.into(),
+                label: group_label(group),
+                amount,
+                share: share(amount),
+                top: items.into_iter().take(3).map(|(b, a)| (defs.display_label(b), a)).collect(),
+            }
+        })
+        .collect();
+    // Interest, diplomacy, consumption taxes, minting… are not per building.
+    let other = total - listed;
+    if other > total * 0.01 {
+        out.push(BudgetGroup {
+            group: "other".into(),
+            label: "Other (not per building: interest, diplomacy, consumption taxes, minting…)".into(),
+            amount: other,
+            share: share(other),
+            top: Vec::new(),
+        });
+    }
+    out.sort_by(|a, b| b.amount.total_cmp(&a.amount));
+    out
+}
+
+/// Budget report for `country`; `None` when the save carries no budget.
+pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
+    let balance = country.weekly_balance;
+    if balance.is_none() && country.budget_lines.is_empty() {
+        return None;
+    }
+    // The save omits `principal` when there is no debt.
+    let debt = country.debt_principal.unwrap_or(0.0);
+    let limit = country.credit_limit;
+    let over_limit = country.credit_headroom.is_some_and(|h| h <= 0.0) || limit.is_some_and(|l| debt >= l);
+    let treasury = country.treasury;
+    let (weeks_to_debt, weeks_to_default) = match balance {
+        Some(b) if b < 0.0 => (
+            Some((treasury / -b).max(0.0)),
+            limit.map(|l| ((treasury + l - debt) / -b).max(0.0)),
+        ),
+        _ => (None, None),
+    };
+    let risk = if over_limit || weeks_to_default.is_some_and(|w| w < 26.0) {
+        Risk::Critical
+    } else if weeks_to_default.is_some_and(|w| w < 104.0) || (debt > 0.0 && balance.is_some_and(|b| b < 0.0)) {
+        Risk::Danger
+    } else if balance.is_some_and(|b| b < 0.0) {
+        Risk::Deficit
+    } else {
+        Risk::Safe
+    };
+    Some(BudgetReport {
+        risk,
+        treasury,
+        weekly_balance: balance,
+        weekly_income: country.weekly_income,
+        weekly_expenses: country.weekly_expenses,
+        debt,
+        credit_limit: limit,
+        weeks_to_debt,
+        weeks_to_default,
+        expenses: groups(defs, country, false, country.weekly_expenses),
+        incomes: groups(defs, country, true, country.weekly_income),
+    })
+}
+
+fn describe(groups: &[BudgetGroup], n: usize) -> String {
+    groups
+        .iter()
+        .take(n)
+        .map(|g| {
+            let top = g.top.first().map_or(String::new(), |(b, a)| format!(", mostly {b} {}", money(*a)));
+            format!("{} {} ({:.0}%{top})", g.label, money(g.amount), g.share * 100.0)
+        })
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+/// Budget-guard advice: runway, then the biggest levers, cost side first.
+pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
+    let urgent = r.risk >= Risk::Danger;
+    let spend = r.weekly_expenses.unwrap_or_else(|| r.expenses.iter().map(|g| g.amount).sum());
+    let share = |groups: &[&str]| if spend > 0.0 { r.expense(groups) / spend } else { 0.0 };
+
+    if r.risk == Risk::Safe {
+        // Hoarding: a growing treasury with idle construction is wasted growth.
+        let builds = r.expense(&["construction_goods"]);
+        if r.weekly_balance.is_some_and(|b| b > 0.0) && builds == 0.0 && r.treasury > spend * 20.0 {
+            out.push(Advice {
+                id: "budget:spend".into(),
+                domain: Domain::Economy,
+                priority: 2,
+                title: format!("Put the {} treasury to work", money(r.treasury)),
+                detail: format!(
+                    "You gain {} a week and nothing is being built. Queue construction: the budget pays for it.",
+                    money(r.weekly_balance.unwrap_or_default())
+                ),
+                why: Some("Money in the treasury earns nothing. Construction is paid from the state budget (construction goods), and every finished building pays wages and taxes back. A small deficit while building is normal; a surplus with an empty queue is growth you are not getting.".into()),
+                goal: None,
+                check: None,
+            });
+        }
+        return;
+    }
+
+    let balance = r.weekly_balance.unwrap_or_default();
+    let mut detail = match (r.weekly_income, r.weekly_expenses) {
+        (Some(i), Some(e)) => format!("You earn {} and spend {} a week ({}). ", money(i), money(e), money(balance)),
+        _ => format!("Weekly balance {}. ", money(balance)),
+    };
+    if r.debt > 0.0 {
+        detail += &format!("Debt {} of a {} credit limit. ", money(r.debt), r.credit_limit.map_or("unknown".into(), money));
+    } else if let Some(w) = r.weeks_to_debt {
+        detail += &format!("The {} treasury lasts about {}, then the state borrows. ", money(r.treasury), weeks(w));
+    }
+    if let Some(w) = r.weeks_to_default {
+        detail += &format!("At this rate the credit limit is reached in about {}. ", weeks(w));
+    }
+    detail += &format!("Biggest costs: {}.", describe(&r.expenses, 3));
+    let build_share = share(&["construction_goods"]);
+    if build_share >= 0.3 {
+        detail += &format!(" {:.0}% of spending is construction: that part is investment.", build_share * 100.0);
+    }
+    let over = r.risk == Risk::Critical && r.weeks_to_default.is_none_or(|w| w <= 0.0);
+    out.push(Advice {
+        id: "budget:balance".into(),
+        domain: Domain::Economy,
+        priority: if urgent { 1 } else { 2 },
+        title: match (r.risk, r.weeks_to_default) {
+            (Risk::Critical, _) if over => "Over the credit limit: cut spending now".into(),
+            (Risk::Critical, Some(w)) => format!("Default in about {w:.0} weeks"),
+            _ => format!("Budget deficit: {} a week", money(balance)),
+        },
+        detail,
+        why: Some("A deficit is not a problem by itself: once the treasury is empty the state borrows, and borrowing to build pays back through the taxes and dividends of the new buildings. It becomes one when it pays for upkeep (army, administration) instead of growth: debt only grows, interest is added to spending, and when debt passes the credit limit the country defaults, with severe penalties. Fix the deficit while the treasury still has money, not after.".into()),
+        goal: None,
+        check: Some(if over { Check::Solvent } else { Check::WeeklyBalance { at_least: 0.0 } }),
+    });
+
+    let lines = |groups: &[&str]| {
+        let parts: Vec<String> = r
+            .expenses
+            .iter()
+            .filter(|g| groups.contains(&g.group.as_str()))
+            .map(|g| {
+                let top: Vec<String> = g.top.iter().map(|(b, a)| format!("{b} {}", money(*a))).collect();
+                format!("{} {} ({})", g.label, money(g.amount), top.join(", "))
+            })
+            .collect();
+        parts.join("; ")
+    };
+
+    let military = share(&["military_goods", "military_wages"]);
+    if military >= 0.2 {
+        out.push(Advice {
+            id: "budget:military".into(),
+            domain: Domain::War,
+            priority: if urgent { 1 } else { 2 },
+            title: format!("Military upkeep is {:.0}% of spending", military * 100.0),
+            detail: format!("{}.", lines(&["military_goods", "military_wages"])),
+            why: Some("Every battalion pays wages to its soldiers and officers (barracks) and consumes arms, ammunition and other goods from the market (the army logistics line). In peacetime you can lower military wages in the Budget panel (soldiers' standard of living and the Armed Forces' approval fall), disband battalions you don't need, or keep older, cheaper unit equipment until a war is coming. Mobilising multiplies these costs, so a war while in deficit drains the treasury fast.".into()),
+            goal: None,
+            check: None,
+        });
+    }
+    if urgent {
+        out.push(Advice {
+            id: "budget:war".into(),
+            domain: Domain::War,
+            priority: 1,
+            title: "Do not start a war yet".into(),
+            detail: "Mobilised armies cost far more than peacetime ones, and the budget is already heading for default.".into(),
+            why: Some("Mobilisation adds wages and supply goods for every mobilised battalion, and lost trade during a war cuts tax income. Starting a war in debt is the classic road to default.".into()),
+            goal: None,
+            check: Some(if over { Check::Solvent } else { Check::WeeklyBalance { at_least: 0.0 } }),
+        });
+    }
+
+    let government = share(&["government_goods", "government_wages"]);
+    if government >= 0.2 {
+        out.push(Advice {
+            id: "budget:government".into(),
+            domain: Domain::Economy,
+            priority: 2,
+            title: format!("Administration is {:.0}% of spending", government * 100.0),
+            detail: format!("{}.", lines(&["government_goods", "government_wages"])),
+            why: Some("Government administrations produce bureaucracy, which laws, institutions and taxes consume; cutting below what you use brings penalties, so cut the price instead of the buildings. Government goods are mostly paper: a cheap local supply (paper mills, wood) lowers this line. Government wages can be lowered in the Budget panel at the cost of bureaucrats' standard of living.".into()),
+            goal: None,
+            check: None,
+        });
+    }
+
+    let support = r.expense(&["subsidies", "government_share_losses"]);
+    if spend > 0.0 && support / spend >= 0.05 {
+        out.push(Advice {
+            id: "budget:subsidies".into(),
+            domain: Domain::Economy,
+            priority: 2,
+            title: format!("Review subsidies and loss-making state buildings ({})", money(support)),
+            detail: format!("{}.", lines(&["subsidies", "government_share_losses"])),
+            why: Some("Subsidies keep unprofitable buildings staffed at the state's expense. They are worth it for what you need (construction inputs, arms before a war); otherwise turn them off in the building's panel and let the market decide.".into()),
+            goal: None,
+            check: None,
+        });
+    }
+
+    out.push(Advice {
+        id: "budget:revenue".into(),
+        domain: Domain::Economy,
+        priority: 2,
+        title: "Raise revenue".into(),
+        detail: format!("Income: {}.", describe(&r.incomes, 4)),
+        why: Some("The tax level in the Budget panel scales income and poll taxes: one step up is the quickest fix, but it lowers pops' standard of living and grows radicals. Consumption taxes on goods your pops buy a lot of add income without touching the tax level. In the long run revenue follows the economy: profitable, well-paid buildings pay income tax, and taxation laws decide who pays.".into()),
+        goal: None,
+        check: Some(Check::WeeklyBalance { at_least: 0.0 }),
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vic3_prices::BudgetLine;
+
+    fn line(income: bool, group: &str, building: &str, amount: f64) -> BudgetLine {
+        BudgetLine { income, group: group.into(), building_type: building.into(), amount }
+    }
+
+    /// Prussia 1836 in miniature: deficit driven by the army.
+    fn prussia() -> WorldCountry {
+        WorldCountry {
+            treasury: 486_803.0,
+            weekly_balance: Some(-7_231.0),
+            weekly_income: Some(57_854.0),
+            weekly_expenses: Some(65_085.0),
+            credit_limit: Some(17_058_032.0),
+            budget_lines: vec![
+                line(false, "military_goods", "building_army_logistics_center", 24_769.0),
+                line(false, "military_wages", "building_barrack", 14_560.0),
+                line(false, "government_goods", "building_government_administration", 15_262.0),
+                line(false, "government_wages", "building_government_administration", 6_316.0),
+                line(true, "poll_taxes", "building_subsistence_farm", 19_417.0),
+                line(true, "income_taxes", "building_manor_house", 1_104.0),
+            ],
+            ..WorldCountry::default()
+        }
+    }
+
+    #[test]
+    fn deficit_report_has_runway_and_breakdown() {
+        let defs = GameDefs::default();
+        let r = report(&defs, &prussia()).expect("report");
+        assert_eq!(r.risk, Risk::Deficit);
+        assert_eq!(r.weeks_to_debt.map(f64::round), Some(67.0));
+        assert_eq!(r.expenses[0].group, "military_goods");
+        // Unlisted spending lands in "other"; shares are of the save totals.
+        let other = r.expenses.iter().find(|g| g.group == "other").expect("other");
+        assert!((other.amount - (65_085.0 - 60_907.0)).abs() < 1e-6);
+        assert!((r.expenses.iter().map(|g| g.share).sum::<f64>() - 1.0).abs() < 1e-9);
+
+        let mut out = Vec::new();
+        budget_advice(&r, &mut out);
+        let ids: Vec<&str> = out.iter().map(|a| a.id.as_str()).collect();
+        assert_eq!(ids, ["budget:balance", "budget:military", "budget:government", "budget:revenue"]);
+        assert_eq!(out[0].priority, 2);
+        assert!(out[0].detail.contains("67 weeks"), "{}", out[0].detail);
+        assert!(out.iter().all(|a| a.why.is_some()));
+    }
+
+    #[test]
+    fn debt_with_deficit_is_danger_and_over_limit_is_critical() {
+        let defs = GameDefs::default();
+        let mut c = prussia();
+        c.treasury = 0.0;
+        c.debt_principal = Some(1_000_000.0);
+        let r = report(&defs, &c).expect("report");
+        assert_eq!(r.risk, Risk::Danger);
+        let mut out = Vec::new();
+        budget_advice(&r, &mut out);
+        assert!(out.iter().any(|a| a.id == "budget:war" && a.priority == 1));
+
+        c.debt_principal = c.credit_limit;
+        let r = report(&defs, &c).expect("report");
+        assert_eq!(r.risk, Risk::Critical);
+        let mut out = Vec::new();
+        budget_advice(&r, &mut out);
+        assert_eq!(out[0].check, Some(Check::Solvent));
+    }
+
+    #[test]
+    fn surplus_with_idle_construction_suggests_spending() {
+        let defs = GameDefs::default();
+        let mut c = prussia();
+        c.weekly_balance = Some(5_000.0);
+        c.treasury = 5_000_000.0;
+        let r = report(&defs, &c).expect("report");
+        assert_eq!(r.risk, Risk::Safe);
+        let mut out = Vec::new();
+        budget_advice(&r, &mut out);
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].id, "budget:spend");
+    }
+}
