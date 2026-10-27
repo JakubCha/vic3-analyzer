@@ -151,6 +151,18 @@ pub struct WorldConstruction {
     pub remaining: Option<f64>,
 }
 
+/// One interest group of a country. `ideologies` are the IG's plus its leader's,
+/// which together set its stance on each law.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct WorldInterestGroup {
+    pub definition: String,
+    /// Share of the country's political power, 0..1.
+    pub clout: f64,
+    pub in_government: bool,
+    pub approval: Option<f64>,
+    pub ideologies: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct WorldCountry {
     pub id: u32,
@@ -182,6 +194,8 @@ pub struct WorldCountry {
     pub interest_regions: Vec<String>,
     /// Country infamy when present on the save.
     pub infamy: Option<f64>,
+    /// This country's interest groups (empty when the save has none).
+    pub interest_groups: Vec<WorldInterestGroup>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -394,6 +408,25 @@ impl World {
                     interest_states: interest.states,
                     interest_regions: interest.regions,
                     infamy: country.infamy.filter(|value| value.is_finite()),
+                    interest_groups: save
+                        .interest_groups()
+                        .iter_present()
+                        .filter(|(_, ig)| ig.country == Some(id) && !ig.definition.is_empty())
+                        .map(|(_, ig)| {
+                            let leader = ig
+                                .leader
+                                .and_then(|leader| save.character_manager().database.get(&leader))
+                                .and_then(Option::as_ref)
+                                .and_then(|character| character.ideology.clone());
+                            WorldInterestGroup {
+                                definition: ig.definition.clone(),
+                                clout: ig.clout,
+                                in_government: ig.in_government,
+                                approval: ig.approval,
+                                ideologies: ig.ideologies.iter().cloned().chain(leader).collect(),
+                            }
+                        })
+                        .collect(),
                 }
             })
             .collect();

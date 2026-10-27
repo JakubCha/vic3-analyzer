@@ -118,12 +118,23 @@ impl AppConfig {
     /// Does not overwrite a valid `game_dir` or a non-empty `save_dirs` list.
     /// Tokens and `defs_blob` are never auto-filled.
     pub fn apply_auto_detect(&mut self) {
+        self.normalize_game_dir();
         let game_ok = self.game_dir.as_ref().is_some_and(|p| is_valid_game_dir(p));
         if !game_ok {
             self.game_dir = detect_game_dir();
         }
         if self.save_dirs.is_empty() {
             self.save_dirs = detect_save_roots().into_iter().map(|r| r.path).collect();
+        }
+    }
+
+    /// Accept the install root (`…/Victoria 3`) as well as its `game` folder.
+    pub fn normalize_game_dir(&mut self) {
+        if let Some(dir) = &self.game_dir {
+            let inner = dir.join("game");
+            if !is_valid_game_dir(dir) && is_valid_game_dir(&inner) {
+                self.game_dir = Some(inner);
+            }
         }
     }
 
@@ -268,6 +279,19 @@ mod tests {
         write_atomic(&path, b"new").unwrap();
         assert_eq!(fs::read(&path).unwrap(), b"new");
         assert_eq!(fs::read_dir(tmp.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn install_root_is_normalized_to_game_folder() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("Victoria 3");
+        fs::create_dir_all(root.join("game").join("common")).unwrap();
+        let mut config = AppConfig {
+            game_dir: Some(root.clone()),
+            ..AppConfig::default()
+        };
+        config.apply_auto_detect();
+        assert_eq!(config.game_dir, Some(root.join("game")));
     }
 
     #[test]

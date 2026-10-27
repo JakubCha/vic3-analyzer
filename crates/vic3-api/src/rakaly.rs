@@ -3,7 +3,7 @@
 //! builds embed the Vic3 tokens this project may not redistribute.
 //!
 //! Lookup order: `VIC3_RAKALY`, `rakaly(.exe)` next to the running executable,
-//! `%LOCALAPPDATA%\Programs\rakaly\rakaly.exe`, then `PATH`.
+//! then `PATH`.
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -19,15 +19,12 @@ pub fn rakaly_path() -> Option<PathBuf> {
     let beside_exe = std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(|dir| dir.join(EXE)));
-    let local_programs = std::env::var_os("LOCALAPPDATA")
-        .map(|dir| PathBuf::from(dir).join("Programs").join("rakaly").join(EXE));
     let on_path = std::env::var_os("PATH")
         .into_iter()
         .flat_map(|paths| std::env::split_paths(&paths).collect::<Vec<_>>())
         .map(|dir| dir.join(EXE));
     beside_exe
         .into_iter()
-        .chain(local_programs)
         .chain(on_path)
         .find(|path| path.is_file())
 }
@@ -43,7 +40,7 @@ pub fn rakaly_path() -> Option<PathBuf> {
 pub fn melt(save_bytes: &[u8]) -> Result<Vec<u8>, String> {
     let path = rakaly_path().ok_or(
         "binary save and no token map. Install Rakaly CLI (https://github.com/rakaly/cli/releases) \
-         to %LOCALAPPDATA%\\Programs\\rakaly\\ or set VIC3_RAKALY, or run the game with -debug_mode \
+         next to vic3-analyzer.exe or set VIC3_RAKALY, or run the game with -debug_mode \
          for plaintext saves",
     )?;
     let mut command = Command::new(&path);

@@ -9,7 +9,7 @@ use crate::{DefsError, GameDefs};
 ///
 /// v16: catalog entity structs use `name` instead of `id` for script keys.
 /// v15: `building_types_order` and `building_types` (renamed from `buildings`).
-pub const BLOB_VERSION: u32 = 16;
+pub const BLOB_VERSION: u32 = 17;
 
 #[derive(Serialize, Deserialize)]
 struct DefsBlob {
@@ -143,6 +143,8 @@ mod tests {
             pop_types: BTreeMap::new(),
             production_method_groups: BTreeMap::new(),
             technologies: BTreeMap::new(),
+            laws: BTreeMap::new(),
+            ideology_law_stances: BTreeMap::new(),
             building_type_index: crate::BuildingTypeIndex::default(),
         };
         defs.rebuild_package_ladder();

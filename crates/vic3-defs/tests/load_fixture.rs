@@ -485,3 +485,16 @@ fn building_redefinition_drops_earlier_construction_ref() {
         None
     );
 }
+
+#[test]
+fn laws_and_ideology_stances_load() {
+    let defs = load_from_path(fixture_root()).expect("fixture");
+    let census = &defs.laws["law_census_voting"];
+    assert_eq!(census.group, "lawgroup_distribution_of_power");
+    assert_eq!(census.progressiveness, 50.0);
+    assert_eq!(census.unlocking_technologies, ["democracy"]);
+    let stances = &defs.ideology_law_stances["ideology_paternalistic"];
+    assert_eq!(stances["law_autocracy"], 2);
+    assert_eq!(stances["law_census_voting"], -1);
+    assert_eq!(stances.len(), 2, "icon and triggers are not stances");
+}

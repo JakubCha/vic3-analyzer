@@ -33,6 +33,8 @@ pub fn pretty_id(id: &str) -> String {
         .or_else(|| id.strip_prefix("building_"))
         .or_else(|| id.strip_prefix("pm_"))
         .or_else(|| id.strip_prefix("popneed_"))
+        .or_else(|| id.strip_prefix("law_"))
+        .or_else(|| id.strip_prefix("ig_"))
         .unwrap_or(id);
     trimmed
         .split('_')
@@ -58,6 +60,8 @@ mod tests {
     fn pretty_id_strips_state_prefix() {
         assert_eq!(pretty_id("STATE_BRANDENBURG"), "Brandenburg");
         assert_eq!(pretty_id("building_rye_farm"), "Rye Farm");
+        assert_eq!(pretty_id("law_national_guard"), "National Guard");
+        assert_eq!(pretty_id("ig_armed_forces"), "Armed Forces");
     }
 
     #[test]

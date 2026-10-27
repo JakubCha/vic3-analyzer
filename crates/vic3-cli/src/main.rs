@@ -583,12 +583,8 @@ fn emit_plan(result: &PlanResult, json: bool) -> Result<()> {
 }
 
 fn archive_dir() -> Result<PathBuf> {
-    if let Some(root) = std::env::var_os("XDG_DATA_HOME") {
-        return Ok(PathBuf::from(root).join("vic3-analyzer"));
-    }
-    dirs::data_local_dir()
-        .map(|root| root.join("vic3-analyzer"))
-        .context("could not determine local data directory")
+    // Same root as the desktop app, including portable `data/` beside the exe.
+    vic3_catalog::app_data_dir().context("could not determine local data directory")
 }
 
 fn save_record(record: &AnalysisRecord) -> Result<PathBuf> {

@@ -1,0 +1,10 @@
+law_autocracy = {
+	group = lawgroup_distribution_of_power
+	progressiveness = -100
+	on_activate = { add_modifier = { name = x } }
+}
+law_census_voting = {
+	group = lawgroup_distribution_of_power
+	progressiveness = 50
+	unlocking_technologies = { democracy }
+}

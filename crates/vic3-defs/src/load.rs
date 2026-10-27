@@ -40,7 +40,7 @@ use crate::{
     classify_defs_path, icons,
     path_rules::{extra_icon_kind, ICON_LEAFS, LOCALIZATION_PREFIXES},
     staging::{StagingBuyPackage, StagingDefs, StagingNeed, StagingNeedEntry, StagingPm},
-    BuildingGroup, BuildingType, DefsError, DefsPathClass, GameDefs, Good, PopType,
+    BuildingGroup, BuildingType, DefsError, DefsPathClass, GameDefs, Good, Law, PopType,
     QualificationFactors, Technology, DEFAULT_PRICE_RANGE,
 };
 
@@ -83,6 +83,8 @@ pub fn load_from_path(root: impl AsRef<Path>) -> Result<GameDefs, DefsError> {
         load_building_types(&data_root, &mut defs.building_construction_refs)?;
     defs.building_groups = load_building_groups(&data_root)?;
     defs.technologies = load_technologies(&data_root)?;
+    defs.laws = load_laws(&data_root)?;
+    defs.ideology_law_stances = load_ideologies(&data_root)?;
     defs.pop_types = load_pop_types(&data_root)?;
     let (goods_icons, extra_icons) = load_icons(&data_root)?;
     attach_icons(&mut defs, goods_icons);
@@ -358,6 +360,9 @@ fn absorb_text_file(
     defs.building_groups
         .extend(file.defs.building_groups.clone());
     defs.technologies.extend(file.defs.technologies.clone());
+    defs.laws.extend(file.defs.laws.clone());
+    defs.ideology_law_stances
+        .extend(file.defs.ideology_law_stances.clone());
     defs.pop_types.extend(file.defs.pop_types.clone());
     defs.pop_needs.extend(file.defs.pop_needs.clone());
     defs.buy_packages.extend(file.defs.buy_packages.clone());
@@ -426,6 +431,11 @@ fn parse_defs_text(
         } else if relative.starts_with("common/technology/technologies/") {
             defs.technologies
                 .extend(parse_technologies_bytes(path, bytes)?);
+        } else if relative.starts_with("common/laws/") {
+            defs.laws.extend(parse_laws_bytes(path, bytes)?);
+        } else if relative.starts_with("common/ideologies/") {
+            defs.ideology_law_stances
+                .extend(parse_ideologies_bytes(path, bytes)?);
         } else if relative.starts_with("common/pop_types/") {
             defs.pop_types.extend(parse_pop_types_bytes(path, bytes)?);
         } else if relative.starts_with("common/building_groups/") {
@@ -1072,6 +1082,92 @@ fn parse_technologies_bytes(
             )
         })
         .collect())
+}
+
+fn load_laws(data_root: &Path) -> Result<BTreeMap<String, Law>, DefsError> {
+    let mut laws = BTreeMap::new();
+    for path in txt_files(&data_root.join("common/laws"))? {
+        let bytes = std::fs::read(&path).map_err(|source| DefsError::Io {
+            path: path.clone(),
+            source,
+        })?;
+        laws.extend(parse_laws_bytes(&path, &bytes)?);
+    }
+    Ok(laws)
+}
+
+fn parse_laws_bytes(path: &Path, bytes: &[u8]) -> Result<BTreeMap<String, Law>, DefsError> {
+    let raw: BTreeMap<String, RawLaw> = parse_bytes(path, bytes)?;
+    Ok(raw
+        .into_iter()
+        .filter(|(_, law)| !law.group.is_empty())
+        .map(|(id, law)| {
+            (
+                id,
+                Law {
+                    group: law.group,
+                    progressiveness: law.progressiveness.unwrap_or(0.0),
+                    unlocking_technologies: law.unlocking_technologies,
+                },
+            )
+        })
+        .collect())
+}
+
+fn load_ideologies(data_root: &Path) -> Result<BTreeMap<String, BTreeMap<String, i8>>, DefsError> {
+    let mut ideologies = BTreeMap::new();
+    for path in txt_files(&data_root.join("common/ideologies"))? {
+        let bytes = std::fs::read(&path).map_err(|source| DefsError::Io {
+            path: path.clone(),
+            source,
+        })?;
+        ideologies.extend(parse_ideologies_bytes(&path, &bytes)?);
+    }
+    Ok(ideologies)
+}
+
+/// `ideology_x = { lawgroup_y = { law_z = approve … } … }` → law stances.
+///
+/// Only `lawgroup_*` blocks are read; icons, triggers and the rest are skipped.
+fn parse_ideologies_bytes(
+    path: &Path,
+    bytes: &[u8],
+) -> Result<BTreeMap<String, BTreeMap<String, i8>>, DefsError> {
+    let bytes = strip_bom(bytes);
+    if looks_empty(bytes) {
+        return Ok(BTreeMap::new());
+    }
+    let tape = TextTape::from_slice(bytes).map_err(|source| DefsError::Parse {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    let reader = tape.utf8_reader();
+    let mut out = BTreeMap::new();
+    for (key, _op, value) in reader.fields() {
+        let Ok(obj) = value.read_object() else { continue };
+        let mut stances = BTreeMap::new();
+        for (group, _op, group_value) in obj.fields() {
+            if !group.read_str().starts_with("lawgroup_") {
+                continue;
+            }
+            let Ok(laws) = group_value.read_object() else { continue };
+            for (law, _op, stance) in laws.fields() {
+                let value = stance.read_str().ok().and_then(|s| match s.as_ref() {
+                    "strongly_approve" => Some(2),
+                    "approve" => Some(1),
+                    "neutral" => Some(0),
+                    "disapprove" => Some(-1),
+                    "strongly_disapprove" => Some(-2),
+                    _ => None,
+                });
+                if let Some(value) = value {
+                    stances.insert(law.read_str().to_string(), value);
+                }
+            }
+        }
+        out.insert(key.read_str().to_string(), stances);
+    }
+    Ok(out)
 }
 
 fn load_building_groups(data_root: &Path) -> Result<BTreeMap<String, BuildingGroup>, DefsError> {
@@ -1732,6 +1828,16 @@ where
     }
 
     deserializer.deserialize_any(OptNumberOrIdentVisitor)
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct RawLaw {
+    #[serde(default)]
+    group: String,
+    #[serde(default)]
+    progressiveness: Option<f64>,
+    #[serde(default)]
+    unlocking_technologies: Vec<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]

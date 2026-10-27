@@ -25,6 +25,8 @@ pub const COMMON_DIRS: &[&str] = &[
     "named_colors",
     "pop_types",
     "technology",
+    "laws",
+    "ideologies",
     "script_values",
 ];
 
@@ -432,7 +434,7 @@ mod tests {
     fn prunes_large_or_unrelated_subtrees() {
         assert_eq!(classify_defs_path("game/sound", true), DefsPathClass::Prune);
         assert_eq!(
-            classify_defs_path("game/common/laws", true),
+            classify_defs_path("game/common/decisions", true),
             DefsPathClass::Prune
         );
         assert_eq!(
@@ -450,7 +452,7 @@ mod tests {
             DefsPathClass::Descend
         );
         assert_eq!(
-            classify_defs_path(&format!("{steam}/game/common/laws"), true),
+            classify_defs_path(&format!("{steam}/game/common/decisions"), true),
             DefsPathClass::Prune
         );
         assert_eq!(
@@ -458,7 +460,7 @@ mod tests {
             DefsPathClass::Read
         );
         assert_eq!(
-            classify_defs_path("common/laws", true),
+            classify_defs_path("common/decisions", true),
             DefsPathClass::Prune
         );
     }

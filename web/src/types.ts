@@ -362,11 +362,22 @@ export type AdviceCheck =
   | { type: 'building_levels'; building_type: string; state_id?: number; at_least: number }
   | { type: 'production_method'; building_id: number; method: string }
   | { type: 'law_inactive'; law: string }
+  | { type: 'law_active'; law: string }
   | { type: 'solvent' }
+
+/** What the laws should achieve (`vic3_api::advice::LawGoal`). */
+export type LawGoal = 'economy' | 'authority' | 'democracy'
+
+/** What the economy should achieve (`vic3_api::advice::EconomyGoal`). */
+export type EconomyGoal = 'growth' | 'living_standards' | 'industrialization' | 'self_sufficiency'
+
+export type AdviceGoal = LawGoal | EconomyGoal
 
 export interface Advice {
   id: string
   domain: AdviceDomain
+  /** The goal this item serves; absent = shown for every goal. */
+  goal?: AdviceGoal
   /** 1 urgent, 2 worthwhile. */
   priority: number
   title: string

@@ -77,6 +77,10 @@ pub struct Save {
     pub cultures: Manager<Culture>,
     #[serde(default)]
     pub laws: Manager<LawEntry>,
+    #[serde(default)]
+    pub interest_groups: Manager<InterestGroup>,
+    #[serde(default)]
+    pub character_manager: Manager<Character>,
     #[serde(default, alias = "markets")]
     pub market_manager: Manager<Market>,
     #[serde(default, alias = "trade_routes")]
@@ -137,6 +141,10 @@ pub struct WorldSave {
     pub cultures: Manager<Culture>,
     #[serde(default)]
     pub laws: Manager<LawEntry>,
+    #[serde(default)]
+    pub interest_groups: Manager<InterestGroup>,
+    #[serde(default)]
+    pub character_manager: Manager<Character>,
     #[serde(default, alias = "constructions")]
     pub building_constructions: Manager<ConstructionOrder>,
     #[serde(default, alias = "gov_constructions")]
@@ -173,6 +181,8 @@ pub trait WorldSnapshot {
     fn pops(&self) -> &Manager<Pop>;
     fn cultures(&self) -> &Manager<Culture>;
     fn previous_played(&self) -> &[Player];
+    fn interest_groups(&self) -> &Manager<InterestGroup>;
+    fn character_manager(&self) -> &Manager<Character>;
     fn active_laws(&self, country_id: u32) -> Vec<&str>;
     fn technology(&self) -> &Manager<TechnologyEntry>;
     fn building_constructions(&self) -> &Manager<ConstructionOrder>;
@@ -216,6 +226,12 @@ macro_rules! impl_world_snapshot {
             }
             fn previous_played(&self) -> &[Player] {
                 &self.previous_played
+            }
+            fn interest_groups(&self) -> &Manager<InterestGroup> {
+                &self.interest_groups
+            }
+            fn character_manager(&self) -> &Manager<Character> {
+                &self.character_manager
             }
             fn active_laws(&self, country_id: u32) -> Vec<&str> {
                 active_laws_in(&self.laws, country_id)
@@ -1287,6 +1303,36 @@ pub struct LawEntry {
     pub country: Option<u32>,
     #[serde(default)]
     pub active: Option<bool>,
+}
+
+/// One entry in `interest_groups.database` (one per country × IG type).
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct InterestGroup {
+    /// IG type, e.g. `ig_landowners`.
+    #[serde(default, deserialize_with = "flex_str")]
+    pub definition: String,
+    #[serde(default, deserialize_with = "optional_id")]
+    pub country: Option<u32>,
+    /// Share of the country's political power, 0..1.
+    #[serde(default)]
+    pub clout: f64,
+    #[serde(default)]
+    pub in_government: bool,
+    /// Approval of the government, about −10..+10.
+    #[serde(default)]
+    pub approval: Option<f64>,
+    /// IG ideologies (its leader's ideology lives on the character).
+    #[serde(default, deserialize_with = "flex_str_vec")]
+    pub ideologies: Vec<String>,
+    #[serde(default, deserialize_with = "optional_id")]
+    pub leader: Option<u32>,
+}
+
+/// One entry in `character_manager.database`; only what IG support needs.
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct Character {
+    #[serde(default, deserialize_with = "optional_flex_str")]
+    pub ideology: Option<String>,
 }
 
 /// A trade route in `trade_route_manager.database`.

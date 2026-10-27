@@ -345,6 +345,15 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     app.manage(AppState::new(session));
     let handle = watch::spawn_save_watcher(app.handle().clone(), roots);
     app.manage(Mutex::new(handle));
+
+    // The window is built here (`create: false` in tauri.conf.json) so a portable
+    // copy keeps WebView2 data in `data/webview` beside the exe, not the profile.
+    let config = app.config().app.windows[0].clone();
+    let mut window = tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?;
+    if let Some(dir) = vic3_catalog::portable_data_dir() {
+        window = window.data_directory(dir.join("webview"));
+    }
+    window.build()?;
     Ok(())
 }
 

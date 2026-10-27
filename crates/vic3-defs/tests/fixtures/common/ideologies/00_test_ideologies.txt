@@ -1,0 +1,8 @@
+ideology_paternalistic = {
+	icon = "gfx/interface/icons/ideology_icons/paternalistic.dds"
+	lawgroup_distribution_of_power = {
+		law_autocracy = strongly_approve
+		law_census_voting = disapprove
+	}
+	possible = { always = yes }
+}

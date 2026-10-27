@@ -39,3 +39,5 @@ web/fixtures/defs.postcard
 
 # Archive dumps
 /archive-export/
+/bin/
+/tmp/

@@ -168,7 +168,7 @@ Ranked suggestions for the played country, grouped by domain (same engine as the
 | --- | --- | :---: | --- |
 | `domain` | string | No | `"economy"`, `"laws"` or `"war"`; omit for all |
 
-- **Output:** `{ advice: [{ id, domain, priority, title, detail, check? }], limitations }`. `priority` 1 is urgent, 2 worthwhile. Laws advice is a vanilla heuristic (no interest-group support or tech-unlock check).
+- **Output:** `{ advice: [{ id, domain, goal?, priority, title, detail, check? }], limitations }`. `priority` 1 is urgent, 2 worthwhile. Economy items carry `goal` (`growth`, `living_standards`, `industrialization`, `self_sufficiency`) and laws items (`economy`, `authority`, `democracy`: the next step per law group with interest-group support from the save); items without `goal` apply to every goal.
 
 ### 8. `check_advice`
 After binding a newer save, reports which earlier suggestions were carried out.

@@ -77,7 +77,7 @@ pub use overlay::{apply_overlay, load_overlay_json, BuildingOverlay, DefsOverlay
 pub use path_rules::{classify_defs_path, DefsPathClass, COMMON_DIRS};
 pub use substitution::{clamp_supply_share, substitution_shares, substitution_weight};
 pub use types::{
-    BuildingGroup, BuildingType, BuyPackage, FlagDefinition, GameDefs, Good, NeedEntry, PopNeed,
+    BuildingGroup, BuildingType, BuyPackage, FlagDefinition, GameDefs, Good, Law, NeedEntry, PopNeed,
     PopType, ProductionMethod, QualificationFactors, Technology,
 };
 

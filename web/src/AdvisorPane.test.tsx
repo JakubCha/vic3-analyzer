@@ -64,6 +64,50 @@ describe('AdvisorPane', () => {
     await waitFor(() => expect(loadTracked()[0].doneAt).toBe('1840.2.1'))
   })
 
+  it('shows laws for the chosen goal only and remembers the goal', async () => {
+    const user = userEvent.setup()
+    const goals: AdviceResult = {
+      advice: [
+        { id: 'law:authority:x', domain: 'laws', goal: 'authority', priority: 1, title: 'Enact Secret Police', detail: '' },
+        { id: 'law:democracy:x', domain: 'laws', goal: 'democracy', priority: 1, title: 'Enact Oligarchy', detail: '' },
+      ],
+      limitations: [],
+    }
+    const api = {
+      loaded_advice: vi.fn(async () => JSON.stringify(goals)),
+      loaded_checks: vi.fn(async () => '[]'),
+    } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" />)
+    await user.click(await screen.findByRole('tab', { name: /Laws \(0\)/ }))
+    await user.selectOptions(screen.getByRole('combobox'), 'democracy')
+    expect(screen.getByText('Enact Oligarchy')).toBeInTheDocument()
+    expect(screen.queryByText('Enact Secret Police')).not.toBeInTheDocument()
+    expect(localStorage.getItem('vic3-advisor-law-goal')).toBe('democracy')
+  })
+
+  it('filters economy advice by economy goal and keeps goal-less warnings', async () => {
+    const user = userEvent.setup()
+    const goals: AdviceResult = {
+      advice: [
+        { id: 'growth:x', domain: 'economy', goal: 'growth', priority: 1, title: 'Expand Coal Mines', detail: '' },
+        { id: 'living_standards:x', domain: 'economy', goal: 'living_standards', priority: 1, title: 'Build more Wheat Farms', detail: '' },
+        { id: 'loss:x', domain: 'economy', priority: 2, title: 'Fix the loss-making Shipyards', detail: '' },
+      ],
+      limitations: [],
+    }
+    const api = {
+      loaded_advice: vi.fn(async () => JSON.stringify(goals)),
+      loaded_checks: vi.fn(async () => '[]'),
+    } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" />)
+    expect(await screen.findByText('Expand Coal Mines')).toBeInTheDocument()
+    expect(screen.queryByText('Build more Wheat Farms')).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByRole('combobox'), 'living_standards')
+    expect(screen.getByText('Build more Wheat Farms')).toBeInTheDocument()
+    expect(screen.getByText('Fix the loss-making Shipyards')).toBeInTheDocument()
+    expect(localStorage.getItem('vic3-advisor-economy-goal')).toBe('living_standards')
+  })
+
   it('keeps other countries’ tracked items out of view', async () => {
     localStorage.setItem(
       'vic3-advisor-tracked',

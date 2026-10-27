@@ -62,7 +62,7 @@ pub use mcp::{
 pub use paths::{
     app_data_dir, default_config_path, default_game_dir_candidates, default_local_save_dir,
     detect_game_dir, detect_save_roots, detect_steam_cloud_save_dirs, infer_location,
-    is_valid_game_dir, roots_from_paths, steam_roots, SaveRoot, APP_NAME, CONFIG_FILE_JSON,
-    CONFIG_FILE_TOML, VIC3_STEAM_APP_ID,
+    is_valid_game_dir, portable_data_dir, roots_from_paths, steam_roots, SaveRoot, APP_NAME,
+    CONFIG_FILE_JSON, CONFIG_FILE_TOML, VIC3_STEAM_APP_ID,
 };
 pub use stub::{classify_kind, normalize_stub, SaveKind, StubError};

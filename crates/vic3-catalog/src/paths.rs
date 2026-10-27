@@ -20,15 +20,27 @@ pub const CONFIG_FILE_JSON: &str = "config.json";
 /// Victoria 3 Steam app id (for Cloud cache under `userdata/<id>/529340/`).
 pub const VIC3_STEAM_APP_ID: &str = "529340";
 
+/// Portable mode: a `data` folder next to the running executable.
+///
+/// Lets a copy kept on another drive store config, defs cache and WebView data
+/// beside itself instead of in the user profile.
+pub fn portable_data_dir() -> Option<PathBuf> {
+    let dir = std::env::current_exe().ok()?.parent()?.join("data");
+    dir.is_dir().then_some(dir)
+}
+
 /// Resolve the shared app data directory (`…/vic3-analyzer`).
 ///
-/// Honors `XDG_DATA_HOME` first (same convention as the CLI archive), then
-/// [`dirs::data_local_dir`].
+/// [`portable_data_dir`] wins when present; then `XDG_DATA_HOME` (same
+/// convention as the CLI archive), then [`dirs::data_local_dir`].
 ///
 /// # Errors
 ///
 /// [`CatalogError::NoAppDataDir`] when neither source yields a path.
 pub fn app_data_dir() -> Result<PathBuf, CatalogError> {
+    if let Some(dir) = portable_data_dir() {
+        return Ok(dir);
+    }
     if let Some(root) = std::env::var_os("XDG_DATA_HOME") {
         return Ok(PathBuf::from(root).join(APP_NAME));
     }

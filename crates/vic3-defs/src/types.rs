@@ -76,6 +76,13 @@ pub struct GameDefs {
     /// Empty when those files were not in the selected game files.
     #[serde(default)]
     pub technologies: BTreeMap<String, Technology>,
+    /// Law id → group / progressiveness / unlocks (`common/laws`).
+    #[serde(default)]
+    pub laws: BTreeMap<String, Law>,
+    /// Ideology id → law id → stance, −2 strongly disapprove … +2 strongly approve
+    /// (`common/ideologies`). Interest-group support for a law sums these.
+    #[serde(default)]
+    pub ideology_law_stances: BTreeMap<String, BTreeMap<String, i8>>,
     /// O(1) lookup table for [`Self::building_types_order`], built on demand.
     ///
     /// Derived from `building_types_order`; not part of the definition data and
@@ -107,6 +114,8 @@ impl Default for GameDefs {
             pop_types: BTreeMap::new(),
             production_method_groups: BTreeMap::new(),
             technologies: BTreeMap::new(),
+            laws: BTreeMap::new(),
+            ideology_law_stances: BTreeMap::new(),
             building_type_index: BuildingTypeIndex::default(),
         }
     }
@@ -387,6 +396,18 @@ pub struct ProductionMethod {
     /// not invent per-level defaults when it is missing.
     #[serde(default)]
     pub country_construction_add: Option<f64>,
+}
+
+/// A law definition (`common/laws`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Law {
+    /// `lawgroup_*` this law belongs to (one active law per group).
+    pub group: String,
+    /// Paradox `progressiveness`: negative = authoritarian/traditional, positive = liberal/radical.
+    pub progressiveness: f64,
+    /// Tech ids from `unlocking_technologies` (any one unlocks the law).
+    #[serde(default)]
+    pub unlocking_technologies: Vec<String>,
 }
 
 /// A technology definition (`common/technology/technologies`).

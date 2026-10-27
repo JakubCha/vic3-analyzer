@@ -111,6 +111,7 @@ async fn world_tables_include_foreign_when_present() {
         interest_states: vec![],
         interest_regions: vec![],
         infamy: None,
+        interest_groups: Vec::new(),
     });
     world.states.push(WorldState {
         id: 999,

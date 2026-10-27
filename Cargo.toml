@@ -69,3 +69,18 @@ incremental = false
 inherits = "release"
 debug = 2
 strip = "none"
+
+# Local iteration on real saves (`cargo run --profile fast`): release speed at
+# runtime without thin-LTO's minutes-long link; incremental rebuilds.
+[profile.fast]
+inherits = "release"
+lto = false
+codegen-units = 256
+incremental = true
+
+# Smaller debug info: much faster links of the DataFusion/Tauri test binaries.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false

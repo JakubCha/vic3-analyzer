@@ -764,9 +764,51 @@ pub fn loaded_plan_json(plan_opts_json: &str) -> Result<String, ApiError> {
 /// [`ApiError::NoLoadedAnalysis`].
 pub fn loaded_alerts_json() -> Result<String, ApiError> {
     with_loaded_analysis(|loaded| {
-        let result = diagnose_alerts(&loaded.world, &loaded.defs, &loaded.prices);
-        Ok(serde_json::to_string(&result)?)
+        Ok(serde_json::to_string(&player_alerts(
+            &loaded.world,
+            &loaded.defs,
+            &loaded.prices,
+        ))?)
     })
+}
+
+/// Alerts for the whole save, with mitigations built only for the player's
+/// alerts (thousands of foreign ones made a real save take minutes).
+fn player_alerts(world: &World, defs: &vic3_defs::GameDefs, prices: &PricesResult) -> vic3_prices::AlertsResult {
+    let Some((_, states)) = advice::player(world) else {
+        return diagnose_alerts(world, defs, prices);
+    };
+    let ids = vic3_prices::alerts_with(
+        world,
+        defs,
+        prices,
+        vic3_prices::AlertsOptions {
+            with_mitigations: false,
+            mitigation_ids: None,
+        },
+    )
+    .alerts
+    .into_iter()
+    .filter(|a| a.state_id.is_none_or(|id| states.contains(&id)))
+    // Market-wide (state-less) mitigations re-solve prices (~1 s each); keep the worst few.
+    .scan(0usize, |stateless, a| {
+        if a.state_id.is_none() {
+            *stateless += 1;
+        }
+        Some((*stateless, a))
+    })
+    .filter(|(stateless, a)| a.state_id.is_some() || *stateless <= 8)
+    .map(|(_, a)| a.id)
+    .collect();
+    vic3_prices::alerts_with(
+        world,
+        defs,
+        prices,
+        vic3_prices::AlertsOptions {
+            with_mitigations: true,
+            mitigation_ids: Some(ids),
+        },
+    )
 }
 
 /// Player advice from the loaded session ([`advice::AdviceResult`] JSON).

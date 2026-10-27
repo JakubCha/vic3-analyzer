@@ -135,6 +135,7 @@ impl CompanionSession {
     pub fn apply_config(&mut self, dto: ConfigDto) -> Result<ConfigDto, String> {
         // Preserve path from disk; ignore client-supplied config_path for writes.
         let mut config = dto.into_config();
+        config.normalize_game_dir();
         if config.auto_detect {
             config.apply_auto_detect();
         }
