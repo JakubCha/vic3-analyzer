@@ -677,3 +677,5 @@ h2 > .good-icon { margin-right: .45rem; }
 .budget-bar { position: absolute; inset: 0 auto 0 0; background: var(--panel); z-index: -1; }
 .advisor-why { color: var(--muted); margin: 0 0 .5rem; }
 .advisor-why summary { cursor: pointer; }
+.advisor.overlay { padding: .5rem; font-size: .9em; }
+.advisor.overlay .advisor-list { margin-top: .5rem; gap: .5rem; }

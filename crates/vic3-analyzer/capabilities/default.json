@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Companion UI allowlist: config, save catalog, analysis JSON, and Advanced Query SQL (see docs/desktop.md).",
-  "windows": ["main"],
+  "windows": ["main", "overlay"],
   "permissions": ["core:default", "allow-companion"]
 }

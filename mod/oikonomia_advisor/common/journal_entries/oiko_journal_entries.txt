@@ -1,0 +1,85 @@
+﻿# Oikonomia Advisor journal entries. Added to the player by common/on_actions/oiko_on_actions.txt
+# (monthly); values come from common/script_values/oiko_values.txt.
+
+# Live budget guard: added with a deficit, silently removed once the balance is positive.
+je_oiko_budget_guard = {
+	icon = "gfx/interface/icons/objectives/economic_dominance.dds"
+	group = je_group_internal_affairs
+
+	invalid = {
+		net_fixed_income >= 0
+	}
+
+	status_desc = {
+		first_valid = {
+			triggered_desc = {
+				desc = je_oiko_budget_guard_status_critical
+				trigger = {
+					OR = {
+						in_default = yes
+						scaled_debt >= 0.85
+					}
+				}
+			}
+			triggered_desc = {
+				desc = je_oiko_budget_guard_status_danger
+				# Already borrowing and still losing money.
+				trigger = { scaled_debt > 0 }
+			}
+			triggered_desc = {
+				desc = je_oiko_budget_guard_status_deficit
+				trigger = { always = yes }
+			}
+		}
+	}
+
+	should_be_pinned_by_default_uninvolved_or_context = yes
+	weight = 1000
+}
+
+# Prussia's first years: the army is the deficit.
+je_oiko_pru_opening = {
+	icon = "gfx/interface/icons/event_icons/event_military.dds"
+	group = je_group_internal_affairs
+
+	complete = {
+		military_expenses_share < 0.4
+		net_fixed_income >= 0
+	}
+
+	on_complete = {
+		set_variable = oiko_pru_opening_done
+	}
+
+	invalid = {
+		NOT = { c:PRU ?= root }
+	}
+
+	should_be_pinned_by_default_uninvolved_or_context = yes
+	weight = 900
+}
+
+# Prussia to the North German Federation to Germany.
+je_oiko_pru_germany = {
+	icon = "gfx/interface/icons/event_icons/event_portrait.dds"
+	group = je_group_internal_affairs
+
+	complete = {
+		c:GER ?= root
+	}
+
+	on_complete = {
+		set_variable = oiko_pru_germany_done
+	}
+
+	invalid = {
+		NOR = {
+			c:PRU ?= root
+			c:NGF ?= root
+			c:GER ?= root
+		}
+	}
+
+	should_be_pinned_by_default_uninvolved_or_context = yes
+	weight = 800
+}

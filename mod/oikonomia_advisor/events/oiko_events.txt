@@ -1,0 +1,37 @@
+﻿namespace = oiko
+
+# Budget alarm: fired by the monthly on_action when default is close.
+oiko.1 = {
+	type = country_event
+
+	title = oiko.1.t
+	desc = oiko.1.d
+	flavor = oiko.1.f
+
+	event_image = {
+		video = "europenorthamerica_capitalists_meeting"
+	}
+
+	on_created_soundeffect = "event:/SFX/UI/Alerts/event_appear"
+
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+
+	duration = 3
+
+	# At most once every six months.
+	cooldown = { days = 180 }
+
+	trigger = {
+		is_player = yes
+		net_fixed_income < 0
+		OR = {
+			in_default = yes
+			scaled_debt >= 0.85
+		}
+	}
+
+	option = {
+		name = oiko.1.a
+		default_option = yes
+	}
+}

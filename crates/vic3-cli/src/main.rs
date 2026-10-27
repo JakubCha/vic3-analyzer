@@ -88,6 +88,7 @@ fn main() -> Result<()> {
         Commands::Defs(cmd) => run_defs(cmd),
         Commands::Archive(cmd) => run_archive(cmd),
         Commands::Mcp(cmd) => run_mcp(cmd),
+        Commands::Mod(cmd) => run_mod(cmd),
     }
 }
 
@@ -123,6 +124,8 @@ enum Commands {
     Archive(ArchiveCli),
     /// Configure and manage the Model Context Protocol (MCP) server for AI assistants.
     Mcp(McpCli),
+    /// Generate the Victoria 3 mod journal entries from the playbook rules.
+    Mod(ModCli),
 }
 
 #[derive(Debug, Args)]
@@ -626,6 +629,39 @@ fn load_record(id: &str) -> Result<AnalysisRecord> {
         &fs::read(&path).with_context(|| format!("reading archive record {}", path.display()))?,
     )
     .with_context(|| format!("parsing archive record {}", path.display()))
+}
+
+#[derive(Debug, Args)]
+struct ModCli {
+    #[command(subcommand)]
+    command: ModCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum ModCommand {
+    /// Write one journal entry per playbook rule (plus on_actions, values, loc) into a mod folder.
+    Generate {
+        /// Mod root, e.g. `mod/oikonomia_advisor`. Generated files are overwritten.
+        #[arg(long)]
+        out: PathBuf,
+    },
+}
+
+fn run_mod(cmd: ModCli) -> Result<()> {
+    let ModCommand::Generate { out } = cmd.command;
+    let generated = vic3_api::modgen::generate(vic3_api::playbook::rules());
+    for (path, text) in &generated.files {
+        let target = out.join(path);
+        if let Some(dir) = target.parent() {
+            std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
+        }
+        std::fs::write(&target, text).with_context(|| format!("write {}", target.display()))?;
+    }
+    writeln!(io::stdout(), "{} rules generated, {} skipped", generated.generated, generated.skipped.len())?;
+    for (id, why) in &generated.skipped {
+        writeln!(io::stdout(), "  skipped {id}: {why}")?;
+    }
+    Ok(())
 }
 
 fn run_archive(cmd: ArchiveCli) -> Result<()> {

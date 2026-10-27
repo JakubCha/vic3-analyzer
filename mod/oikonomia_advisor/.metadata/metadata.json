@@ -1,0 +1,12 @@
+{
+  "name": "Oikonomia Advisor",
+  "id": "oikonomia.advisor",
+  "version": "0.1.0",
+  "supported_game_version": "1.13.*",
+  "short_description": "Journal entries that guard your budget and walk you through Prussia's playbook, with live values and the mechanics explained.",
+  "tags": ["Gameplay", "Utilities"],
+  "relationships": [],
+  "game_custom_data": {
+    "multiplayer_synchronized": true
+  }
+}

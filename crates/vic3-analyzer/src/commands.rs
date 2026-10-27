@@ -16,7 +16,7 @@
 
 use std::sync::Mutex;
 
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::dto::{ConfigDto, DashboardDto, SaveStubDto};
 use crate::session::{AppState, CompanionSession, SqlDocsDto};
@@ -132,13 +132,44 @@ pub async fn use_save(
     solve_opts_json: Option<String>,
 ) -> Result<String, String> {
     let opts = solve_opts_json.unwrap_or_else(|| "{}".into());
-    tauri::async_runtime::spawn_blocking(move || {
+    let handle = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<AppState>();
         let mut session = state.inner.lock().map_err(|_| "state lock poisoned")?;
         session.use_save(&name, location.as_deref(), &opts)
     })
     .await
-    .map_err(|e| format!("use_save join: {e}"))?
+    .map_err(|e| format!("use_save join: {e}"))?;
+    if result.is_ok() {
+        // Other windows (the overlay) refresh their advice on this.
+        let _ = handle.emit(ANALYSIS_LOADED_EVENT, ());
+    }
+    result
+}
+
+/// Event emitted to every window after `use_save` binds a new analysis.
+pub const ANALYSIS_LOADED_EVENT: &str = "analysis-loaded";
+
+/// Open the always-on-top "Now" overlay, or close it when open.
+///
+/// # Errors
+///
+/// Window creation failure (message string).
+#[tauri::command]
+pub async fn toggle_overlay(app: AppHandle) -> Result<bool, String> {
+    if let Some(window) = app.get_webview_window("overlay") {
+        window.close().map_err(|e| e.to_string())?;
+        return Ok(false);
+    }
+    let mut builder = tauri::WebviewWindowBuilder::new(&app, "overlay", tauri::WebviewUrl::App("index.html?overlay".into()))
+        .title("Vic3 Advisor · Now")
+        .inner_size(380.0, 520.0)
+        .always_on_top(true);
+    if let Some(dir) = vic3_catalog::portable_data_dir() {
+        builder = builder.data_directory(dir.join("webview"));
+    }
+    builder.build().map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 /// Prices JSON for the bound analysis session (`vic3-api`).

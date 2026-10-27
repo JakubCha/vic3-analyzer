@@ -67,6 +67,7 @@ pub fn run() {
             commands::sql_docs,
             commands::get_mcp_status,
             commands::toggle_mcp_client,
+            commands::toggle_overlay,
         ]);
 
     // Docs / WDIO only — never enable the `webdriver` feature in player release builds.

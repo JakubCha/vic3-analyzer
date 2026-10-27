@@ -1,0 +1,112 @@
+﻿# Oikonomia Advisor: values shown in the journal entries. Root = the country.
+# Flags are 1/0 so localization can tick checkboxes by comparing to oiko_one.
+
+oiko_zero = { value = 0 }
+oiko_one = { value = 1 }
+
+# --- Budget guard ---
+
+oiko_balance = { value = net_fixed_income }
+oiko_treasury = { value = gold_reserves }
+
+# Weeks until the treasury is empty at the current deficit (0 when not losing money).
+oiko_weeks_to_debt = {
+	value = 0
+	if = {
+		limit = {
+			net_fixed_income < 0
+			gold_reserves > 0
+		}
+		value = gold_reserves
+		divide = net_fixed_income
+		multiply = -1
+	}
+}
+
+# Principal relative to the credit limit (1 = default).
+oiko_debt_share = { value = scaled_debt }
+
+oiko_military_share = { value = military_expenses_share }
+oiko_military_target = { value = 0.4 }
+
+# --- Prussia: opening ---
+
+oiko_paper_ok = {
+	value = 0
+	if = {
+		limit = { market_capital.market = { mg:paper = { market_goods_pricier < 0.1 } } }
+		value = 1
+	}
+}
+
+oiko_small_arms_ok = {
+	value = 0
+	if = {
+		limit = { market_capital.market = { mg:small_arms = { market_goods_pricier < 0.1 } } }
+		value = 1
+	}
+}
+
+oiko_construction_levels = {
+	value = 0
+	every_scope_building = {
+		limit = { is_building_type = building_construction_sector }
+		add = this.level
+	}
+}
+oiko_construction_target = { value = 10 }
+
+# --- Prussia: road to Germany ---
+
+oiko_has_public_schools = {
+	value = 0
+	if = {
+		limit = { has_law_or_variant = law_type:law_public_schools }
+		value = 1
+	}
+}
+
+oiko_has_nationalism = {
+	value = 0
+	if = {
+		limit = { has_technology_researched = nationalism }
+		value = 1
+	}
+}
+
+oiko_schleswig_solved = {
+	value = 0
+	if = {
+		limit = { has_global_variable = schleswig_holstein_question_solved }
+		value = 1
+	}
+}
+
+oiko_war_chest_ok = {
+	value = 0
+	if = {
+		limit = { scaled_debt < 0.3 }
+		value = 1
+	}
+}
+
+oiko_is_ngf = {
+	value = 0
+	if = {
+		limit = {
+			OR = {
+				c:NGF ?= root
+				c:GER ?= root
+			}
+		}
+		value = 1
+	}
+}
+
+oiko_has_pan_nationalism = {
+	value = 0
+	if = {
+		limit = { has_technology_researched = pan-nationalism }
+		value = 1
+	}
+}

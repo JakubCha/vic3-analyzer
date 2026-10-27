@@ -1,0 +1,46 @@
+﻿# Oikonomia Advisor: hand the player its journal entries on the monthly pulse.
+# Inactive "potential" journal entries only exist in campaigns started with the
+# mod, so the entries are added here instead; this also works for older saves.
+
+on_monthly_pulse_country = {
+	on_actions = { oiko_monthly_country }
+}
+
+oiko_monthly_country = {
+	trigger = {
+		is_player = yes
+	}
+	# Budget alarm popup; its own trigger and cooldown decide whether it fires.
+	events = {
+		oiko.1
+	}
+	effect = {
+		# Budget guard: back with every deficit, gone (invalid) once the balance is positive.
+		if = {
+			limit = {
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_budget_guard }
+			}
+			add_journal_entry = { type = je_oiko_budget_guard }
+		}
+		if = {
+			limit = {
+				c:PRU ?= root
+				NOT = { has_journal_entry = je_oiko_pru_opening }
+				NOT = { has_variable = oiko_pru_opening_done }
+			}
+			add_journal_entry = { type = je_oiko_pru_opening }
+		}
+		if = {
+			limit = {
+				OR = {
+					c:PRU ?= root
+					c:NGF ?= root
+				}
+				NOT = { has_journal_entry = je_oiko_pru_germany }
+				NOT = { has_variable = oiko_pru_germany_done }
+			}
+			add_journal_entry = { type = je_oiko_pru_germany }
+		}
+	}
+}

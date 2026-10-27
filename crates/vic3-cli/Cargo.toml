@@ -24,6 +24,7 @@ serde.workspace = true
 serde_json.workspace = true
 sha2 = "0.11.0"
 uuid = { version = "1.24.1", features = ["v4"] }
+vic3-api = { path = "../vic3-api" }
 vic3-catalog = { path = "../vic3-catalog" }
 vic3-defs = { path = "../vic3-defs" }
 vic3-load = { path = "../vic3-load" }

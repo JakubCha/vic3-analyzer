@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { Advice, AdviceDomain, AdviceGoal, AdviceResult, BudgetReport } from './types'
+import { isTauri } from './env'
+import { invokeTauri } from './tauriApi'
 import type { WasmApi } from './wasm'
 
 /** `now`: the few most important items across every domain. */
-type View = AdviceDomain | 'now'
+export type View = AdviceDomain | 'now'
 
 /** How many items the Now tab shows: a short session's worth. */
 const NOW_LIMIT = 5
@@ -25,7 +27,7 @@ export interface TrackedAdvice {
   doneAt?: string
 }
 
-type GoalDomain = 'economy' | 'laws'
+export type GoalDomain = 'economy' | 'laws'
 
 /** Choosable goals per tab, with the hint shown next to the picker. */
 const GOALS: Record<GoalDomain, { options: readonly { id: AdviceGoal; label: string }[]; hint: string }> = {
@@ -89,13 +91,28 @@ interface Props {
   date?: string
 }
 
+/** The chosen goal per tab, as stored by the Advisor (the overlay reads the same). */
+export function loadGoals(): Record<GoalDomain, AdviceGoal> {
+  return { economy: loadGoal('economy'), laws: loadGoal('laws') }
+}
+
+/**
+ * Advice shown in a tab. Goal-tagged items show only under their tab's chosen
+ * goal. Advice arrives sorted by priority (budget, playbook, market within
+ * each); Now lifts the budget verdict to the top even when only "worthwhile".
+ */
+export function adviceInTab(advice: Advice[], tab: View, goals: Record<GoalDomain, AdviceGoal>): Advice[] {
+  const inView = (item: Advice) => !item.goal || (item.domain !== 'war' && item.goal === goals[item.domain])
+  const items = advice.filter((item) => (tab === 'now' || item.domain === tab) && inView(item))
+  if (tab !== 'now') return items
+  const budgetFirst = (item: Advice) => (item.id === 'budget:balance' ? 0 : 1)
+  return [...items].sort((a, b) => budgetFirst(a) - budgetFirst(b)).slice(0, NOW_LIMIT)
+}
+
 /** Advisor: per-domain suggestions plus a tracked list confirmed by later saves. */
 export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
   const [domain, setDomain] = useState<View>('now')
-  const [goals, setGoals] = useState<Record<GoalDomain, AdviceGoal>>(() => ({
-    economy: loadGoal('economy'),
-    laws: loadGoal('laws'),
-  }))
+  const [goals, setGoals] = useState<Record<GoalDomain, AdviceGoal>>(loadGoals)
   const [result, setResult] = useState<AdviceResult>()
   const [tracked, setTracked] = useState<TrackedAdvice[]>(loadTracked)
   const [error, setError] = useState<string>()
@@ -136,17 +153,7 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
 
   const mine = tracked.filter((item) => item.tag === tag)
   const isTracked = (id: string) => mine.some((item) => item.advice.id === id)
-  // Goal-tagged advice shows only under its tab's chosen goal; untagged always.
-  const inView = (item: Advice) =>
-    !item.goal || (item.domain !== 'war' && item.goal === goals[item.domain])
-  // Advice arrives sorted by priority (budget, playbook, market within each);
-  // Now lifts the budget verdict to the top even when it is only "worthwhile".
-  const inTab = (tab: View) => {
-    const items = (result?.advice ?? []).filter((item) => (tab === 'now' || item.domain === tab) && inView(item))
-    if (tab !== 'now') return items
-    const budgetFirst = (item: Advice) => (item.id === 'budget:balance' ? 0 : 1)
-    return [...items].sort((a, b) => budgetFirst(a) - budgetFirst(b)).slice(0, NOW_LIMIT)
-  }
+  const inTab = (tab: View) => adviceInTab(result?.advice ?? [], tab, goals)
   const list = inTab(domain)
   const goalDomain: GoalDomain | undefined = domain === 'war' || domain === 'now' ? undefined : domain
   const pickGoal = (target: GoalDomain, next: AdviceGoal) => {
@@ -204,7 +211,12 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
       {domain === 'now' && (
         <p className="alert-severity">
           The {NOW_LIMIT} most important decisions right now, budget first. Uses the goals chosen in the Economy and
-          Laws tabs.
+          Laws tabs.{' '}
+          {isTauri() && (
+            <button type="button" onClick={() => void invokeTauri<boolean>('toggle_overlay')}>
+              Overlay on top of the game
+            </button>
+          )}
         </p>
       )}
 
@@ -287,7 +299,7 @@ const RISK_LABEL: Record<BudgetReport['risk'], string> = {
 }
 
 /** Budget guard: balance, runway and where the money goes. */
-function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
+export function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
   const weeks = (w: number) => (w >= 104 ? `${(w / 52).toFixed(1)} years` : `${w.toFixed(0)} weeks`)
   const runway =
     b.debt > 0

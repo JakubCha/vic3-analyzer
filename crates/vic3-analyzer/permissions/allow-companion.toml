@@ -21,4 +21,5 @@ commands.allow = [
   "loaded_gaps",
   "sql_query",
   "sql_docs",
+  "toggle_overlay",
 ]

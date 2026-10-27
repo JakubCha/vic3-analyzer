@@ -51,6 +51,7 @@
 
 pub mod advice;
 pub mod budget;
+pub mod modgen;
 pub mod playbook;
 mod error;
 pub mod rakaly;
