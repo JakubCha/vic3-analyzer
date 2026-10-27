@@ -23,7 +23,8 @@ export interface DashboardDto {
 interface Props {
   /** Currently bound save stub (filename). */
   loadedName?: string
-  onUseSave: (stub: SaveStub) => Promise<void>
+  /** `newest`: the stub is the most recent save (live follow resumes). */
+  onUseSave: (stub: SaveStub, newest: boolean) => Promise<void>
   /** Bump to force a catalog refresh (e.g. after Settings save). */
   refreshKey?: number
 }
@@ -41,9 +42,12 @@ export function newestSave(rows: SaveStub[]): SaveStub | undefined {
  *
  * Events that land while a load runs collapse into one follow-up load, and an
  * unchanged newest save (e.g. old autosave rotated out) is not reloaded.
+ * `load` returns `false` to decline (not following now); that save stays eligible.
  * Returns an unsubscribe function; a no-op outside Tauri.
  */
-export function followNewestSave(load: (stub: SaveStub) => Promise<void>): () => void {
+export function followNewestSave(
+  load: (stub: SaveStub) => Promise<void | false>,
+): () => void {
   const listen = (window as any).__TAURI__?.event?.listen
   if (!listen) return () => {}
   let running = false
@@ -61,9 +65,8 @@ export function followNewestSave(load: (stub: SaveStub) => Promise<void>): () =>
         const newest = newestSave(await invokeTauri<SaveStub[]>('list_saves'))
         const key = newest && `${newest.location}/${newest.name}@${newest.mtime}`
         if (!newest || key === lastKey) continue
-        lastKey = key
         // `load` shows its own error; the next autosave retries.
-        await load(newest).catch(() => {})
+        if ((await load(newest).catch(() => undefined)) !== false) lastKey = key
       } while (again)
     } catch {
       // Catalog rescan failed; the next `saves-changed` retries.
@@ -123,7 +126,7 @@ export function DesktopCatalog({ loadedName, onUseSave, refreshKey = 0 }: Props)
     setLoadingName(stub.name)
     setError(undefined)
     try {
-      await onUseSave(stub)
+      await onUseSave(stub, newestSave(saves) === stub)
       setStatus(`Loaded ${stub.name}`)
       await refresh()
     } catch (reason) {

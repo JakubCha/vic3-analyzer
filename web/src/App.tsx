@@ -21,6 +21,7 @@ import {
   storeSave,
   storeSaveAnalysis,
 } from './saveStore'
+import { AdvisorPane } from './AdvisorPane'
 import { AlertsPane } from './AlertsPane'
 import { BuildingsPane } from './BuildingsPane'
 import { BuildQueuesPane } from './BuildQueuesPane'
@@ -343,8 +344,12 @@ function App({ wasmApi }: Props) {
       })
   }
 
+  /** Bumped on every save/defs change; async runs drop results from an older load. */
+  const loadGen = useRef(0)
+
   /** Keep the chosen save (and optional token map) across reloads. */
   const applySaveFile = (file?: File, tokens: File | null = null) => {
+    loadGen.current += 1
     setSaveFile(file)
     setTokensFile(file ? tokens ?? undefined : undefined)
     setSaveRestored(false)
@@ -368,6 +373,7 @@ function App({ wasmApi }: Props) {
 
   /** Keep the chosen blob across reloads. */
   const applyDefsFile = (file?: File) => {
+    loadGen.current += 1
     setDefsFile(file)
     setDefsRestored(false)
     setResult(undefined)
@@ -394,6 +400,11 @@ function App({ wasmApi }: Props) {
     setPendingApply(undefined)
   }
 
+  /** In-flight desktop loads; live follow waits for the next autosave while one runs. */
+  const desktopLoading = useRef(0)
+  /** Off after the player hand-picks an older save; picking the newest resumes following. */
+  const following = useRef(true)
+
   /**
    * Desktop: bind a catalog stub via Rust (`use_save`) and hydrate prices.
    *
@@ -401,6 +412,8 @@ function App({ wasmApi }: Props) {
    * until the new one is ready, and keeps it on failure (e.g. a half-written autosave).
    */
   const useDesktopSave = async (stub: SaveStub, live = false) => {
+    loadGen.current += 1
+    desktopLoading.current += 1
     if (!live) clearAnalysisUi()
     setBusy(true)
     setError(undefined)
@@ -424,8 +437,11 @@ function App({ wasmApi }: Props) {
       setResult(JSON.parse(pricesJson) as PricesResult)
       setAnalysisReady(true)
       if (live) {
-        // A pending Apply was built against the previous save's buildings.
+        // Apply / gaps / plan were built against the previous save.
         setPendingApply(undefined)
+        setGapsResult(undefined)
+        setPlanResult(undefined)
+        setCatalogRefresh((current) => current + 1)
       } else {
         selectView('prices')
       }
@@ -437,8 +453,14 @@ function App({ wasmApi }: Props) {
       setError(reason instanceof Error ? reason.message : String(reason))
       throw reason
     } finally {
+      desktopLoading.current -= 1
       setBusy(false)
     }
+  }
+
+  const pickDesktopSave = (stub: SaveStub, newest: boolean) => {
+    following.current = newest
+    return useDesktopSave(stub)
   }
 
   // Live play: every autosave re-binds the newest save, which refreshes prices and alerts.
@@ -448,7 +470,10 @@ function App({ wasmApi }: Props) {
   })
   useEffect(() => {
     if (!desktop) return
-    return followNewestSave((stub) => liveLoad.current(stub, true))
+    return followNewestSave(async (stub) => {
+      if (!following.current || desktopLoading.current > 0) return false
+      await liveLoad.current(stub, true)
+    })
   }, [desktop])
 
   useEffect(() => {
@@ -477,7 +502,10 @@ function App({ wasmApi }: Props) {
   }, [desktop])
 
   useEffect(() => {
-    void listAnalyses().then(setRecords)
+    // IndexedDB can be blocked (private mode); the archive then just starts empty.
+    void listAnalyses()
+      .then(setRecords)
+      .catch(() => setRecords([]))
     if (desktop) {
       setApi(createTauriApi())
       return
@@ -728,16 +756,21 @@ function App({ wasmApi }: Props) {
     setRecords(await listAnalyses())
   }
 
+  /** Desktop binds saves in Rust, so it has no `saveFile`/defs file in the browser. */
+  const canAnalyze = Boolean(api && (desktop || (saveFile && effectiveDefs)))
+
   const applyWhatIf = async (opts: Record<string, unknown>) => {
-    if (!api || !saveFile || !effectiveDefs) return
+    if (!api || !canAnalyze) return
+    const gen = loadGen.current
     setBusy(true)
     setError(undefined)
     try {
       const [saveBytes, tokenBytes] = await Promise.all([bytes(saveFile), bytes(tokensFile)])
       const json = await api.loaded_what_if(JSON.stringify(opts))
+      if (gen !== loadGen.current) return
       const nextResult = JSON.parse(json) as PricesResult
       setResult(nextResult)
-      await archiveResult('what_if', opts, nextResult, saveBytes!, tokenBytes)
+      if (saveBytes) await archiveResult('what_if', opts, nextResult, saveBytes, tokenBytes)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     } finally {
@@ -891,15 +924,19 @@ function App({ wasmApi }: Props) {
 
   const submitGaps = async (event: FormEvent) => {
     event.preventDefault()
-    if (!api || !saveFile || !effectiveDefs || !goal.trim()) return
+    if (!api || !canAnalyze || !goal.trim()) return
+    const gen = loadGen.current
     setBusy(true)
     setError(undefined)
     try {
       const [saveBytes, tokenBytes] = await Promise.all([bytes(saveFile), bytes(tokensFile)])
       const json = await api.loaded_gaps(goal.trim())
+      if (gen !== loadGen.current) return
       const nextResult = JSON.parse(json) as GapsResult
       setGapsResult(nextResult)
-      await archiveResult('gaps', { goal: goal.trim() }, nextResult, saveBytes!, tokenBytes)
+      if (saveBytes) {
+        await archiveResult('gaps', { goal: goal.trim() }, nextResult, saveBytes, tokenBytes)
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
     } finally {
@@ -909,16 +946,18 @@ function App({ wasmApi }: Props) {
 
   const submitPlan = (event: FormEvent) => {
     event.preventDefault()
-    if (!api || !saveFile || !effectiveDefs) return
+    if (!api || !canAnalyze) return
+    const gen = loadGen.current
     setBusy(true)
     setError(undefined)
     void Promise.all([bytes(saveFile), bytes(tokensFile)])
       .then(async ([saveBytes, tokenBytes]) => {
         const opts = { goal, max_days: 3650, label: label || null }
         const json = await api.loaded_plan(JSON.stringify(opts))
+        if (gen !== loadGen.current) return
         const nextResult = JSON.parse(json) as PlanResult
         setPlanResult(nextResult)
-        await archiveResult('plan', opts, nextResult, saveBytes!, tokenBytes, label)
+        if (saveBytes) await archiveResult('plan', opts, nextResult, saveBytes, tokenBytes, label)
       })
       .catch((reason: unknown) => {
         setError(reason instanceof Error ? reason.message : String(reason))
@@ -1348,6 +1387,20 @@ function App({ wasmApi }: Props) {
         />
       )}
 
+      {activeView === 'advisor' && (
+        <section
+          className={gated ? 'workspace-page needs-defs' : 'workspace-page'}
+          aria-labelledby="advisor-heading"
+        >
+          <h2 id="advisor-heading">Advisor</h2>
+          {api && result && analysisReady ? (
+            <AdvisorPane api={api} analysisKey={result} tag={summary?.tag} date={summary?.date} />
+          ) : (
+            <p>Advice appears after a save is priced. With the game running, each autosave refreshes it.</p>
+          )}
+        </section>
+      )}
+
       {activeView === 'alerts' && (
         <section
           className={gated ? 'workspace-page needs-defs' : 'workspace-page'}
@@ -1608,7 +1661,7 @@ function App({ wasmApi }: Props) {
         <DesktopCatalog
           loadedName={desktopSaveName}
           refreshKey={catalogRefresh}
-          onUseSave={useDesktopSave}
+          onUseSave={pickDesktopSave}
         />
       )}
 

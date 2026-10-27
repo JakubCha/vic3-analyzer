@@ -21,7 +21,8 @@ use rmcp::{
     ServerHandler, ServiceExt,
 };
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
+use vic3_api::advice::{Check, Domain};
 use vic3_catalog::SaveLocation;
 use vic3_prices::WorldDelta;
 use vic3_sql::{schema_catalog_json, UseSaveRequest};
@@ -40,6 +41,7 @@ const FLOW_MARKDOWN: &str = r#"# Vic3 Analyzer MCP flow
 1. Discover saves: tool `query` on `saves`, or read resource `vic3://saves`.
 2. Bind session: tool `use_save` with `{ "name": "autosave" }` or `{ "selector": "latest_autosave" }`.
 3. Prefer tool `campaign_brief` for a compact session overview, then query / `preview_delta` as needed (`alerts()` is player-scoped; use `alerts('all')` for the full save).
+4. For "what should I do next": tool `advice` (optionally `{ "domain": "economy" | "laws" | "war" }`). After the player acts and a newer save is bound, pass the items' `check` objects to `check_advice` to see which are done.
 
 Rules:
 - Filename **stubs** only (no filesystem paths).
@@ -139,6 +141,21 @@ pub struct RefreshCatalogArgs {
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CampaignBriefArgs {
     // No fields — schemars still emits an object schema.
+}
+
+/// Args for tool `advice`.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct AdviceArgs {
+    /// Optional filter: `economy`, `laws` or `war`. Omit for all domains.
+    #[serde(default)]
+    pub domain: Option<String>,
+}
+
+/// Args for tool `check_advice`.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct CheckAdviceArgs {
+    /// `check` objects copied from `advice` results.
+    pub checks: Vec<Value>,
 }
 
 /// Args for tool `explain`: SQL to wrap as `EXPLAIN …` when needed.
@@ -262,6 +279,43 @@ impl Vic3McpServer {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         match self.runtime.campaign_brief().await {
             Ok(body) => Ok(tool_ok_json(&body)),
+            Err(e) => Ok(sql_to_tool_result(e)),
+        }
+    }
+
+    /// Ranked advisor suggestions for the played country.
+    #[tool(
+        description = "After use_save: ranked suggestions for the played country ({advice:[{id, domain, priority (1 urgent, 2 worthwhile), title, detail, check?}], limitations}). Optional domain filter: economy | laws | war. Keep each item's `check` to verify it later with check_advice."
+    )]
+    async fn advice(
+        &self,
+        Parameters(args): Parameters<AdviceArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        let domain = match args.domain.as_deref().map(|d| serde_json::from_value::<Domain>(json!(d))) {
+            None => None,
+            Some(Ok(domain)) => Some(domain),
+            Some(Err(_)) => return Ok(tool_err("domain must be economy, laws or war")),
+        };
+        match self.runtime.advice(domain).await {
+            Ok(result) => Ok(tool_ok_json(&json!(result))),
+            Err(e) => Ok(sql_to_tool_result(e)),
+        }
+    }
+
+    /// Evaluate advisor checks on the bound save.
+    #[tool(
+        description = "After use_save on a newer save: pass `check` objects from earlier `advice` results; returns {done:[bool]} in the same order (true = the suggestion was carried out)."
+    )]
+    async fn check_advice(
+        &self,
+        Parameters(args): Parameters<CheckAdviceArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        let checks: Vec<Check> = match serde_json::from_value(Value::Array(args.checks)) {
+            Ok(checks) => checks,
+            Err(e) => return Ok(tool_err(format!("invalid check: {e}"))),
+        };
+        match self.runtime.check_advice(&checks).await {
+            Ok(done) => Ok(tool_ok_json(&json!({ "done": done }))),
             Err(e) => Ok(sql_to_tool_result(e)),
         }
     }
@@ -393,7 +447,7 @@ impl ServerHandler for Vic3McpServer {
                 .build(),
         )
         .with_instructions(
-            "Vic3 Analyzer MCP: discover saves → use_save → campaign_brief / query / preview_delta. \
+            "Vic3 Analyzer MCP: discover saves → use_save → campaign_brief / advice / query / preview_delta; check_advice confirms done suggestions on a newer save. \
              Stubs only (no paths). Resources: vic3://schema|saves|session|docs/*."
                 .to_string(),
         )
@@ -613,12 +667,17 @@ fn parse_mtime(s: &str) -> Result<SystemTime, String> {
         .or_else(|_| DateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%SZ"))
         .map_err(|e| format!("mtime must be ISO-8601: {e}"))?;
     let utc: DateTime<Utc> = dt.with_timezone(&Utc);
-    Ok(SystemTime::UNIX_EPOCH + Duration::from_secs(utc.timestamp().max(0) as u64))
+    // Keep sub-second precision: `saves` lists mtimes with fractional seconds.
+    Ok(SystemTime::UNIX_EPOCH
+        + Duration::new(utc.timestamp().max(0) as u64, utc.timestamp_subsec_nanos()))
 }
 
 fn normalize_explain_sql(sql: &str) -> String {
     let trimmed = sql.trim();
-    if trimmed.len() >= 7 && trimmed[..7].eq_ignore_ascii_case("explain") {
+    if trimmed
+        .get(..7)
+        .is_some_and(|p| p.eq_ignore_ascii_case("explain"))
+    {
         trimmed.to_string()
     } else {
         format!("EXPLAIN {trimmed}")
@@ -633,4 +692,25 @@ fn system_time_iso(t: SystemTime) -> String {
 /// Stringify a path for `vic3://session` (full display path in v1).
 fn redact_home(path: &std::path::Path) -> String {
     path.display().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_mtime_round_trips_listed_subsecond_value() {
+        let t = SystemTime::UNIX_EPOCH + Duration::new(1_700_000_000, 123_456_789);
+        assert_eq!(parse_mtime(&system_time_iso(t)).unwrap(), t);
+    }
+
+    #[test]
+    fn normalize_explain_sql_handles_non_ascii_prefix() {
+        assert_eq!(normalize_explain_sql("żółć SELECT"), "EXPLAIN żółć SELECT");
+        assert_eq!(
+            normalize_explain_sql(" explain SELECT 1"),
+            "explain SELECT 1"
+        );
+        assert_eq!(normalize_explain_sql("SELECT 1"), "EXPLAIN SELECT 1");
+    }
 }

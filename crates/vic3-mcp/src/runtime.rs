@@ -21,6 +21,8 @@ use vic3_sql::{
     UseSaveResult,
 };
 
+use vic3_api::advice::{advice, checks_done, AdviceResult, Check, Domain};
+
 use crate::brief::campaign_brief_json;
 
 /// Why MCP failed to open (config / catalog / engine).
@@ -224,6 +226,31 @@ impl McpRuntime {
         let binding = eng.active_binding().ok_or(SqlError::Unbound)?;
         let session = eng.active_session().ok_or(SqlError::Unbound)?;
         Ok(campaign_brief_json(&session, binding.as_ref()))
+    }
+
+    /// Advisor suggestions for the bound save, optionally limited to one domain.
+    ///
+    /// # Errors
+    ///
+    /// [`SqlError::Unbound`] when no save is bound.
+    pub async fn advice(&self, domain: Option<Domain>) -> Result<AdviceResult, SqlError> {
+        // Clone the binding out so the advice scan does not hold the engine lock.
+        let binding = self.engine.lock().await.active_binding().ok_or(SqlError::Unbound)?;
+        let mut result = advice(&binding.world, &binding.defs, &binding.prices);
+        if let Some(domain) = domain {
+            result.advice.retain(|item| item.domain == domain);
+        }
+        Ok(result)
+    }
+
+    /// Whether each advisor check holds on the bound save.
+    ///
+    /// # Errors
+    ///
+    /// [`SqlError::Unbound`] when no save is bound.
+    pub async fn check_advice(&self, checks: &[Check]) -> Result<Vec<bool>, SqlError> {
+        let binding = self.engine.lock().await.active_binding().ok_or(SqlError::Unbound)?;
+        Ok(checks_done(&binding.world, &binding.defs, checks))
     }
 }
 

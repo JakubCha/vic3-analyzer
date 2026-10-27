@@ -44,6 +44,10 @@ fn ser_mtime<S: Serializer>(t: &SystemTime, s: S) -> Result<S::Ok, S::Error> {
     s.serialize_f64(secs)
 }
 
+fn unix_millis(t: SystemTime) -> u128 {
+    t.duration_since(UNIX_EPOCH).unwrap_or_default().as_millis()
+}
+
 fn de_mtime<'de, D: Deserializer<'de>>(d: D) -> Result<SystemTime, D::Error> {
     let secs = f64::deserialize(d)?;
     Ok(UNIX_EPOCH + Duration::from_secs_f64(secs.max(0.0)))
@@ -162,7 +166,8 @@ impl SaveCatalog {
             .iter()
             .filter(|e| e.name == stub)
             .filter(|e| location.is_none_or(|loc| e.location == loc))
-            .filter(|e| mtime.is_none_or(|t| e.mtime == t))
+            // Millisecond granularity: SQL `saves.mtime` is ms; MCP may round-trip text.
+            .filter(|e| mtime.is_none_or(|t| unix_millis(e.mtime) == unix_millis(t)))
             .collect();
 
         match matches.len() {
@@ -328,6 +333,24 @@ mod tests {
             .resolve("autosave", Some(SaveLocation::SteamCloud), None)
             .unwrap();
         assert_eq!(disambig.location, SaveLocation::SteamCloud);
+    }
+
+    #[test]
+    fn resolve_mtime_matches_at_millisecond_granularity() {
+        let tmp = tempfile::tempdir().unwrap();
+        write_save(tmp.path(), "autosave.v3");
+        let catalog = scan_roots(&[SaveRoot {
+            path: tmp.path().to_path_buf(),
+            location: SaveLocation::Local,
+        }])
+        .unwrap();
+        let real = catalog.entries()[0].mtime;
+        // As exposed by SQL `saves.mtime` (TimestampMillisecond).
+        let ms = UNIX_EPOCH + Duration::from_millis(unix_millis(real) as u64);
+        assert!(catalog.resolve("autosave", None, Some(ms)).is_ok());
+        assert!(catalog.resolve("autosave", None, Some(real)).is_ok());
+        let off = ms + Duration::from_millis(1);
+        assert!(catalog.resolve("autosave", None, Some(off)).is_err());
     }
 
     #[test]

@@ -100,7 +100,7 @@ impl AppConfig {
             fs::create_dir_all(parent).map_err(|e| CatalogError::io(parent, e))?;
         }
         let bytes = encode_config_bytes(path, self)?;
-        fs::write(path, bytes).map_err(|e| CatalogError::io(path, e))
+        write_atomic(path, &bytes).map_err(|e| CatalogError::io(path, e))
     }
 
     /// Clear overrides and re-run discovery (Settings “Reset to auto-detect”).
@@ -131,6 +131,25 @@ impl AppConfig {
     pub fn save_roots(&self) -> Vec<SaveRoot> {
         roots_from_paths(self.save_dirs.iter().cloned())
     }
+}
+
+/// Write via a synced sibling temp file + rename so a crash mid-write never
+/// leaves a torn file. Symlinked targets are resolved so the link survives.
+pub(crate) fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let mut tmp = path.clone().into_os_string();
+    tmp.push(format!(".{}.tmp", std::process::id()));
+    let tmp = PathBuf::from(tmp);
+    let written = fs::File::create(&tmp).and_then(|mut f| {
+        f.write_all(bytes)?;
+        f.sync_all()
+    });
+    let result = written.and_then(|()| fs::rename(&tmp, &path));
+    if result.is_err() {
+        let _ = fs::remove_file(&tmp);
+    }
+    result
 }
 
 /// Resolve which config file to use under `app_data` (prefer existing, else TOML).
@@ -240,6 +259,16 @@ fn encode_config_bytes(path: &Path, cfg: &AppConfig) -> Result<Vec<u8>, CatalogE
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn write_atomic_replaces_without_leaving_temp() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("config.toml");
+        fs::write(&path, b"old").unwrap();
+        write_atomic(&path, b"new").unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"new");
+        assert_eq!(fs::read_dir(tmp.path()).unwrap().count(), 1);
+    }
 
     #[test]
     fn desktop_config_open_creates_app_data() {

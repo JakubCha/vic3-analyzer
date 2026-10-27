@@ -115,13 +115,14 @@ fn push_military_pp_decisions(
     let _ = push_mil_hire_decisions(args, branch);
 }
 
-fn mil_levels(state: &PlanningState, pred: fn(&str) -> bool) -> u32 {
+/// Levels of a military type still in `state.constructions`. Built levels are
+/// already netted out of `power_raise_needed`, so only in-flight ones count.
+fn mil_levels_queued(state: &PlanningState, pred: fn(&str) -> bool) -> u32 {
     state
-        .mil_buildings
+        .constructions
         .iter()
-        .filter(|b| pred(&b.building))
-        .map(|b| b.levels.floor() as u32)
-        .sum()
+        .filter(|row| pred(&row.building_type_name))
+        .count() as u32
 }
 
 /// Default production methods: first PM id in each production-method group.
@@ -651,7 +652,7 @@ impl EconomyContext {
                         .full_power_projection()
                         .max(1.0);
                     let levels_needed = (needed / per).ceil().max(1.0) as u32;
-                    let have = mil_levels(state, is_barracks_building);
+                    let have = mil_levels_queued(state, is_barracks_building);
                     if have < levels_needed.min(u32::from(cap)) {
                         candidates.insert(BUILDING_BARRACKS.to_string());
                     }
@@ -673,8 +674,8 @@ impl EconomyContext {
                         .max(1.0);
                     let levels_needed = (needed / per).ceil().max(1.0) as u32;
                     let ships_needed = levels_needed.min(u32::from(cap));
-                    let shipyard = mil_levels(state, is_shipyard_building);
-                    let admin = mil_levels(state, is_naval_admin_building);
+                    let shipyard = mil_levels_queued(state, is_shipyard_building);
+                    let admin = mil_levels_queued(state, is_naval_admin_building);
                     if shipyard < ships_needed {
                         candidates.insert(BUILDING_SHIPYARD.to_string());
                     }
@@ -1611,24 +1612,37 @@ fn apply_payday_effects(state: &mut PlanningState) {
         .unwrap_or(false);
 }
 
+/// One-sided shortfall of `x rel value`: 0 when met, otherwise the distance
+/// still to cover. An unmet strict atom on its boundary stays above 0 so the
+/// payday that crosses it counts as progress.
+fn rel_shortfall(rel: Rel, x: f64, value: f64) -> f64 {
+    if rel.holds(x, value) {
+        return 0.0;
+    }
+    let gap = match rel {
+        Rel::Ge | Rel::Gt => value - x,
+        Rel::Le | Rel::Lt => x - value,
+        Rel::Eq => (x - value).abs(),
+    };
+    gap.max(f64::MIN_POSITIVE)
+}
+
 fn fiscal_slack(atom: &SimpleSubgoal, state: &PlanningState) -> Option<f64> {
     match atom {
-        SimpleSubgoal::Solvent => Some(if state.solvent { 0.0 } else { 1.0 }),
+        SimpleSubgoal::Solvent => Some(if state.solvent {
+            0.0
+        } else {
+            // solvent <=> headroom > 0
+            state
+                .credit_headroom
+                .map(|headroom| (-headroom).max(f64::MIN_POSITIVE))
+                .unwrap_or(1.0)
+        }),
         SimpleSubgoal::CreditHeadroom { rel, value } => {
-            let headroom = state.credit_headroom?;
-            if rel.holds(headroom, *value) {
-                Some(0.0)
-            } else {
-                Some((headroom - *value).abs())
-            }
+            Some(rel_shortfall(*rel, state.credit_headroom?, *value))
         }
         SimpleSubgoal::DebtPrincipal { rel, value } => {
-            let principal = state.debt_principal?;
-            if rel.holds(principal, *value) {
-                Some(0.0)
-            } else {
-                Some((principal - *value).abs())
-            }
+            Some(rel_shortfall(*rel, state.debt_principal?, *value))
         }
         _ => None,
     }
@@ -4280,6 +4294,84 @@ mod tests {
             .is_none(),
             "second research enqueue must still respect research track"
         );
+    }
+
+    #[test]
+    fn barracks_offered_past_built_levels_until_queued_covers_need() {
+        let world = World {
+            countries: vec![WorldCountry {
+                id: 1,
+                tag: "GER".into(),
+                ..WorldCountry::default()
+            }],
+            states: vec![WorldState {
+                id: 1,
+                country: Some(1),
+                ..WorldState::default()
+            }],
+            ..World::default()
+        };
+        let economy = EconomyContext::new(world, GameDefs::default(), SolveOpts::default());
+        let mut start = PlanningState::from_parts(PlanningParts {
+            country: "GER".into(),
+            army_power_projection: Some(0.0),
+            army_pp_baseline: Some(0.0),
+            construction_points_per_day: 1.0,
+            ..PlanningParts::default()
+        });
+        start.push_mil_building_level(BUILDING_BARRACKS);
+        start.complete_mil_hire(BUILDING_BARRACKS);
+        let pp = start.army_power_projection.unwrap();
+        // One staffed barracks; target needs one more level.
+        let goal = compile(&format!("army_power_projection >= {}", pp + 1.0)).unwrap();
+        let is_barracks_queue = |edge: &Successor| {
+            matches!(&edge.action, Action::QueueBuildingLevel { building_type_name, .. }
+                if building_type_name == BUILDING_BARRACKS)
+        };
+        let edges = successors(&start, &goal, SimConfig::default(), &economy);
+        let queued = edges
+            .iter()
+            .find(|edge| is_barracks_queue(edge))
+            .expect("built level must not count against the remaining need");
+        let again = successors(&queued.state, &goal, SimConfig::default(), &economy);
+        assert!(
+            !again.iter().any(is_barracks_queue),
+            "queued level already covers the need: {again:?}"
+        );
+    }
+
+    #[test]
+    fn payday_chain_closes_multi_payday_fiscal_goals() {
+        let start = PlanningState::from_parts(PlanningParts {
+            country: "GER".into(),
+            debt_principal: Some(1_500.0),
+            credit_limit: Some(1_000.0),
+            credit_headroom: Some(-500.0),
+            solvent: false,
+            weekly_balance: Some(100.0),
+            ..PlanningParts::default()
+        });
+        // Strict goals must also progress across the 0 boundary (headroom 0 -> 100).
+        for (goal, paydays) in [
+            ("solvent", 6),
+            ("credit_headroom > 0", 6),
+            ("debt_principal < 200", 14),
+        ] {
+            let goal = compile(goal).unwrap();
+            let mut state = start.clone();
+            for _ in 0..paydays {
+                assert!(!evaluate(&goal, &state));
+                let waits = successors(
+                    &state,
+                    &goal,
+                    SimConfig::default(),
+                    &EconomyContext::empty(),
+                );
+                assert_eq!(waits.len(), 1, "payday must stay available: {state:?}");
+                state = waits[0].state.clone();
+            }
+            assert!(evaluate(&goal, &state));
+        }
     }
 
     #[test]

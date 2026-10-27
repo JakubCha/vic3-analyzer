@@ -355,6 +355,30 @@ export interface AlertsResult {
   limitations: string[]
 }
 
+export type AdviceDomain = 'economy' | 'laws' | 'war'
+
+/** Condition a later save confirms (`vic3_api::advice::Check`). */
+export type AdviceCheck =
+  | { type: 'building_levels'; building_type: string; state_id?: number; at_least: number }
+  | { type: 'production_method'; building_id: number; method: string }
+  | { type: 'law_inactive'; law: string }
+  | { type: 'solvent' }
+
+export interface Advice {
+  id: string
+  domain: AdviceDomain
+  /** 1 urgent, 2 worthwhile. */
+  priority: number
+  title: string
+  detail: string
+  check?: AdviceCheck
+}
+
+export interface AdviceResult {
+  advice: Advice[]
+  limitations: string[]
+}
+
 export type AnalysisResult = PricesResult | GapsResult | PlanResult
 
 export interface SaveSummary {

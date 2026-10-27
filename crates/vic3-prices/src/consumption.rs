@@ -236,9 +236,17 @@ pub(crate) fn wage_bins_from_pops<'a, I>(pops: I) -> Vec<WealthBin>
 where
     I: IntoIterator<Item = &'a WorldPop>,
 {
+    bins_from_pops(pops.into_iter().filter(|pop| pop.wages > 0.0))
+}
+
+/// Collapse pops (any wages) into bins keyed by saved integer wealth.
+pub(crate) fn bins_from_pops<'a, I>(pops: I) -> Vec<WealthBin>
+where
+    I: IntoIterator<Item = &'a WorldPop>,
+{
     let mut sizes = [0.0; 100];
     for pop in pops {
-        if pop.wages > 0.0 && pop.size > 0.0 {
+        if pop.size > 0.0 {
             sizes[usize::from(pop.wealth.clamp(1, 99))] += pop.size;
         }
     }

@@ -1,4 +1,5 @@
 export type WorkspaceView =
+  | 'advisor'
   | 'prices'
   | 'states'
   | 'pops'
@@ -19,6 +20,7 @@ export type MilitaryTab = 'army' | 'navy' | 'mobilization'
 export type BuildingsTab = 'overview' | 'queues'
 
 export const WORKSPACE_NAV: readonly { view: WorkspaceView; label: string }[] = [
+  { view: 'advisor', label: 'Advisor' },
   { view: 'prices', label: 'Prices' },
   { view: 'states', label: 'States' },
   { view: 'pops', label: 'Pops' },

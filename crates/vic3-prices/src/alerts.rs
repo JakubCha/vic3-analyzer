@@ -29,6 +29,7 @@ use crate::qualification_advice::{
     select_levers, shortage_target, state_mix, state_profession_totals, BuildingStaffing, LeverKey,
     StateMix,
 };
+use crate::optimize::slot_candidates;
 use crate::result::{BuildingEconomics, ExtraLevelsDelta, ProductionMethodDelta, WorldDelta};
 use crate::{
     apply_delta, market_access, price, GoodPrice, PricesResult, StateNeed, World, WorldBuilding,
@@ -324,8 +325,14 @@ fn collect_goods_alerts(args: &mut AlertCollectArgs<'_>) {
             short_goods
                 .entry(good_id.clone())
                 .and_modify(|hint| {
-                    hint.building_id = Some(building.id);
-                    hint.state_id = building.state_id;
+                    // Keep a scope only while every building short on this good agrees;
+                    // a market-wide row (no scope) stays unscoped.
+                    if hint.building_id != Some(building.id) {
+                        hint.building_id = None;
+                    }
+                    if hint.state_id != building.state_id {
+                        hint.state_id = None;
+                    }
                 })
                 .or_insert_with(|| {
                     let row = prices.goods.iter().find(|good| good.name == *good_id);
@@ -748,7 +755,7 @@ struct MitigationIndex<'a> {
     /// Prices-result building indices that list each good in `outputs`.
     price_output_by_good: BTreeMap<&'a str, Vec<usize>>,
     /// Cached `type_pm_candidates` results for this pass.
-    pm_candidates: RefCell<BTreeMap<String, Vec<String>>>,
+    pm_candidates: RefCell<BTreeMap<String, Vec<Vec<String>>>>,
     /// Cached best PM upgrade per `(good_id, state_id)`.
     best_pm: RefCell<BestPmCache>,
 }
@@ -825,17 +832,19 @@ impl<'a> MitigationIndex<'a> {
             .unwrap_or_default()
     }
 
-    fn type_pm_candidates(&self, type_id: &str) -> Vec<String> {
+    /// Per-slot PM candidates for `type_id` (see [`slot_candidates`]).
+    fn type_pm_candidates(&self, type_id: &str) -> Vec<Vec<String>> {
         if let Some(cached) = self.pm_candidates.borrow().get(type_id) {
             return cached.clone();
         }
-        let mut ids = BTreeSet::new();
-        if let Some(indices) = self.by_type.get(type_id) {
-            for &i in indices {
-                ids.extend(self.world.buildings[i].production_methods.iter().cloned());
-            }
-        }
-        let out: Vec<String> = ids.into_iter().collect();
+        let peers: Vec<&WorldBuilding> = self
+            .by_type
+            .get(type_id)
+            .into_iter()
+            .flatten()
+            .map(|&i| &self.world.buildings[i])
+            .collect();
+        let out = slot_candidates(self.defs, type_id, &peers);
         self.pm_candidates
             .borrow_mut()
             .insert(type_id.to_string(), out.clone());
@@ -885,12 +894,16 @@ impl<'a> MitigationIndex<'a> {
                 continue;
             }
             let candidates = self.type_pm_candidates(building.type_script_id(self.defs));
-            if candidates.len() < 2 {
+            if candidates.iter().all(|slot| slot.len() < 2) {
                 continue;
             }
-            let (in0, out0) = building.goods_io(self.defs);
+            // Recipe baseline: the trial below is recipe IO, so saved IO here would
+            // score the saved-vs-recipe gap instead of the PM swap.
+            let (in0, out0) = building
+                .with_methods(current.clone())
+                .goods_io(self.defs);
             for slot in 0..current.len() {
-                for candidate in &candidates {
+                for candidate in candidates.get(slot).into_iter().flatten() {
                     if current[slot] == *candidate {
                         continue;
                     }
@@ -993,6 +1006,8 @@ fn extra_levels_on_type(
             want == Some(building.building_type_id)
                 && state_id.is_none_or(|sid| building.state == Some(sid))
         })
+        // The advice is "+N levels" on one building, not on every match (worldwide when state is None).
+        .take(1)
         .map(|building| ExtraLevelsDelta {
             building_type_id: None,
             building_id: Some(building.id),
@@ -2999,14 +3014,17 @@ mod tests {
     }
 
     /// Naive full-world scan (pre-index semantics) for equivalence checks.
-    fn naive_type_pm_candidates(world: &World, defs: &GameDefs, type_id: &str) -> Vec<String> {
-        let mut ids = BTreeSet::new();
-        for building in &world.buildings {
-            if building.type_script_id(defs) == type_id {
-                ids.extend(building.production_methods.iter().cloned());
-            }
-        }
-        ids.into_iter().collect()
+    fn naive_type_pm_candidates(
+        world: &World,
+        defs: &GameDefs,
+        type_id: &str,
+    ) -> Vec<Vec<String>> {
+        let peers: Vec<&WorldBuilding> = world
+            .buildings
+            .iter()
+            .filter(|building| building.type_script_id(defs) == type_id)
+            .collect();
+        slot_candidates(defs, type_id, &peers)
     }
 
     fn naive_best_pm_upgrade(
@@ -3027,12 +3045,12 @@ mod tests {
                 continue;
             }
             let candidates = naive_type_pm_candidates(world, defs, building.type_script_id(defs));
-            if candidates.len() < 2 {
+            if candidates.iter().all(|slot| slot.len() < 2) {
                 continue;
             }
-            let (in0, out0) = building.goods_io(defs);
+            let (in0, out0) = building.with_methods(current.clone()).goods_io(defs);
             for slot in 0..current.len() {
-                for candidate in &candidates {
+                for candidate in candidates.get(slot).into_iter().flatten() {
                     if current[slot] == *candidate {
                         continue;
                     }
@@ -3083,6 +3101,42 @@ mod tests {
     }
 
     #[test]
+    fn extra_levels_without_state_touches_one_building() {
+        let (world, defs, _) = fixture();
+        let delta = extra_levels_on_type(&world, &defs, "building_rye_farm", None, 1);
+        assert_eq!(delta.extra_levels.len(), 1, "{:?}", delta.extra_levels);
+    }
+
+    #[test]
+    fn best_pm_upgrade_scores_baseline_on_recipes_not_saved_io() {
+        let (mut world, defs, prices) = fixture();
+        let grain = defs.index_of("grain").expect("grain");
+        // Saved IO far above any recipe: a saved-IO baseline would hide the upgrade.
+        let farm = world.buildings.iter_mut().find(|b| b.id == 3).unwrap();
+        farm.saved_outputs = vec![(grain, 1_000.0)];
+        let index = MitigationIndex::build(&world, &defs, &prices);
+        let pick = index
+            .best_pm_upgrade("grain", Some(1))
+            .expect("recipe upgrade still found");
+        assert_eq!(pick.building_id, 3);
+        assert_eq!(pick.new_pm, "pm_soil_enriching_farming");
+    }
+
+    #[test]
+    fn market_shortage_alert_stays_unscoped_with_short_input_building() {
+        let (world, defs, prices) = fixture();
+        assert!(prices.buildings.iter().any(|b| b.short_inputs == ["electricity"]));
+        let result = goods_shortage_alerts(&world, &defs, &prices, AlertsOptions::default());
+        let alert = result
+            .alerts
+            .iter()
+            .find(|alert| alert.good_name.as_deref() == Some("electricity"))
+            .expect("electricity shortage");
+        assert_eq!(alert.state_id, None);
+        assert_eq!(alert.building_id, None);
+    }
+
+    #[test]
     fn mitigation_index_matches_naive_pm_and_producer_picks() {
         let (world, defs, prices) = fixture();
         let index = MitigationIndex::build(&world, &defs, &prices);
@@ -3098,10 +3152,10 @@ mod tests {
         );
         assert_eq!(
             index.type_pm_candidates("building_rye_farm"),
-            vec![
+            vec![vec![
                 "pm_simple_farming".to_string(),
                 "pm_soil_enriching_farming".to_string(),
-            ]
+            ]]
         );
 
         for state_id in [None, Some(1), Some(99)] {

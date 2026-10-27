@@ -16,6 +16,8 @@ commands.allow = [
   "loaded_military",
   "loaded_constructions",
   "loaded_alerts",
+  "loaded_advice",
+  "loaded_checks",
   "loaded_gaps",
   "sql_query",
   "sql_docs",

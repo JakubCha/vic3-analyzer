@@ -350,11 +350,11 @@ fn plan_from_root(
             // Already at goal — trivial path.
             shortest_path::<_, PairingHeap<_, _>>(&pea_root).ok_or(PlanError::Unreachable)?
         }
-        Some(u) => PathFinderBuilder::new(pea_root)
-            .max_cost(u)
+        // No greedy witness: still bound by max_days so unreachable goals terminate.
+        u => PathFinderBuilder::new(pea_root)
+            .max_cost(u.unwrap_or(max_days))
             .shortest_path::<PairingHeap<_, _>>()
             .ok_or(PlanError::Unreachable)?,
-        None => shortest_path::<_, PairingHeap<_, _>>(&pea_root).ok_or(PlanError::Unreachable)?,
     };
     if super::astar_trace::enabled() {
         let summary = pea_path
@@ -446,6 +446,27 @@ mod tests {
             Action::WaitForEvent { days: 365, .. }
         ));
         assert_eq!(result.actions[1].day, 365);
+    }
+
+    #[test]
+    fn search_without_greedy_bound_is_capped_at_max_days() {
+        // Greedy gives up past max_days (None); the A* search must still be
+        // bounded instead of exploring beyond the budget.
+        let state = PlanningState::from_parts(PlanningParts {
+            country: "GER".into(),
+            ..PlanningParts::default()
+        });
+        let err = plan(
+            state,
+            compile("research(tech=nitroglycerin)").unwrap(),
+            SimConfig::default(),
+            EconomyContext::empty(),
+            100,
+            0.0,
+            vec![],
+        )
+        .unwrap_err();
+        assert!(matches!(err, PlanError::Unreachable), "{err:?}");
     }
 
     fn record(id: &str, day_cost: u32) -> AnalysisRecord {

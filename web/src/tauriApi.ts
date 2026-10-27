@@ -49,7 +49,10 @@ export function createTauriApi(): WasmApi {
     loaded_gaps: async (goal) => await invokeTauri<string>('loaded_gaps', { goal }),
     loaded_plan: async (planOptsJson) => await invokeTauri<string>('loaded_plan', { planOptsJson }),
     loaded_alerts: async () => await invokeTauri<string>('loaded_alerts'),
-    loaded_production_methods: async () => "{}",
+    loaded_advice: async () => await invokeTauri<string>('loaded_advice'),
+    loaded_checks: async (checksJson) => await invokeTauri<string>('loaded_checks', { checks: checksJson }),
+    // shortcut: no desktop PM recipes yet (empty list), add a Tauri command when Buildings needs them.
+    loaded_production_methods: async () => "[]",
     prices: async () => await invokeTauri<string>('loaded_prices'),
     what_if: async () => "{}",
     gaps: async (_s, _t, _d, _so, goal) => await invokeTauri<string>('loaded_gaps', { goal }),

@@ -246,7 +246,8 @@ export function BuildingsPane({
     let cancelled = false
     void Promise.resolve(api.loaded_production_methods())
       .then((json) => {
-        if (!cancelled) setLoadedMethods(JSON.parse(json) as ProductionMethodDef[])
+        const parsed: unknown = JSON.parse(json)
+        if (!cancelled) setLoadedMethods(Array.isArray(parsed) ? (parsed as ProductionMethodDef[]) : [])
       })
       .catch(() => {
         if (!cancelled) setLoadedMethods([])

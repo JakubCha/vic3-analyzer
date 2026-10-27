@@ -153,6 +153,18 @@ pub fn loaded_alerts() -> Result<String, JsError> {
     vic3_api::loaded_alerts_json().map_err(to_js)
 }
 
+/// Player advice per domain from the current analysis (`AdviceResult` JSON).
+#[wasm_bindgen]
+pub fn loaded_advice() -> Result<String, JsError> {
+    vic3_api::loaded_advice_json().map_err(to_js)
+}
+
+/// Evaluate tracked advice checks (JSON array) on the current analysis; JSON `bool` array.
+#[wasm_bindgen]
+pub fn loaded_checks(checks_json: &str) -> Result<String, JsError> {
+    vic3_api::loaded_checks_json(checks_json).map_err(to_js)
+}
+
 /// Production-method recipes from the loaded definitions (`[{id, inputs, outputs}]`).
 #[wasm_bindgen]
 pub fn loaded_production_methods() -> Result<String, JsError> {

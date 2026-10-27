@@ -28,6 +28,7 @@
 
 use super::pathfinding::SearchNode;
 use crate::goals::{evaluate, Goal, SimpleSubgoal};
+use crate::military::is_barracks_building;
 use crate::sim::{EconomyContext, SimConfig, Successor};
 use crate::world::PlanningState;
 use std::cell::{Cell, RefCell};
@@ -172,8 +173,11 @@ impl GdpKnapsack {
     fn new(economy: &crate::sim::EconomyContext, config: crate::sim::SimConfig) -> Self {
         let mut items = Vec::new();
         let mut efficiency_map = std::collections::HashMap::new();
+        // Modeled GDP is gross output revenue at solved prices, so the per-level
+        // upper bound is output value at the price ceiling (inputs not netted).
+        let price_ceiling = 1.0 + economy.defs.price_range.max(0.0);
         for building_type in economy.defs.building_types.values() {
-            let (inputs, outputs) =
+            let (_, outputs) =
                 crate::sim::default_building_io_per_level(&economy.defs, building_type);
             let mut gdp_add = 0.0;
             for i in 0..outputs.len() {
@@ -182,17 +186,7 @@ impl GdpKnapsack {
                 if qty > 0.0 {
                     if let Some(good) = economy.defs.goods.get(economy.defs.goods_order[i].as_str())
                     {
-                        gdp_add += qty * good.base_price;
-                    }
-                }
-            }
-            for i in 0..inputs.len() {
-                let good_id = vic3_defs::GoodId::from_usize(i);
-                let qty = inputs[good_id];
-                if qty > 0.0 {
-                    if let Some(good) = economy.defs.goods.get(economy.defs.goods_order[i].as_str())
-                    {
-                        gdp_add -= qty * good.base_price;
+                        gdp_add += qty * good.base_price * price_ceiling;
                     }
                 }
             }
@@ -233,6 +227,8 @@ struct SearchContext {
     /// Vic3-side search counters — see [`SearchTraceStats`].
     trace: SearchTraceStats,
     gdp_knapsack: GdpKnapsack,
+    /// Work points of the cheapest queueable level (construction ETA bound).
+    cheapest_level_work: f64,
 }
 
 /// Compact key and state handle for Vic3 planning.
@@ -307,6 +303,7 @@ impl Vic3Node {
         economy: EconomyContext,
     ) -> Self {
         let knapsack = GdpKnapsack::new(&economy, config);
+        let cheapest_level_work = crate::construction::cheapest_level_work_points(&economy, config);
         Self::with_context(
             state,
             Rc::new(SearchContext {
@@ -315,6 +312,7 @@ impl Vic3Node {
                 economy: Rc::new(economy),
                 trace: SearchTraceStats::default(),
                 gdp_knapsack: knapsack,
+                cheapest_level_work,
             }),
         )
     }
@@ -444,7 +442,8 @@ impl Hash for Vic3Node {
 /// construction. AND uses the longest child (actions may overlap or satisfy
 /// multiple atoms), OR uses the cheapest child, and NOT stays at zero. Missing
 /// technologies / open interest / raisable army / missing laws always
-/// contribute their fixed duration, even when an unrelated item is queued:
+/// contribute their fixed duration (the queued item itself: its days left),
+/// even when an unrelated item is queued:
 /// returning zero there would drop the estimate over a zero-day queue edge and
 /// break consistency for closed-node A*. Open `good_price` / `gdp` atoms
 /// contribute `construction_days` when the economy context has no SwitchPm
@@ -475,7 +474,7 @@ fn goal_timing_lower_bound(
     let army_train_days = u32::from(config.army_training_days.max(1));
     let navy_crew_days = u32::from(config.navy_crew_days.max(1));
     let law_days = u32::from(config.law_days.max(1));
-    let construction_days = construction_eta_days(state, config);
+    let construction_days = construction_eta_days(state, config, context);
     match goal {
         Goal::And(children) => children
             .iter()
@@ -495,7 +494,11 @@ fn goal_timing_lower_bound(
             if state.has_law(law) {
                 0
             } else {
-                law_days
+                days_left_if(
+                    state.queued_law.as_deref() == Some(law.as_str()),
+                    state.law_days_left,
+                    law_days,
+                )
             }
         }
         Goal::Simple(SimpleSubgoal::InterestIn { kind, id }) => {
@@ -503,17 +506,27 @@ fn goal_timing_lower_bound(
                 crate::goals::InterestKind::State => state.has_interest_state(id),
                 crate::goals::InterestKind::Region => state.has_interest_region(id),
             };
+            let queued = matches!(
+                (kind, &state.queued_interest),
+                (crate::goals::InterestKind::State, Some(crate::world::QueuedInterest::State(q)))
+                    | (crate::goals::InterestKind::Region, Some(crate::world::QueuedInterest::Region(q)))
+                    if q == id
+            );
             if held {
                 0
             } else {
-                interest_days
+                days_left_if(queued, state.interest_days_left, interest_days)
             }
         }
         Goal::Simple(atom @ SimpleSubgoal::ArmyPower { rel, value }) => {
             if atom.eval(state) {
                 0
             } else if !state.army_buildings_fully_staffed() {
-                army_train_days
+                let queued = state
+                    .queued_hire
+                    .as_deref()
+                    .is_some_and(is_barracks_building);
+                days_left_if(queued, state.hire_days_left, army_train_days)
             } else if crate::sim::power_raise_needed(*rel, *value, state.army_power_projection)
                 .is_some()
             {
@@ -526,7 +539,11 @@ fn goal_timing_lower_bound(
             if atom.eval(state) {
                 0
             } else if !state.navy_buildings_fully_staffed() {
-                navy_crew_days
+                let queued = state
+                    .queued_hire
+                    .as_deref()
+                    .is_some_and(|b| !is_barracks_building(b));
+                days_left_if(queued, state.hire_days_left, navy_crew_days)
             } else if crate::sim::power_raise_needed(*rel, *value, state.navy_power_projection)
                 .is_some()
             {
@@ -651,16 +668,13 @@ fn calculate_optimal_cp_and_penalties(
     Some((optimal_cp, active_penalties))
 }
 
-/// Optimistically projects future capacity if the current queue contains construction sectors.
+/// Current construction capacity for the timeline bound.
+///
+/// Only completed sectors count (they are already in the rate): crediting a
+/// merely queued sector would drop `h` over the 0-day enqueue edge.
 #[inline(always)]
 fn estimate_optimistic_capacity(state: &PlanningState) -> f64 {
-    let mut future_rate = state.construction_points_per_day;
-    for c in &state.constructions {
-        if c.building_type_name == crate::construction::BUILDING_CONSTRUCTION_SECTOR {
-            future_rate += 5.0; // Optimistic upper bound for sector yield
-        }
-    }
-    future_rate.max(1.0)
+    state.construction_points_per_day.max(1.0)
 }
 
 /// Pure mathematical solver for the queue penalty fixed-point timeline.
@@ -710,10 +724,21 @@ fn solve_fixed_point_timeline(
     }
     t_guess
 }
+/// Remaining days of a timed track item: its live counter while it is the queued
+/// item, else the full duration. Queueing sets the counter to the full duration,
+/// so the 0-day enqueue edge keeps `h`, and each waited day lowers it by one.
+fn days_left_if(queued: bool, left: Option<u16>, full: u32) -> u32 {
+    match left {
+        Some(left) if queued => u32::from(left),
+        _ => full,
+    }
+}
+
 /// Serial research ETA for a leaf tech (missing ancestors sum when defs exist).
 ///
-/// Queued identity is ignored: a missing tech always costs at least one research
-/// period so a 0-day `QueueTech` edge cannot drop the heuristic (A* consistency).
+/// The queued tech counts its remaining days (`QueueTech` seeds them with the
+/// same ETA, so the 0-day enqueue edge keeps `h`); other missing techs cost a
+/// full research period.
 fn research_eta_for_leaf(
     tech: &str,
     state: &PlanningState,
@@ -723,19 +748,26 @@ fn research_eta_for_leaf(
     if state.has_tech(tech) {
         return 0;
     }
+    let queued_left = |id: &str, full: u32| {
+        days_left_if(
+            state.queued_tech.as_deref() == Some(id),
+            state.tech_days_left,
+            full,
+        )
+    };
     let fallback = u32::from(config.research_days.max(1));
     if economy.defs.technologies.is_empty() {
-        return fallback;
+        return queued_left(tech, fallback);
     }
     let missing = crate::tech::missing_tech_closure(tech, state, &economy.defs);
-    if missing.is_empty() {
-        return 0;
-    }
     let mut total = 0u32;
     for id in missing {
-        total = total.saturating_add(single_tech_research_eta(&id, config, economy));
+        total = total.saturating_add(queued_left(
+            &id,
+            single_tech_research_eta(&id, config, economy),
+        ));
     }
-    total.max(1)
+    total
 }
 
 fn single_tech_research_eta(tech: &str, config: SimConfig, economy: &EconomyContext) -> u32 {
@@ -748,11 +780,12 @@ fn single_tech_research_eta(tech: &str, config: SimConfig, economy: &EconomyCont
     fallback
 }
 
-fn construction_eta_days(state: &PlanningState, config: SimConfig) -> u32 {
+fn construction_eta_days(state: &PlanningState, config: SimConfig, context: &SearchContext) -> u32 {
     crate::construction::construction_eta_days(
         state,
         config,
         crate::construction::ConstructionEtaMode::CapacityOrSlot,
+        context.cheapest_level_work,
     )
 }
 
@@ -1405,6 +1438,7 @@ mod tests {
                 items: vec![],
                 efficiency_map: std::collections::HashMap::new(),
             },
+            cheapest_level_work: f64::from(config.default_construction_cost),
         };
 
         // By default, the knapsack is empty.
@@ -1439,14 +1473,8 @@ mod tests {
             113
         );
 
-        // CodeRabbit Regression Test: Queued Construction Sectors increase optimistic future capacity.
-        // If we queue 2 construction sectors, the optimistic rate increases by 2 * 5.0 = 10.0.
-        // Future rate = 5.0 (base) + 10.0 = 15.0.
-        // c_0 = 15.0
-        // r * w / c_0 = 0.05 * 10000 / 15 = 33.333 > 1.0
-        // t1 = 20 * ln(33.333) = 20 * 3.506 = 70.1 days
-        // t2 = 70.1 + 20 = 90.1 days -> ceil(90.1) = 91 days
-        // The heuristic drops from 113 to 91, proving we optimistically model future capacity.
+        // Queueing Construction Sectors is a 0-day edge: merely queued sectors add
+        // no capacity credit, so the bound must not drop below 113 (consistency).
         state
             .constructions
             .push(crate::world::PlanningConstruction {
@@ -1474,11 +1502,66 @@ mod tests {
 
         let new_bound = goal_timing_lower_bound(&goal, &state, config, &economy, &context);
         assert!(
-            new_bound < 113,
-            "Heuristic did not optimistically model future construction capacity (was {})",
-            new_bound
+            new_bound >= 113,
+            "queued sectors lowered h over a 0-day edge (was {new_bound})"
         );
-        assert_eq!(new_bound, 91);
+    }
+
+    #[test]
+    fn heuristic_charges_days_left_on_queued_timers() {
+        // law_days 180, interest_days 90: queue both, wait out the interest.
+        let goal = compile("has_law(law_x) && interest_in(state=s)").unwrap();
+        let root = Vic3Node::new(
+            PlanningState::from_parts(PlanningParts {
+                country: "GER".into(),
+                ..PlanningParts::default()
+            }),
+            goal,
+            SimConfig::default(),
+            EconomyContext::empty(),
+        );
+        let queued = root
+            .apply_action(&Action::QueueLaw {
+                law: "law_x".into(),
+            })
+            .unwrap();
+        let queued = Vic3Node::with_context(queued, Rc::clone(&root.cache.context));
+        let queued = queued
+            .apply_action(&Action::QueueInterest {
+                kind: crate::goals::InterestKind::State,
+                id: "s".into(),
+            })
+            .unwrap();
+        let queued = Vic3Node::with_context(queued, Rc::clone(&root.cache.context));
+        let (mid, days) = queued
+            .successors()
+            .into_iter()
+            .find(|(n, _)| n.state().interest_states.contains("s"))
+            .expect("interest wait");
+        assert_eq!(days, 90);
+        // Law has 90 of 180 days left; the full duration would be inadmissible.
+        assert_eq!(mid.heuristic(), 90);
+        // Debug consistency assert inside `successors` must hold along the search.
+        let (_, cost) = shortest_path::<_, PairingHeap<_, _>>(&root).expect("reachable");
+        assert_eq!(cost, 180);
+    }
+
+    #[test]
+    fn gdp_knapsack_rates_gross_output_at_price_ceiling() {
+        // Logging camp consumes more wood value than it makes: net VA < 0, but it
+        // still adds gross revenue to modeled GDP.
+        let mut economy = crate::test_support::logging_and_cs_economy().economy;
+        let wood = economy.defs.index_of("wood").unwrap();
+        for pm in economy.defs.production_methods.values_mut() {
+            if !pm.outputs.is_empty() {
+                pm.inputs.push((wood, 20.0));
+            }
+        }
+        let config = SimConfig::default();
+        let knapsack = GdpKnapsack::new(&economy, config);
+        // 10 wood * base 20 * (1 + 0.75) / 30 CP.
+        let eff = knapsack.efficiency_map["building_logging_camp"];
+        assert!((eff - 10.0 * 20.0 * 1.75 / 30.0).abs() < 1e-9, "eff={eff}");
     }
 
     #[test]

@@ -15,6 +15,7 @@ use std::sync::Arc;
 
 use datafusion::arrow::array::RecordBatch;
 use datafusion::execution::config::SessionConfig;
+use datafusion::execution::context::SQLOptions;
 use datafusion::prelude::SessionContext;
 use vic3_catalog::{SaveCatalog, SaveRoot};
 use vic3_defs::GameDefs;
@@ -202,7 +203,12 @@ impl SqlEngine {
     /// unbound facts; DataFusion planning/execution as [`SqlError::DataFusion`].
     pub async fn query(&self, sql: &str) -> Result<Vec<RecordBatch>, SqlError> {
         assert_readonly(sql)?;
-        let df = self.ctx.sql(sql).await?;
+        // `SELECT … INTO t` parses as a Query but plans as DDL; refuse at plan time too.
+        let opts = SQLOptions::new()
+            .with_allow_ddl(false)
+            .with_allow_dml(false)
+            .with_allow_statements(false);
+        let df = self.ctx.sql_with_options(sql, opts).await?;
         Ok(df.collect().await?)
     }
 }

@@ -658,3 +658,13 @@ h2 > .good-icon { margin-right: .45rem; }
   .site-footer { align-items: flex-start; flex-direction: column; gap: .35rem; }
   .archive-list li { grid-template-columns: 1fr; gap: .5rem; }
 }
+
+/* Advisor */
+.advisor-domains { display: flex; gap: .5rem; flex-wrap: wrap; }
+.advisor-domains button.active { font-weight: 600; border-color: var(--line); background: var(--panel); }
+.advisor-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .75rem; }
+.advisor-item { border: 1px solid var(--line); padding: .6rem .85rem; }
+.advisor-item.priority-1 { border-left: 4px solid currentColor; }
+.advisor-item p { margin: .35rem 0 .5rem; }
+.advisor-tracked { padding-left: 1.1rem; display: grid; gap: .4rem; }
+.advisor-done { color: var(--muted); }

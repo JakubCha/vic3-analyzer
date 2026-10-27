@@ -14,6 +14,9 @@ pub enum ApiError {
     /// Save or token map could not be loaded.
     #[error(transparent)]
     Load(#[from] vic3_load::LoadError),
+    /// Binary save could not be melted to plaintext with Rakaly.
+    #[error("{0}")]
+    Melt(String),
     /// Plaintext save could not be patched.
     #[error(transparent)]
     Export(#[from] vic3_load::ExportError),

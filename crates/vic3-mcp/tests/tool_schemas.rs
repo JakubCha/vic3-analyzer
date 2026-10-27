@@ -69,6 +69,8 @@ async fn tool_schemas_match_mcp_contract() {
             "explain",
             "campaign_brief",
             "preview_delta",
+            "advice",
+            "check_advice",
         ])
     );
 
@@ -215,6 +217,22 @@ async fn query_and_use_save_tools_end_to_end() {
     assert!(brief["top_goods"].is_array());
     assert!(brief["hotspots"].is_array());
     assert!(brief["alert_kinds"].is_object());
+
+    // Advisor over the same binding; the fixture's GER has law_autocracy etc., not flagged laws.
+    let all = runtime.advice(None).await.expect("advice");
+    assert!(!all.limitations.is_empty());
+    let laws = runtime
+        .advice(Some(vic3_api::advice::Domain::Laws))
+        .await
+        .expect("laws advice");
+    assert!(laws.advice.iter().all(|a| a.domain == vic3_api::advice::Domain::Laws));
+    let done = runtime
+        .check_advice(&[vic3_api::advice::Check::LawInactive {
+            law: "law_serfdom".into(),
+        }])
+        .await
+        .expect("check_advice");
+    assert_eq!(done, [true]);
 
     let countries = runtime
         .query("SELECT name FROM countries WHERE name = 'GER'")

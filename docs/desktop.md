@@ -83,7 +83,9 @@ flowchart TD
 ```
 
 - **Shared Configuration:** The GUI and MCP server share the same configuration file and definition caches.
-- **Save Watcher (live follow):** Monitors configured save directories with debouncing. When a new autosave or manual save appears, the GUI loads the newest one automatically and refreshes prices and alerts, keeping your current tab. A half-written save leaves the previous analysis on screen; the next autosave retries.
+- **Save Watcher (live follow):** Monitors configured save directories with debouncing. When a new autosave or manual save appears, the GUI loads the newest one automatically and refreshes prices and alerts, keeping your current tab. A half-written save leaves the previous analysis on screen; the next autosave retries. Loading an older save from the Saves list pauses following; loading the newest save resumes it.
+- **Normal (binary) saves:** without a token map, saves are melted to plaintext with [Rakaly CLI](https://github.com/rakaly/cli/releases) (its release builds embed the Vic3 tokens). Put `rakaly.exe` in `%LOCALAPPDATA%Programsakaly`, next to `vic3-analyzer.exe`, on `PATH`, or point `VIC3_RAKALY` at it. Without Rakaly, run the game with `-debug_mode` for plaintext saves. After a game patch, Rakaly may lag until its next release; unknown fields are then skipped.
+- **Advisor tab:** ranked suggestions per domain (Economy, Laws, War) for the played country. "Do this" adds a suggestion to a to-do list kept in the app; each later save checks it (building levels reached, production method switched, law repealed, credit restored) and ticks it off. Suggestions without a checkable condition get a "Mark done" button. Laws advice is a vanilla heuristic (no interest-group support or tech-unlock check); war advice covers military-goods supply and finances only.
 - **Privacy Guarantee:** The application only scans allowlisted save and Steam directories. It never transmits saves, telemetry, or system files over the network.
 
 ---

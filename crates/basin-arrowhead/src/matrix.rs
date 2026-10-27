@@ -231,13 +231,9 @@ impl ArrowheadMat {
             let mut val = 0.0;
             if idx < g {
                 val += self.hub[(idx, idx)];
+                // `market_sigma` columns are σ unknowns, not `r`; they belong to the σ branch.
                 for i in 0..g {
                     val += self.market_r[(i, idx)].powi(2);
-                }
-                for block in &self.market_sigma {
-                    for i in 0..g {
-                        val += block[(i, idx)].powi(2);
-                    }
                 }
             } else {
                 let state = (idx - g) / g;
@@ -748,6 +744,23 @@ mod tests {
             (structured - dense_max).abs() < 1e-10,
             "max_diagonal: structured={structured} dense={dense_max}",
         );
+    }
+
+    #[test]
+    fn gram_diagonal_entries_match_dense_gram() {
+        // Every entry, not just the max: the max lands on a σ column in
+        // `random_jacobian`, which hid a wrong `r`-column diagonal.
+        let jac = random_jacobian(4, 3, 7);
+        let gram = jac.gram();
+        let dense = dense_gram(&jac);
+        for i in 0..gram.n() {
+            assert!(
+                (gram.gram_diagonal_entry(i) - dense[(i, i)]).abs() < 1e-10,
+                "diag {i}: structured={} dense={}",
+                gram.gram_diagonal_entry(i),
+                dense[(i, i)],
+            );
+        }
     }
 
     #[test]

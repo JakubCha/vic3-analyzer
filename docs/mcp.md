@@ -119,6 +119,7 @@ args = ["mcp"]
 2. **Bind Session:** Call `use_save` with a save name stub (`"autosave"`) or selector (`"latest_autosave"`).
 3. **Inspect Campaign:** Call `campaign_brief` for a compact overview of domestic goods shortages, regional hotspots, and critical alerts.
 4. **Deep Dive:** Execute specific SQL queries using `query` or preview economic modifications using `preview_delta`.
+5. **Advise:** Call `advice` for what to do next; after a newer save is bound, `check_advice` confirms which suggestions were done.
 
 ---
 
@@ -159,6 +160,24 @@ Rescans allowlisted save directories and updates the available save catalog.
 
 ### 6. `explain`
 Returns the DataFusion logical and physical execution plan for a SQL statement.
+
+### 7. `advice`
+Ranked suggestions for the played country, grouped by domain (same engine as the desktop Advisor tab).
+
+| Parameter | Type | Required | Description |
+| --- | --- | :---: | --- |
+| `domain` | string | No | `"economy"`, `"laws"` or `"war"`; omit for all |
+
+- **Output:** `{ advice: [{ id, domain, priority, title, detail, check? }], limitations }`. `priority` 1 is urgent, 2 worthwhile. Laws advice is a vanilla heuristic (no interest-group support or tech-unlock check).
+
+### 8. `check_advice`
+After binding a newer save, reports which earlier suggestions were carried out.
+
+| Parameter | Type | Required | Description |
+| --- | --- | :---: | --- |
+| `checks` | array | Yes | `check` objects copied from `advice` items |
+
+- **Output:** `{ done: [bool] }` in the same order.
 
 ---
 

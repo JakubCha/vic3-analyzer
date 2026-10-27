@@ -268,7 +268,7 @@ pub struct Country {
     pub definition: String,
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub government: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub capital: Option<u32>,
     #[serde(default)]
     pub states: Vec<u32>,
@@ -276,16 +276,16 @@ pub struct Country {
     pub infamy: Option<f64>,
     #[serde(default)]
     pub budget: Budget,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub market: Option<u32>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub market_capital: Option<u32>,
     #[serde(default)]
     pub is_main_tag: Option<bool>,
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub country_type: Option<String>,
     /// Direct overlord country id when this country is a subject.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub overlord: Option<u32>,
     /// Subject type id when present (`puppet`, `dominion`, …).
     #[serde(default, deserialize_with = "optional_flex_str")]
@@ -392,9 +392,9 @@ impl Budget {
 pub struct State {
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub region: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub country: Option<u32>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub market: Option<u32>,
     #[serde(default)]
     pub arable_land: Option<f64>,
@@ -465,7 +465,7 @@ pub struct StatePopStatistics {
 pub struct Building {
     #[serde(default, deserialize_with = "flex_str")]
     pub building: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub state: Option<u32>,
     #[serde(default, rename = "levels", alias = "level")]
     pub level: i32,
@@ -713,7 +713,12 @@ pub struct Pop {
     pub wealth: Option<i32>,
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub culture: Option<String>,
-    #[serde(default, rename = "location", alias = "state")]
+    #[serde(
+        default,
+        rename = "location",
+        alias = "state",
+        deserialize_with = "optional_id"
+    )]
     pub state: Option<u32>,
     /// Frozen wage bill when present; omitted pops keep wealth at the saved integer.
     #[serde(default)]
@@ -1113,7 +1118,7 @@ fn optional_id<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<u32>
     impl<'de> Visitor<'de> for V {
         type Value = Option<u32>;
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            f.write_str("a building id, none, or omission")
+            f.write_str("an id, none, or omission")
         }
         fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
             Ok(None)
@@ -1162,7 +1167,7 @@ pub const DEPENDENT_DEMAND_WEIGHT: f64 = 1.0;
 /// `acquired_technologies.value` and the queued tech at `research_technology`.
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct TechnologyEntry {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub country: Option<u32>,
     #[serde(
         default,
@@ -1193,7 +1198,7 @@ pub struct MilitaryFormation {
         deserialize_with = "optional_flex_str"
     )]
     pub kind: Option<String>,
-    #[serde(default, alias = "owner")]
+    #[serde(default, alias = "owner", deserialize_with = "optional_id")]
     pub country: Option<u32>,
     #[serde(default)]
     pub organization: Option<f64>,
@@ -1209,7 +1214,7 @@ pub struct MilitaryFormation {
 /// One declared or automatic interest marker (`interest_marker_manager`).
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct InterestMarker {
-    #[serde(default, alias = "owner")]
+    #[serde(default, alias = "owner", deserialize_with = "optional_id")]
     pub country: Option<u32>,
     /// Strategic region script id (`region_western_europe`, `sr:…`, …).
     #[serde(
@@ -1229,7 +1234,7 @@ pub struct InterestMarker {
 /// One unit listed on a formation. Fields are best-effort.
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct MilitaryUnit {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub id: Option<u32>,
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub name: Option<String>,
@@ -1249,7 +1254,7 @@ pub struct MilitaryUnit {
 pub struct MilitaryHq {
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub country: Option<u32>,
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub region: Option<String>,
@@ -1260,7 +1265,7 @@ pub struct MilitaryHq {
 pub struct MobilizationEntry {
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub name: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub country: Option<u32>,
     #[serde(default, rename = "type", deserialize_with = "optional_flex_str")]
     pub kind: Option<String>,
@@ -1269,7 +1274,7 @@ pub struct MobilizationEntry {
 /// A market in `market_manager.database`.
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct Market {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub owner: Option<u32>,
 }
 
@@ -1278,7 +1283,7 @@ pub struct Market {
 pub struct LawEntry {
     #[serde(default, deserialize_with = "flex_str")]
     pub law: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub country: Option<u32>,
     #[serde(default)]
     pub active: Option<bool>,
@@ -1291,7 +1296,7 @@ pub struct LawEntry {
 /// manager; post-1.9 trade capacity lives on [`State::trade`] instead.
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct TradeRoute {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_flex_str")]
     pub goods: Option<String>,
     #[serde(default)]
     pub volume: Option<f64>,
@@ -1303,9 +1308,9 @@ pub struct TradeRoute {
 /// A queued construction (private or government) when the save has one.
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct ConstructionOrder {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_flex_str")]
     pub building: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub state: Option<u32>,
     #[serde(default)]
     pub remaining: Option<f64>,
@@ -1356,7 +1361,7 @@ pub struct ConstructionQueueEntry {
 /// Last-played tag pointer (`previous_played`).
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub struct Player {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "optional_id")]
     pub idtype: Option<u32>,
     #[serde(default)]
     pub name: Option<String>,
@@ -1891,6 +1896,38 @@ country_manager={
                 .map(|country| country.definition.as_str()),
             Some("GER")
         );
+    }
+
+    #[test]
+    fn none_ids_and_integer_strings_deserialize() {
+        let save = crate::load_slice(
+            br#"SAV01000000000000000000
+country_manager={
+	database={
+		2={ definition="GER" capital=none market=none overlord=none }
+	}
+}
+"#,
+            crate::empty_tokens(),
+        )
+        .expect("capital=none must not abort the load");
+        let country = save.country_by_tag("GER").expect("GER");
+        assert_eq!(
+            (country.capital, country.market, country.overlord),
+            (None, None, None)
+        );
+
+        // Binary saves hand these over as integers, not strings.
+        use serde::de::{
+            value::{Error, MapDeserializer},
+            Deserialize,
+        };
+        let ints =
+            || MapDeserializer::<_, Error>::new([("goods", 3u32), ("building", 12u32)].into_iter());
+        let route = super::TradeRoute::deserialize(ints()).expect("integer goods");
+        assert_eq!(route.goods.as_deref(), Some("3"));
+        let order = super::ConstructionOrder::deserialize(ints()).expect("integer building");
+        assert_eq!(order.building.as_deref(), Some("12"));
     }
 
     #[test]

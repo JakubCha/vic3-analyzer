@@ -415,3 +415,73 @@ fn live_game_renders_representative_flags_without_magenta() {
         );
     }
 }
+
+fn goods_file(path: &str, text: &str) -> (String, Vec<u8>) {
+    (path.to_string(), text.as_bytes().to_vec())
+}
+
+#[test]
+fn steam_library_paths_load() {
+    let steam = "C:/Program Files (x86)/Steam/steamapps/common/Victoria 3/game";
+    let defs = load_from_files([
+        goods_file(
+            &format!("{steam}/common/goods/00_goods.txt"),
+            "grain = { cost = 20 }\n",
+        ),
+        goods_file(
+            &format!("{steam}/localization/english/goods_l_english.yml"),
+            "l_english:\n grain:0 \"Grain\"\n",
+        ),
+    ])
+    .expect("Steam install paths");
+    assert_eq!(defs.base_price("grain"), Some(20.0));
+    assert_eq!(defs.labels.get("grain").map(String::as_str), Some("Grain"));
+}
+
+#[test]
+fn script_constants_do_not_fail_the_file() {
+    let defs = load_from_files([goods_file(
+        "game/common/goods/00_goods.txt",
+        "@base = 20 # comment\n@base_x = 99\ngrain = { cost = @base }\nwood = { cost = @base_x }\n",
+    )])
+    .expect("@constants");
+    assert_eq!(defs.goods_order, ["grain", "wood"]);
+    assert_eq!(defs.base_price("grain"), Some(20.0));
+    assert_eq!(defs.base_price("wood"), Some(99.0));
+}
+
+#[test]
+fn good_without_cost_keeps_its_index() {
+    let defs = load_from_files([goods_file(
+        "game/common/goods/00_goods.txt",
+        "grain = { cost = 20 }\nmystery = { }\nwood = { cost = 30 }\n",
+    )])
+    .expect("goods");
+    assert_eq!(defs.goods_order, ["grain", "mystery", "wood"]);
+    assert_eq!(defs.base_price("mystery"), None);
+    assert_eq!(defs.base_price_idx(GoodId::from_usize(2)), Some(30.0));
+}
+
+#[test]
+fn building_redefinition_drops_earlier_construction_ref() {
+    let defs = load_from_files([
+        goods_file("game/common/goods/00_goods.txt", "grain = { cost = 20 }\n"),
+        goods_file(
+            "game/common/script_values/00_values.txt",
+            "construction_cost_high = 600\n",
+        ),
+        goods_file(
+            "game/common/buildings/00_buildings.txt",
+            "building_x = { required_construction = construction_cost_high }\n",
+        ),
+        goods_file(
+            "game/common/buildings/01_override.txt",
+            "building_x = { building_group = bg_test }\n",
+        ),
+    ])
+    .expect("buildings");
+    assert_eq!(
+        defs.building_types["building_x"].required_construction,
+        None
+    );
+}

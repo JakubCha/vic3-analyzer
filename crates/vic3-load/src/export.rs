@@ -8,8 +8,10 @@
 //! and rewrites `production_methods` / `levels` in place. Origin bytes are
 //! never written; the return value is a new buffer.
 //!
-//! Zip saves are re-emitted as a single `gamestate` member. Raw text stays raw
-//! text. Ironman / binary envelopes return [`ExportError::BinaryNotSupported`].
+//! Zipped text saves (bare zip, or `SAV` kind 2/4 with header + metadata before
+//! the zip) get only their `gamestate` member replaced; the prefix and other
+//! members are kept. Raw text stays raw text. Ironman / binary envelopes
+//! (kinds 1/3/5) return [`ExportError::BinaryNotSupported`].
 //!
 //! Contrasts with `vic3_prices::preview` / `WorldDelta`: those mutate a cloned
 //! world in memory and re-solve prices without writing a file. See
@@ -79,7 +81,7 @@ pub enum ExportError {
 
 /// Patch `original` and return new bytes. The input slice is never written.
 ///
-/// Zip input is re-emitted as a single `gamestate` member. Raw text input
+/// Zip input keeps its prefix and other members; only `gamestate` is replaced. Raw text input
 /// stays raw text. An empty [`SavePatch`] returns a copy of `original`.
 ///
 /// # Errors
@@ -93,13 +95,13 @@ pub fn export_save(original: &[u8], patch: &SavePatch) -> Result<Vec<u8>, Export
     if patch.is_empty() {
         return Ok(original.to_vec());
     }
-    if looks_like_zip(original) {
+    reject_binary(original)?;
+    if looks_like_zip(original) || matches!(sav_kind(original), Some(2 | 4)) {
         let gamestate = read_zip_gamestate(original)?;
         reject_binary(&gamestate)?;
         let patched = patch_gamestate(&gamestate, patch)?;
-        return write_zip_gamestate(&patched);
+        return write_zip_gamestate(original, &patched);
     }
-    reject_binary(original)?;
     patch_gamestate(original, patch)
 }
 
@@ -107,10 +109,19 @@ fn looks_like_zip(data: &[u8]) -> bool {
     data.first() == Some(&b'P') && data.get(1) == Some(&b'K')
 }
 
-/// SAV version/kind live at bytes 3–6 (`SAV` + 2-digit version + 2-digit kind).
-/// Kind `00` is plaintext; anything else is ironman/binary.
+/// SAV kind at bytes 5–6 (`SAV` + 2 hex version + 2 hex kind), as jomini reads it.
+fn sav_kind(data: &[u8]) -> Option<u16> {
+    if !data.starts_with(b"SAV") {
+        return None;
+    }
+    let hex = std::str::from_utf8(data.get(5..7)?).ok()?;
+    u16::from_str_radix(hex, 16).ok()
+}
+
+/// Kinds 0 (text), 2 (zipped text) and 4 (split zipped text) are Clausewitz
+/// text; 1/3/5 are binary token streams, and unknown kinds are refused too.
 fn reject_binary(data: &[u8]) -> Result<(), ExportError> {
-    if data.len() >= 7 && data.starts_with(b"SAV") && &data[5..7] != b"00" {
+    if data.len() >= 7 && data.starts_with(b"SAV") && !matches!(sav_kind(data), Some(0 | 2 | 4)) {
         return Err(ExportError::BinaryNotSupported);
     }
     Ok(())
@@ -129,15 +140,34 @@ fn read_zip_gamestate(data: &[u8]) -> Result<Vec<u8>, ExportError> {
     Ok(buf)
 }
 
-fn write_zip_gamestate(gamestate: &[u8]) -> Result<Vec<u8>, ExportError> {
-    let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
-    zip.start_file(
-        "gamestate",
-        SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
-    )
-    .map_err(zip_err)?;
-    zip.write_all(gamestate)
-        .map_err(|err| ExportError::Zip(err.to_string()))?;
+/// Rebuild `original`'s zip with `gamestate` replaced. Bytes before the zip
+/// (SAV header + inlined metadata) and every other member are kept as-is.
+fn write_zip_gamestate(original: &[u8], gamestate: &[u8]) -> Result<Vec<u8>, ExportError> {
+    let mut archive = ZipArchive::new(Cursor::new(original)).map_err(zip_err)?;
+    // Same rule as jomini: the prefix ends at the first local file header.
+    let mut prefix = original.len() as u64;
+    for index in 0..archive.len() {
+        prefix = prefix.min(archive.by_index_raw(index).map_err(zip_err)?.header_start());
+    }
+    let prefix = usize::try_from(prefix).map_err(|_| ExportError::Malformed)?;
+    let mut out = Cursor::new(original[..prefix].to_vec());
+    out.set_position(prefix as u64);
+    // Writing after the prefix keeps the zip's offsets absolute, as in the original.
+    let mut zip = ZipWriter::new(out);
+    for index in 0..archive.len() {
+        let file = archive.by_index_raw(index).map_err(zip_err)?;
+        if file.name() != "gamestate" {
+            zip.raw_copy_file(file).map_err(zip_err)?;
+            continue;
+        }
+        zip.start_file(
+            "gamestate",
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
+        )
+        .map_err(zip_err)?;
+        zip.write_all(gamestate)
+            .map_err(|err| ExportError::Zip(err.to_string()))?;
+    }
     let cursor = zip.finish().map_err(zip_err)?;
     Ok(cursor.into_inner())
 }
@@ -647,10 +677,58 @@ building_manager={
         );
     }
 
+    /// `prefix` followed by a zip of `members`, offsets absolute like the game's.
+    fn zip_fixture(prefix: &[u8], members: &[(&str, &[u8])]) -> Vec<u8> {
+        let mut out = Cursor::new(prefix.to_vec());
+        out.set_position(prefix.len() as u64);
+        let mut zip = ZipWriter::new(out);
+        for (name, body) in members {
+            zip.start_file(*name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(body).unwrap();
+        }
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn compressed_text_sav_is_patched_not_rejected() {
+        let meta = b"meta_data={ name=\"x\" }\n";
+        let mut prefix = format!("SAV0102a40f789f{:08x}\n", meta.len()).into_bytes();
+        prefix.extend_from_slice(meta);
+        let body = tiny_save().split_off(24); // zipped gamestate has no SAV line
+        let original = zip_fixture(&prefix, &[("meta", meta), ("gamestate", &body)]);
+        let patched = export_save(&original, &pm_patch(12345, &["pm_kind2"])).expect("kind 02");
+        assert!(patched.starts_with(&prefix), "header + metadata kept");
+        let mut archive = ZipArchive::new(Cursor::new(&patched[..])).unwrap();
+        let mut kept = String::new();
+        archive
+            .by_name("meta")
+            .unwrap()
+            .read_to_string(&mut kept)
+            .unwrap();
+        assert_eq!(kept.as_bytes(), meta);
+        let gamestate = read_zip_gamestate(&patched).unwrap();
+        assert!(String::from_utf8(gamestate).unwrap().contains("pm_kind2"));
+        let save = load_slice(&patched, empty_tokens()).expect("jomini reads the rewrite");
+        let building = save
+            .building_manager
+            .database
+            .get(&12345)
+            .and_then(|slot| slot.as_ref());
+        assert_eq!(building.unwrap().active_production_methods(), ["pm_kind2"]);
+        for kind in [b"01", b"03", b"05"] {
+            let mut binary = prefix.clone();
+            binary[5..7].copy_from_slice(kind);
+            assert!(matches!(
+                export_save(&binary, &pm_patch(1, &["pm_a"])),
+                Err(ExportError::BinaryNotSupported)
+            ));
+        }
+    }
+
     #[test]
     fn zip_input_returns_zip_with_gamestate_member() {
         let raw = tiny_save();
-        let zipped = write_zip_gamestate(&raw).expect("fixture zip");
+        let zipped = zip_fixture(b"", &[("gamestate", &raw)]);
         assert!(looks_like_zip(&zipped));
         let patched = export_save(&zipped, &pm_patch(12345, &["pm_zip"])).expect("patch zip");
         assert!(looks_like_zip(&patched));

@@ -167,8 +167,16 @@ pub fn detect_steam_cloud_save_dirs() -> Vec<PathBuf> {
         }
     }
     found.sort();
-    found.dedup();
-    found
+    dedupe_real_paths(found)
+}
+
+/// Drop paths that resolve to the same directory (Linux `~/.steam/steam` is a
+/// symlink to `~/.local/share/Steam`). Keeps the first spelling; falls back to
+/// the raw path when it cannot be canonicalized.
+fn dedupe_real_paths(mut paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut seen = std::collections::HashSet::new();
+    paths.retain(|p| seen.insert(std::fs::canonicalize(p).unwrap_or_else(|_| p.clone())));
+    paths
 }
 
 /// A save-catalog root with its agent-facing `location` tag.
@@ -221,7 +229,8 @@ pub fn infer_location(path: &Path) -> SaveLocation {
 ///
 /// * `paths` — absolute save-root directories from [`crate::AppConfig::save_dirs`].
 pub fn roots_from_paths(paths: impl IntoIterator<Item = PathBuf>) -> Vec<SaveRoot> {
-    paths
+    // Configs persisted before symlink dedupe may still list both spellings.
+    dedupe_real_paths(paths.into_iter().collect())
         .into_iter()
         .map(|path| {
             let location = infer_location(&path);
@@ -234,6 +243,19 @@ pub fn roots_from_paths(paths: impl IntoIterator<Item = PathBuf>) -> Vec<SaveRoo
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn roots_dedupe_by_real_path() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("saves");
+        fs::create_dir_all(&dir).unwrap();
+        // Same directory, different text (stands in for the ~/.steam/steam symlink).
+        let alias = dir.join("..").join("saves");
+        let missing = tmp.path().join("missing");
+        let roots = roots_from_paths([dir.clone(), alias, missing.clone()]);
+        let paths: Vec<_> = roots.into_iter().map(|r| r.path).collect();
+        assert_eq!(paths, vec![dir, missing]);
+    }
 
     #[test]
     fn validates_game_dir_by_common() {

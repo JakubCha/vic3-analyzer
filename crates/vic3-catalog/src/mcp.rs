@@ -534,40 +534,33 @@ pub fn update_codex_toml_content(
     original: &str,
     binary: &ResolvedMcpBinary,
 ) -> Result<String, String> {
-    let mut table: toml::Table = if original.trim().is_empty() {
-        toml::Table::new()
-    } else {
-        toml::from_str(original).map_err(|e| format!("invalid TOML: {e}"))?
-    };
+    // toml_edit keeps the user's comments, ordering and formatting.
+    let mut doc: toml_edit::DocumentMut =
+        original.parse().map_err(|e| format!("invalid TOML: {e}"))?;
 
-    let servers = table
-        .entry("mcp_servers")
-        .or_insert_with(|| toml::Value::Table(toml::Table::new()));
+    let servers = doc.entry("mcp_servers").or_insert_with(|| {
+        let mut t = toml_edit::Table::new();
+        t.set_implicit(true);
+        toml_edit::Item::Table(t)
+    });
 
     let servers_table = servers
-        .as_table_mut()
+        .as_table_like_mut()
         .ok_or_else(|| "'mcp_servers' is not a TOML table".to_string())?;
 
-    let mut server_entry = toml::Table::new();
-    server_entry.insert(
-        "command".to_string(),
-        toml::Value::String(binary.command.to_string_lossy().to_string()),
-    );
-    let args_array = toml::Value::Array(
+    let mut server_entry = toml_edit::Table::new();
+    server_entry["command"] = toml_edit::value(binary.command.to_string_lossy().to_string());
+    server_entry["args"] = toml_edit::value(
         binary
             .args
             .iter()
-            .map(|a| toml::Value::String(a.clone()))
-            .collect(),
-    );
-    server_entry.insert("args".to_string(), args_array);
-
-    servers_table.insert(
-        MCP_SERVER_NAME.to_string(),
-        toml::Value::Table(server_entry),
+            .map(String::as_str)
+            .collect::<toml_edit::Array>(),
     );
 
-    toml::to_string_pretty(&table).map_err(|e| format!("serializing TOML: {e}"))
+    servers_table.insert(MCP_SERVER_NAME, toml_edit::Item::Table(server_entry));
+
+    Ok(doc.to_string())
 }
 
 /// Remove `vic3-analyzer` from Codex `mcp_servers` table in TOML content.
@@ -576,20 +569,16 @@ pub fn remove_codex_toml_content(original: &str) -> Result<(String, bool), Strin
         return Ok((original.to_string(), false));
     }
 
-    let mut table: toml::Table =
-        toml::from_str(original).map_err(|e| format!("invalid TOML: {e}"))?;
+    let mut doc: toml_edit::DocumentMut =
+        original.parse().map_err(|e| format!("invalid TOML: {e}"))?;
 
-    let mut modified = false;
-    if let Some(servers) = table.get_mut("mcp_servers").and_then(|v| v.as_table_mut()) {
-        if servers.remove(MCP_SERVER_NAME).is_some() {
-            modified = true;
-        }
-    }
+    let modified = doc
+        .get_mut("mcp_servers")
+        .and_then(|v| v.as_table_like_mut())
+        .is_some_and(|servers| servers.remove(MCP_SERVER_NAME).is_some());
 
     if modified {
-        let serialized =
-            toml::to_string_pretty(&table).map_err(|e| format!("serializing TOML: {e}"))?;
-        Ok((serialized, true))
+        Ok((doc.to_string(), true))
     } else {
         Ok((original.to_string(), false))
     }
@@ -648,7 +637,7 @@ pub fn install_client_config(
                     fs::create_dir_all(parent)
                         .map_err(|e| format!("creating dir {}: {e}", parent.display()))?;
                 }
-                fs::write(&path, &updated)
+                crate::config::write_atomic(&path, updated.as_bytes())
                     .map_err(|e| format!("writing {}: {e}", path.display()))?;
             }
             Ok(updated)
@@ -668,7 +657,7 @@ pub fn install_client_config(
                     fs::create_dir_all(parent)
                         .map_err(|e| format!("creating dir {}: {e}", parent.display()))?;
                 }
-                fs::write(&path, &updated)
+                crate::config::write_atomic(&path, updated.as_bytes())
                     .map_err(|e| format!("writing {}: {e}", path.display()))?;
             }
             Ok(updated)
@@ -710,7 +699,7 @@ pub fn uninstall_client_config(client: McpClientKind, dry_run: bool) -> Result<b
                 .map_err(|e| format!("reading {}: {e}", path.display()))?;
             let (updated, modified) = remove_codex_toml_content(&existing)?;
             if modified && !dry_run {
-                fs::write(&path, updated)
+                crate::config::write_atomic(&path, updated.as_bytes())
                     .map_err(|e| format!("writing {}: {e}", path.display()))?;
             }
             Ok(modified)
@@ -726,7 +715,7 @@ pub fn uninstall_client_config(client: McpClientKind, dry_run: bool) -> Result<b
                 .map_err(|e| format!("reading {}: {e}", path.display()))?;
             let (updated, modified) = remove_mcp_json_content(&existing)?;
             if modified && !dry_run {
-                fs::write(&path, updated)
+                crate::config::write_atomic(&path, updated.as_bytes())
                     .map_err(|e| format!("writing {}: {e}", path.display()))?;
             }
             Ok(modified)
@@ -908,10 +897,22 @@ mod tests {
         let (removed, modified) = remove_codex_toml_content(&result).unwrap();
         assert!(modified);
         let table2: toml::Table = toml::from_str(&removed).unwrap();
-        assert!(!table2["mcp_servers"]
-            .as_table()
-            .unwrap()
-            .contains_key("vic3-analyzer"));
+        assert!(table2
+            .get("mcp_servers")
+            .and_then(|s| s.get("vic3-analyzer"))
+            .is_none());
+    }
+
+    #[test]
+    fn test_codex_toml_round_trip_keeps_comments() {
+        let bin = mock_binary();
+        let original =
+            "# my settings\nmodel = \"o3\" # inline\n\n[mcp_servers.other]\ncommand = \"x\"\n";
+        let added = update_codex_toml_content(original, &bin).unwrap();
+        assert!(added.contains("# my settings") && added.contains("# inline"));
+        let (removed, modified) = remove_codex_toml_content(&added).unwrap();
+        assert!(modified);
+        assert_eq!(removed, original);
     }
 
     #[test]

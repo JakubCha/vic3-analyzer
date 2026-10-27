@@ -118,6 +118,8 @@ export function workerWasmApi(local: WasmApi, port: WasmWorkerPort): WasmApi {
     loaded_gaps: (goal) => call('loaded_gaps', [goal]),
     loaded_plan: (planOptsJson) => call('loaded_plan', [planOptsJson]),
     loaded_alerts: () => call('loaded_alerts', []),
+    loaded_advice: () => call('loaded_advice', []),
+    loaded_checks: (checksJson) => call('loaded_checks', [checksJson]),
     loaded_production_methods: () => call('loaded_production_methods', []),
     // Keep the public byte-oriented API stable while production calls reuse
     // the worker-owned session loaded by App.

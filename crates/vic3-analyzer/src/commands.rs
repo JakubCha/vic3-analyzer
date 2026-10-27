@@ -38,7 +38,7 @@ pub fn api_ping() -> Result<&'static str, String> {
 /// # Errors
 ///
 /// `"state lock poisoned"` if the session mutex is poisoned.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_config(state: State<'_, AppState>) -> Result<ConfigDto, String> {
     let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
     Ok(session.config_dto())
@@ -53,7 +53,7 @@ pub fn get_config(state: State<'_, AppState>) -> Result<ConfigDto, String> {
 /// # Errors
 ///
 /// Lock poison, catalog/config I/O, or invalid paths from [`CompanionSession::apply_config`].
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_config(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -72,7 +72,7 @@ pub fn save_config(
 /// # Errors
 ///
 /// Lock poison or config write / catalog refresh failure.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn reset_config(app: AppHandle, state: State<'_, AppState>) -> Result<ConfigDto, String> {
     let dto = {
         let mut session = state.inner.lock().map_err(|_| "state lock poisoned")?;
@@ -87,7 +87,7 @@ pub fn reset_config(app: AppHandle, state: State<'_, AppState>) -> Result<Config
 /// # Errors
 ///
 /// Lock poison or catalog I/O.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_saves(state: State<'_, AppState>) -> Result<Vec<SaveStubDto>, String> {
     let mut session = state.inner.lock().map_err(|_| "state lock poisoned")?;
     session.refresh_catalog()
@@ -98,7 +98,7 @@ pub fn list_saves(state: State<'_, AppState>) -> Result<Vec<SaveStubDto>, String
 /// # Errors
 ///
 /// Lock poison.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_dashboard(state: State<'_, AppState>) -> Result<DashboardDto, String> {
     let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
     Ok(session.dashboard())
@@ -108,12 +108,6 @@ pub fn get_dashboard(state: State<'_, AppState>) -> Result<DashboardDto, String>
 #[tauri::command]
 pub fn detection_hints() -> Vec<String> {
     crate::session::detection_hints()
-}
-
-/// Read the raw bytes of a save file at the given absolute path.
-#[tauri::command]
-pub fn read_save_bytes(location: String) -> Result<Vec<u8>, String> {
-    std::fs::read(&location).map_err(|e| e.to_string())
 }
 
 /// Bind analysis + SQL session by filename stub.
@@ -151,11 +145,13 @@ pub async fn use_save(
 ///
 /// # Errors
 ///
-/// No loaded analysis, or lock poison.
-#[tauri::command]
-pub fn loaded_prices(state: State<'_, AppState>) -> Result<String, String> {
-    let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-    session.loaded_prices_json()
+/// No loaded analysis.
+///
+/// The `loaded_*` reads below use the process-wide `vic3-api` session without
+/// the `AppState` lock, so they never wait behind a running `use_save`.
+#[tauri::command(async)]
+pub fn loaded_prices() -> Result<String, String> {
+    vic3_api::loaded_prices_json().map_err(|e| e.to_string())
 }
 
 /// Defs icons JSON (PNG data URLs) from the resolved defs postcard.
@@ -168,9 +164,13 @@ pub fn loaded_prices(state: State<'_, AppState>) -> Result<String, String> {
 #[tauri::command]
 pub async fn loaded_defs_icons(app: AppHandle) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-        session.loaded_defs_icons_json()
+        // Snapshot config, then release the lock: a first defs build can take minutes.
+        let (config, app_data) = {
+            let state = app.state::<AppState>();
+            let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
+            session.defs_context()
+        };
+        crate::session::defs_icons_json(&config, &app_data)
     })
     .await
     .map_err(|e| format!("loaded_defs_icons join: {e}"))?
@@ -180,44 +180,67 @@ pub async fn loaded_defs_icons(app: AppHandle) -> Result<String, String> {
 ///
 /// # Errors
 ///
-/// No loaded analysis, or lock poison.
-#[tauri::command]
-pub fn loaded_summary(state: State<'_, AppState>) -> Result<String, String> {
-    let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-    session.loaded_summary_json()
+/// No loaded analysis.
+#[tauri::command(async)]
+pub fn loaded_summary() -> Result<String, String> {
+    vic3_api::loaded_summary_json().map_err(|e| e.to_string())
 }
 
 /// Military snapshot JSON for the bound session.
 ///
 /// # Errors
 ///
-/// No loaded analysis, or lock poison.
-#[tauri::command]
-pub fn loaded_military(state: State<'_, AppState>) -> Result<String, String> {
-    let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-    session.loaded_military_json()
+/// No loaded analysis.
+#[tauri::command(async)]
+pub fn loaded_military() -> Result<String, String> {
+    vic3_api::loaded_military_json().map_err(|e| e.to_string())
 }
 
 /// Construction queue snapshot JSON for the bound session.
 ///
 /// # Errors
 ///
-/// No loaded analysis, or lock poison.
-#[tauri::command]
-pub fn loaded_constructions(state: State<'_, AppState>) -> Result<String, String> {
-    let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-    session.loaded_constructions_json()
+/// No loaded analysis.
+#[tauri::command(async)]
+pub fn loaded_constructions() -> Result<String, String> {
+    vic3_api::loaded_constructions_json().map_err(|e| e.to_string())
 }
 
 /// Alerts JSON for the bound analysis session.
 ///
 /// # Errors
 ///
-/// No loaded analysis, or lock poison.
-#[tauri::command]
-pub fn loaded_alerts(state: State<'_, AppState>) -> Result<String, String> {
-    let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-    session.loaded_alerts_json()
+/// No loaded analysis.
+#[tauri::command(async)]
+pub fn loaded_alerts() -> Result<String, String> {
+    vic3_api::loaded_alerts_json().map_err(|e| e.to_string())
+}
+
+/// Advisor JSON (economy / laws / war) for the loaded analysis.
+///
+/// Reads the process-wide `vic3-api` session without the `AppState` lock and
+/// off the UI thread, so it never waits behind a running `use_save`.
+///
+/// # Errors
+///
+/// No loaded analysis.
+#[tauri::command(async)]
+pub fn loaded_advice() -> Result<String, String> {
+    vic3_api::loaded_advice_json().map_err(|e| e.to_string())
+}
+
+/// Evaluate tracked advice checks on the loaded save.
+///
+/// # Arguments
+///
+/// * `checks` — JSON array of `vic3_api::advice::Check`.
+///
+/// # Errors
+///
+/// No loaded analysis, or invalid JSON.
+#[tauri::command(async)]
+pub fn loaded_checks(checks: String) -> Result<String, String> {
+    vic3_api::loaded_checks_json(&checks).map_err(|e| e.to_string())
 }
 
 /// Gaps JSON for `goal` against the bound session.
@@ -228,13 +251,11 @@ pub fn loaded_alerts(state: State<'_, AppState>) -> Result<String, String> {
 ///
 /// # Errors
 ///
-/// No loaded analysis, goal parse/plan failure, or lock poison.
+/// No loaded analysis, or goal parse/plan failure.
 #[tauri::command]
-pub async fn loaded_gaps(app: AppHandle, goal: String) -> Result<String, String> {
+pub async fn loaded_gaps(goal: String) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
-        session.loaded_gaps_json(&goal)
+        vic3_api::loaded_gaps_json(&goal).map_err(|e| e.to_string())
     })
     .await
     .map_err(|e| format!("loaded_gaps join: {e}"))?
@@ -264,14 +285,14 @@ pub async fn sql_query(app: AppHandle, sql: String) -> Result<String, String> {
 /// # Errors
 ///
 /// Lock poison.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn sql_docs(state: State<'_, AppState>) -> Result<SqlDocsDto, String> {
     let session = state.inner.lock().map_err(|_| "state lock poisoned")?;
     Ok(session.sql_docs())
 }
 
 /// Query the current detection and configuration status of supported MCP clients on this OS.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_mcp_status() -> Vec<vic3_catalog::McpClientStatus> {
     vic3_catalog::McpClientKind::supported_on_current_os()
         .into_iter()
@@ -280,7 +301,7 @@ pub fn get_mcp_status() -> Vec<vic3_catalog::McpClientStatus> {
 }
 
 /// Enable or disable MCP configuration for a specific AI client.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn toggle_mcp_client(
     client_id: String,
     enabled: bool,

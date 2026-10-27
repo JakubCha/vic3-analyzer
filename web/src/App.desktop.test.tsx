@@ -191,6 +191,41 @@ describe('App (desktop / Tauri)', () => {
     }
   })
 
+  it('stops following autosaves after the player loads an older save by hand', async () => {
+    let fire: (() => void) | undefined
+    ;(window as any).__TAURI__ = {
+      event: {
+        listen: vi.fn(async (_event: string, handler: () => void) => {
+          fire = handler
+          return () => {}
+        }),
+      },
+    }
+    const newer = { ...saveStub, name: 'autosave.v3', mtime: 5 }
+    const base = invoke.getMockImplementation()!
+    invoke.mockImplementation(async (cmd, args) =>
+      cmd === 'list_saves' ? [saveStub, newer] : base(cmd, args),
+    )
+    try {
+      const user = userEvent.setup()
+      render(<App />)
+      const loads = await screen.findAllByRole('button', { name: 'Load' })
+      await user.click(loads[0]) // alp.v3, the older save
+      await waitFor(() => expect(fire).toBeDefined())
+      await waitFor(() => {
+        expect(invoke).toHaveBeenCalledWith('use_save', { name: 'alp.v3', location: 'local' })
+      })
+
+      fire!()
+      await waitFor(() => {
+        expect(invoke.mock.calls.filter(([cmd]) => cmd === 'list_saves').length).toBeGreaterThan(2)
+      })
+      expect(invoke).not.toHaveBeenCalledWith('use_save', { name: 'autosave.v3', location: 'local' })
+    } finally {
+      delete (window as any).__TAURI__
+    }
+  })
+
   it('loads goods icons and foreign state flags after binding a catalog save', async () => {
     const user = userEvent.setup()
     const { container } = render(<App />)

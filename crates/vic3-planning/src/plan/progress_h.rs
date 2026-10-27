@@ -358,7 +358,13 @@ fn residual_days_from_gap(
     subgoal: &SimpleSubgoal,
     gdp_for_rates: f64,
 ) -> u32 {
-    let eta = construction_eta_days(state, config, ConstructionEtaMode::CapacityOrSlot).max(1);
+    let eta = construction_eta_days(
+        state,
+        config,
+        ConstructionEtaMode::CapacityOrSlot,
+        f64::from(config.default_construction_cost),
+    )
+    .max(1);
     let cap = allocation_cap_points_per_day(state, config, None);
     let slots = max_parallel_construction_jobs(state.construction_points_per_day, cap).get() as f64;
 
@@ -716,7 +722,13 @@ fn estimated_build_days(
     if days.is_finite() && days > 0.0 {
         return (days as u32).clamp(1, u32::MAX / 4);
     }
-    construction_eta_days(state, config, ConstructionEtaMode::CapacityOrSlot).max(1)
+    construction_eta_days(
+        state,
+        config,
+        ConstructionEtaMode::CapacityOrSlot,
+        f64::from(config.default_construction_cost),
+    )
+    .max(1)
 }
 
 /// Cheap candidate-bag ranking key for one action (lower is better).

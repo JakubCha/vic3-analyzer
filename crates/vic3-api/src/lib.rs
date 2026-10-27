@@ -49,14 +49,16 @@
 //! Usage overview: [`docs/cli.md`](../../../docs/cli.md). Result schemas:
 //! [`docs/json-schema.md`](../../../docs/json-schema.md).
 
+pub mod advice;
 mod error;
+pub mod rakaly;
 
 use arc_swap::ArcSwapOption;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
-use vic3_load::{empty_tokens, load_slice, load_tokens_slice, Save, SavePatch};
+use vic3_load::{empty_tokens, load_slice, load_tokens_slice, LoadError, Save, SavePatch};
 use vic3_planning::EconomyContext;
 use vic3_planning::PlanOpts;
 use vic3_planning::PlanningState;
@@ -157,13 +159,14 @@ pub const DEFS_CACHE_NAME: &str = "defs.postcard";
 
 /// Resolve or build a defs postcard for desktop hosts (GUI + MCP).
 ///
-/// Order: explicit `defs_blob` file → existing `app_data/defs.postcard` → build
-/// from `game_dir` and write the cache. Callers should validate `game_dir` with
+/// Order: explicit `defs_blob` file → `app_data/defs.postcard` when its
+/// `.stamp` sidecar matches `game_dir` (or no `game_dir` is set) → build from
+/// `game_dir` and write the cache. Callers should validate `game_dir` with
 /// [`vic3_catalog::is_valid_game_dir`] before relying on a live install path.
 ///
 /// First-time builds from a full Steam install decode many DDS icons and can
 /// take minutes; GUI Settings and MCP share this cache so the cost is paid once
-/// per app-data directory.
+/// per install / game update.
 pub fn ensure_defs_blob(
     defs_blob: Option<&Path>,
     game_dir: Option<&Path>,
@@ -179,7 +182,13 @@ pub fn ensure_defs_blob(
         )));
     }
     let cache = app_data.join(DEFS_CACHE_NAME);
-    if cache.is_file() {
+    let stamp_path = app_data.join(format!("{DEFS_CACHE_NAME}.stamp"));
+    let stamp = game_dir.map(defs_cache_stamp);
+    if cache.is_file()
+        && stamp
+            .as_ref()
+            .is_none_or(|s| std::fs::read_to_string(&stamp_path).is_ok_and(|old| old == *s))
+    {
         return Ok(cache);
     }
     let game = game_dir.ok_or_else(|| {
@@ -195,8 +204,87 @@ pub fn ensure_defs_blob(
         )));
     }
     let bytes = defs_blob_from_game(game)?;
-    std::fs::write(&cache, &bytes).map_err(|source| ApiError::io(&cache, source))?;
+    write_atomic(&cache, &bytes).map_err(|source| ApiError::io(&cache, source))?;
+    // Stamp last: a crash before this leaves a mismatch, so the next call rebuilds.
+    let stamp = stamp.unwrap_or_default();
+    write_atomic(&stamp_path, stamp.as_bytes())
+        .map_err(|source| ApiError::io(&stamp_path, source))?;
     Ok(cache)
+}
+
+/// What the defs cache was built from: blob format, `game_dir`, and name/size/mtime
+/// of the files in the core defs dirs. A blob-format bump or game patch changes it.
+///
+/// shortcut: samples a few `common/` dirs, not every defs input; widen the list if a
+/// patch that only touches other dirs ever leaves a stale cache.
+fn defs_cache_stamp(game: &Path) -> String {
+    use std::fmt::Write;
+    let mut out = format!("{}\n{}\n", vic3_defs::BLOB_VERSION, game.display());
+    for dir in [
+        "common/goods",
+        "common/buildings",
+        "common/production_methods",
+        "common/defines",
+    ] {
+        let Ok(entries) = std::fs::read_dir(game.join(dir)) else {
+            continue;
+        };
+        let mut files: Vec<_> = entries
+            .flatten()
+            .filter_map(|e| {
+                let meta = e.metadata().ok()?;
+                Some((e.file_name(), meta.len(), meta.modified().ok()))
+            })
+            .collect();
+        files.sort();
+        for (name, len, mtime) in files {
+            let _ = writeln!(out, "{dir}/{} {len} {mtime:?}", name.to_string_lossy());
+        }
+    }
+    out
+}
+
+/// Write via a synced sibling temp file + rename so readers never see a torn file.
+fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(format!(".{}.tmp", std::process::id()));
+    let tmp = std::path::PathBuf::from(tmp);
+    let written = std::fs::File::create(&tmp).and_then(|mut f| {
+        f.write_all(bytes)?;
+        f.sync_all()
+    });
+    let result = written.and_then(|()| std::fs::rename(&tmp, path));
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
+}
+
+#[cfg(test)]
+mod defs_cache_tests {
+    use super::*;
+
+    #[test]
+    fn ensure_defs_blob_rebuilds_when_stamp_is_stale() {
+        let game = Path::new(env!("CARGO_MANIFEST_DIR")).join("../vic3-defs/tests/fixtures");
+        let tmp = std::env::temp_dir().join(format!("vic3-api-defs-cache-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+
+        let cache = ensure_defs_blob(None, Some(&game), &tmp).unwrap();
+        let stamp_path = tmp.join(format!("{DEFS_CACHE_NAME}.stamp"));
+        assert_eq!(std::fs::read_to_string(&stamp_path).unwrap(), defs_cache_stamp(&game));
+
+        // Torn / other-install cache: stale stamp must force a rebuild.
+        std::fs::write(&cache, b"garbage").unwrap();
+        std::fs::write(&stamp_path, "other install").unwrap();
+        let again = ensure_defs_blob(None, Some(&game), &tmp).unwrap();
+        vic3_defs::decode_blob(&std::fs::read(&again).unwrap()).expect("rebuilt blob decodes");
+
+        // No game_dir: reuse whatever cache exists.
+        assert_eq!(ensure_defs_blob(None, None, &tmp).unwrap(), cache);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
 }
 
 /// Path convenience for [`load_analysis_json`].
@@ -678,6 +766,34 @@ pub fn loaded_alerts_json() -> Result<String, ApiError> {
     with_loaded_analysis(|loaded| {
         let result = diagnose_alerts(&loaded.world, &loaded.defs, &loaded.prices);
         Ok(serde_json::to_string(&result)?)
+    })
+}
+
+/// Player advice from the loaded session ([`advice::AdviceResult`] JSON).
+///
+/// # Errors
+///
+/// [`ApiError::NoLoadedAnalysis`].
+pub fn loaded_advice_json() -> Result<String, ApiError> {
+    with_loaded_analysis(|loaded| {
+        let result = advice::advice(&loaded.world, &loaded.defs, &loaded.prices);
+        Ok(serde_json::to_string(&result)?)
+    })
+}
+
+/// Evaluate tracked [`advice::Check`]s (JSON array) on the loaded save; returns a JSON `bool` array.
+///
+/// # Errors
+///
+/// [`ApiError::NoLoadedAnalysis`] or invalid `checks_json`.
+pub fn loaded_checks_json(checks_json: &str) -> Result<String, ApiError> {
+    let checks: Vec<advice::Check> = serde_json::from_str(checks_json)?;
+    with_loaded_analysis(|loaded| {
+        Ok(serde_json::to_string(&advice::checks_done(
+            &loaded.world,
+            &loaded.defs,
+            &checks,
+        ))?)
     })
 }
 
@@ -1255,7 +1371,13 @@ fn base64(bytes: &[u8]) -> String {
 
 fn load_save(save_bytes: &[u8], tokens_bytes: Option<&[u8]>) -> Result<Save, ApiError> {
     match tokens_bytes {
-        None | Some([]) => Ok(load_slice(save_bytes, empty_tokens())?),
+        None | Some([]) => match load_slice(save_bytes, empty_tokens()) {
+            Err(LoadError::MissingTokens) => {
+                let melted = rakaly::melt(save_bytes).map_err(ApiError::Melt)?;
+                Ok(load_slice(&melted, empty_tokens())?)
+            }
+            loaded => Ok(loaded?),
+        },
         Some(tokens) => {
             let resolver = load_tokens_slice(tokens)?;
             Ok(load_slice(save_bytes, resolver)?)
@@ -1324,7 +1446,7 @@ mod tests {
     use serde_json::Value;
     use std::path::PathBuf;
     use vic3_defs::{encode_blob, load_from_path};
-    use vic3_load::{empty_tokens, load_slice, LoadError};
+    use vic3_load::{empty_tokens, load_slice};
 
     /// Process-wide session is shared; serialize tests that install/clear it.
     fn session_lock() -> std::sync::MutexGuard<'static, ()> {
@@ -1443,19 +1565,31 @@ mod tests {
         assert_eq!(v["market_id"], 1);
     }
 
-    #[test]
-    fn parse_save_binary_without_tokens_is_missing_tokens() {
+    /// Tests that read `VIC3_RAKALY` share the process env; hold this while set.
+    fn rakaly_env(path: Option<&std::path::Path>) -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let guard = LOCK.lock().unwrap_or_else(|p| p.into_inner());
+        // A path that is not a file disables every other lookup location.
+        let missing = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("no-such-rakaly");
+        std::env::set_var("VIC3_RAKALY", path.unwrap_or(&missing));
+        guard
+    }
+
+    fn binary_save() -> Vec<u8> {
         let mut bytes = b"SAV0101deadbeef00000000\n".to_vec();
         bytes.extend_from_slice(&[0u8; 32]);
-        let err = parse_save_json(&bytes, None).expect_err("binary needs tokens");
-        assert!(
-            matches!(err, ApiError::Load(LoadError::MissingTokens)),
-            "expected MissingTokens, got {err:?}"
-        );
+        bytes
+    }
+
+    #[test]
+    fn parse_save_binary_without_tokens_or_rakaly_explains_both_fixes() {
+        let _env = rakaly_env(None);
+        let err = parse_save_json(&binary_save(), None).expect_err("binary needs tokens");
+        assert!(matches!(err, ApiError::Melt(_)), "expected Melt, got {err:?}");
         let msg = err.to_string();
         assert!(
-            msg.contains("token"),
-            "error should mention tokens, got: {msg}"
+            msg.contains("token") && msg.contains("Rakaly") && msg.contains("debug_mode"),
+            "error should name tokens, Rakaly and debug mode, got: {msg}"
         );
         assert!(
             !msg.to_lowercase().contains("missing field"),
@@ -1464,11 +1598,33 @@ mod tests {
     }
 
     #[test]
-    fn parse_save_binary_empty_tokens_is_missing_tokens() {
-        let mut bytes = b"SAV0101deadbeef00000000\n".to_vec();
-        bytes.extend_from_slice(&[0u8; 32]);
-        let err = parse_save_json(&bytes, Some(&[])).expect_err("empty tokens");
-        assert!(matches!(err, ApiError::Load(LoadError::MissingTokens)));
+    fn parse_save_binary_empty_tokens_falls_back_to_rakaly() {
+        let _env = rakaly_env(None);
+        let err = parse_save_json(&binary_save(), Some(&[])).expect_err("empty tokens");
+        assert!(matches!(err, ApiError::Melt(_)), "expected Melt, got {err:?}");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn binary_save_is_melted_through_rakaly() {
+        // Fake Rakaly: ignores stdin and prints the plaintext fixture.
+        let dir = std::env::temp_dir().join(format!("vic3-fake-rakaly-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // Backslash-only path: cmd's `type` rejects `/` separators.
+        let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join("vic3-load")
+            .join("tests")
+            .join("fixtures")
+            .join("plaintext.txt");
+        let script = dir.join("rakaly.cmd");
+        std::fs::write(&script, format!("@type \"{}\"\r\n", fixture.display())).unwrap();
+        let _env = rakaly_env(Some(&script));
+
+        let save = load_save(&binary_save(), None).expect("melted via fake rakaly");
+        assert!(save.country_by_tag("GER").is_some());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

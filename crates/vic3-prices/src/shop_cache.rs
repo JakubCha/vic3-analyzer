@@ -19,7 +19,7 @@ use std::sync::Arc;
 use vic3_defs::{GameDefs, GoodsVec};
 
 use crate::consumption::{
-    add_pop_from_units, wage_bins_from_pops, NeedShares, UnitBaskets, WealthBin,
+    add_wage_bins, bins_from_pops, wage_bins_from_pops, NeedShares, UnitBaskets, WealthBin,
 };
 use crate::formula::{effective_mapi, market_access};
 use crate::world::{World, WorldPop};
@@ -42,6 +42,9 @@ pub struct StateShop {
     pub frozen_sell: GoodsVec,
     /// Non-wage pop buy at base prices (wage pops live in [`Self::wage_bins`]).
     pub frozen_pop_buy: GoodsVec,
+    /// Non-wage pops binned by wealth; [`Self::frozen_pop_buy`] is re-derived
+    /// from these when the unit baskets change.
+    pub(crate) frozen_pop_bins: Vec<WealthBin>,
     /// Wage-earning pops binned for price-sensitive consumption.
     pub(crate) wage_bins: Vec<WealthBin>,
 }
@@ -80,6 +83,8 @@ pub struct ShopCache {
     pub(crate) access_by_state: BTreeMap<u32, f64>,
     /// Wage bins for pops with no state.
     pub(crate) stateless_wage_bins: Vec<WealthBin>,
+    /// Non-wage pops with no state, binned by wealth.
+    pub(crate) stateless_frozen_pop_bins: Vec<WealthBin>,
     /// Access-scaled frozen pop buy (stateless + each shop’s frozen pops).
     pub(crate) frozen_pop_buy: GoodsVec,
     /// Building IO rows mirroring the world at build/patch time (for revenues).
@@ -118,8 +123,8 @@ impl ShopCache {
         // 5) Per-state shops (local orders + pop bins).
         let shops = state_shops(world, defs, &access_by_state, n_goods, &base_prices, &units);
         // 6) Fold state frozen pops into market pop buy; collect stateless wage bins.
-        let (stateless_wage_bins, frozen_pop_buy) =
-            split_pop_buy(world, n_goods, &base_prices, &units, &shops);
+        let (stateless_wage_bins, stateless_frozen_pop_bins, frozen_pop_buy) =
+            split_pop_buy(world, &base_prices, &units, &shops);
         // 7) Snapshot building IO for GDP/revenue without keeping the full World.
         let buildings = world
             .buildings
@@ -142,6 +147,7 @@ impl ShopCache {
             base_prices,
             access_by_state,
             stateless_wage_bins,
+            stateless_frozen_pop_bins,
             frozen_pop_buy,
             buildings,
         }
@@ -154,7 +160,8 @@ impl ShopCache {
     /// * `old_inputs` / `old_outputs` — quantities to remove (previous `goods_io`).
     /// * `new_inputs` / `new_outputs` — quantities to add (updated `goods_io`).
     ///
-    /// Also refreshes [`Self::units`] from the new market sell mix. Does **not**
+    /// Also refreshes [`Self::units`] from the new market sell mix and re-derives
+    /// every frozen pop buy from it (all shops, since the shares are market-wide). Does **not**
     /// update [`Self::buildings`] — call [`Self::set_building_io`] for revenue rows.
     pub fn patch_building_io(
         &mut self,
@@ -181,6 +188,25 @@ impl ShopCache {
         }
 
         self.rebuild_units(defs);
+        self.refreeze_pop_buy();
+    }
+
+    /// Re-derive frozen pop buy (per shop and market) from bins after [`Self::units`] changed.
+    fn refreeze_pop_buy(&mut self) {
+        for shop in &mut self.shops {
+            if shop.frozen_pop_bins.is_empty() {
+                continue;
+            }
+            let shop = Arc::make_mut(shop);
+            shop.frozen_pop_buy =
+                frozen_buy_from_bins(&shop.frozen_pop_bins, &self.base_prices, &self.units);
+        }
+        self.frozen_pop_buy = market_pop_buy(
+            &self.stateless_frozen_pop_bins,
+            &self.base_prices,
+            &self.units,
+            &self.shops,
+        );
     }
 
     /// Insert or replace the per-building IO record used for revenues / GDP.
@@ -230,6 +256,7 @@ impl ShopCache {
             frozen_buy: GoodsVec::zeros(n),
             frozen_sell: GoodsVec::zeros(n),
             frozen_pop_buy: GoodsVec::zeros(n),
+            frozen_pop_bins: Vec::new(),
             wage_bins: Vec::new(),
         }));
         self.shops.last_mut().expect("just pushed")
@@ -349,33 +376,20 @@ fn state_shops(
                     }
                 }
             }
-            // Pops: wage → bins; others → frozen buy at base prices.
-            let mut frozen_pop_buy = GoodsVec::zeros(n);
-            let mut wage_pops = Vec::new();
-            for pop in &pops {
-                if pop.state != Some(id) {
-                    continue;
-                }
-                if pop.wages > 0.0 {
-                    wage_pops.push(pop);
-                } else {
-                    add_pop_from_units(
-                        &mut frozen_pop_buy,
-                        pop,
-                        base_prices,
-                        base_prices,
-                        units,
-                        1.0,
-                    );
-                }
-            }
+            // Pops: wage → bins; others → bins frozen at base prices.
+            let (wage_pops, frozen_pops): (Vec<&WorldPop>, Vec<&WorldPop>) = pops
+                .iter()
+                .filter(|pop| pop.state == Some(id))
+                .partition(|pop| pop.wages > 0.0);
+            let frozen_pop_bins = bins_from_pops(frozen_pops);
             Arc::new(StateShop {
                 id,
                 access,
                 mapi: effective_mapi(access),
                 frozen_buy,
                 frozen_sell,
-                frozen_pop_buy,
+                frozen_pop_buy: frozen_buy_from_bins(&frozen_pop_bins, base_prices, units),
+                frozen_pop_bins,
                 wage_bins: wage_bins_from_pops(wage_pops),
             })
         })
@@ -385,50 +399,56 @@ fn state_shops(
 /// Stateless pops + access-scaled per-state frozen pop buy → market pop buy.
 ///
 /// * `world` — for pops with `state == None`.
-/// * `n` — goods length.
 /// * `base_prices` / `units` — freeze non-wage stateless pops.
 /// * `shops` — contribute each state’s `frozen_pop_buy * access`.
 ///
-/// Returns `(stateless_wage_bins, market_frozen_pop_buy)`.
+/// Returns `(stateless_wage_bins, stateless_frozen_pop_bins, market_frozen_pop_buy)`.
 fn split_pop_buy(
     world: &World,
-    n: usize,
     base_prices: &GoodsVec,
     units: &UnitBaskets,
     shops: &[Arc<StateShop>],
-) -> (Vec<WealthBin>, GoodsVec) {
-    let mut frozen_pop_buy = GoodsVec::zeros(n);
-    let mut stateless = Vec::new();
-    for pop in world.iter_pops() {
-        if pop.state.is_some() {
-            continue;
-        }
-        if pop.wages > 0.0 {
-            stateless.push(pop);
-        } else {
-            add_pop_from_units(
-                &mut frozen_pop_buy,
-                &pop,
-                base_prices,
-                base_prices,
-                units,
-                1.0,
-            );
-        }
-    }
+) -> (Vec<WealthBin>, Vec<WealthBin>, GoodsVec) {
+    let (stateless, frozen): (Vec<WorldPop>, Vec<WorldPop>) = world
+        .iter_pops()
+        .filter(|pop| pop.state.is_none())
+        .partition(|pop| pop.wages > 0.0);
+    let frozen_bins = bins_from_pops(&frozen);
+    let frozen_pop_buy = market_pop_buy(&frozen_bins, base_prices, units, shops);
+    (wage_bins_from_pops(&stateless), frozen_bins, frozen_pop_buy)
+}
+
+/// Non-wage pop buy at base prices (their wealth never moves) from wealth bins.
+fn frozen_buy_from_bins(bins: &[WealthBin], base_prices: &GoodsVec, units: &UnitBaskets) -> GoodsVec {
+    let mut buy = GoodsVec::zeros(base_prices.len());
+    // At base prices the Laspeyres wealth equals the saved wealth, as for non-wage pops.
+    add_wage_bins(&mut buy, bins, base_prices, base_prices, units, 1.0);
+    buy
+}
+
+/// Stateless frozen pop buy plus each shop’s `frozen_pop_buy * access`.
+fn market_pop_buy(
+    stateless: &[WealthBin],
+    base_prices: &GoodsVec,
+    units: &UnitBaskets,
+    shops: &[Arc<StateShop>],
+) -> GoodsVec {
+    let mut buy = frozen_buy_from_bins(stateless, base_prices, units);
     for shop in shops {
         for (good, quantity) in shop.frozen_pop_buy.iter_indexed() {
-            frozen_pop_buy.add(good, quantity * shop.access);
+            buy.add(good, quantity * shop.access);
         }
     }
-    (wage_bins_from_pops(&stateless), frozen_pop_buy)
+    buy
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::world::{WorldBuilding, WorldCountry, WorldState};
-    use vic3_defs::{BuildingType, Good, ProductionMethod};
+    use vic3_defs::{
+        BuildingType, BuyPackage, Good, NeedEntry, NeedId, NeedsVec, PopNeed, ProductionMethod,
+    };
 
     fn tiny_defs() -> GameDefs {
         let mut defs = GameDefs {
@@ -514,6 +534,84 @@ mod tests {
             frozen_buy: GoodsVec::zeros(n),
             frozen_sell: GoodsVec::zeros(n),
             ..World::default()
+        }
+    }
+
+    #[test]
+    fn patch_building_io_refreezes_non_wage_pop_buy() {
+        let mut defs = tiny_defs();
+        let grain = defs.index_of("grain").unwrap();
+        let fabric = defs.index_of("fabric").unwrap();
+        let entry = |good| NeedEntry {
+            good,
+            weight: 1.0,
+            min_supply_share: 0.0,
+            max_supply_share: 1.0,
+        };
+        defs.needs_order = vec!["popneed_basic".into()];
+        defs.pop_needs = vec![PopNeed {
+            name: "popneed_basic".into(),
+            default_good: Some(grain),
+            entries: vec![entry(grain), entry(fabric)],
+        }];
+        let mut needs = NeedsVec::zeros(1);
+        needs[NeedId::from_usize(0)] = 10.0;
+        defs.buy_packages.insert(
+            1,
+            BuyPackage {
+                wealth: 1,
+                political_strength: 0.0,
+                needs,
+            },
+        );
+        defs.rebuild_package_ladder();
+        defs.production_methods.insert(
+            "pm_fabric".into(),
+            ProductionMethod {
+                name: "pm_fabric".into(),
+                outputs: vec![(fabric, 10.0)],
+                ..ProductionMethod::default()
+            },
+        );
+        let mut world = tiny_world(&defs);
+        let mut mill = world.buildings[0].clone();
+        mill.id = 2;
+        mill.production_methods = vec!["pm_fabric".into()];
+        world.buildings.push(mill);
+        // One non-wage pop in the state and one stateless: both freeze at base prices.
+        for state in [Some(10), None] {
+            world.pops.push(WorldPop {
+                state,
+                size: 1_000_000.0,
+                wealth: 1,
+                wages: 0.0,
+                culture: None,
+                profession: None,
+            });
+        }
+        let mut cache = ShopCache::from_world(&world, &defs);
+        let before = cache.frozen_pop_buy.clone();
+
+        let mut bumped = world.clone();
+        bumped.buildings[0].add_extra_levels(3);
+        let rebuilt = ShopCache::from_world(&bumped, &defs);
+        let (old_i, old_o) = world.buildings[0].goods_io(&defs);
+        let (new_i, new_o) = bumped.buildings[0].goods_io(&defs);
+        cache.patch_building_io(&defs, Some(10), &old_i, &old_o, &new_i, &new_o);
+
+        // The sell mix shifted toward grain, so the frozen basket must too.
+        assert!((before[grain] - rebuilt.frozen_pop_buy[grain]).abs() > 1e-9);
+        let shop = cache.shops.iter().find(|s| s.id == 10).unwrap();
+        let rebuilt_shop = rebuilt.shops.iter().find(|s| s.id == 10).unwrap();
+        for good in [grain, fabric] {
+            assert!(
+                (shop.frozen_pop_buy[good] - rebuilt_shop.frozen_pop_buy[good]).abs() < 1e-9,
+                "shop pop buy {good:?}"
+            );
+            assert!(
+                (cache.frozen_pop_buy[good] - rebuilt.frozen_pop_buy[good]).abs() < 1e-9,
+                "market pop buy {good:?}"
+            );
         }
     }
 

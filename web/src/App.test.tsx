@@ -190,6 +190,10 @@ function mockApi(): WasmApi {
     ),
     loaded_gaps: vi.fn(() => gapsResult),
     loaded_plan: vi.fn(() => planResult),
+    loaded_advice: vi.fn(() => JSON.stringify({ advice: [], limitations: [] })),
+    loaded_checks: vi.fn((checksJson: string) =>
+      JSON.stringify((JSON.parse(checksJson) as unknown[]).map(() => false)),
+    ),
     loaded_alerts: vi.fn(() =>
       JSON.stringify({
         alerts: [],

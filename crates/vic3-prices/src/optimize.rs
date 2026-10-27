@@ -1,17 +1,21 @@
 //! Greedy production-method search over player buildings.
 //!
-//! Candidates are PMs already used by the same building type in the world.
-//! Each trial replaces one PM slot on a type-aggregated clone and re-solves
+//! Candidates are PMs already used by the same building type in the world,
+//! limited per slot to that slot's PM group (see [`slot_candidates`]). Trials
+//! are scored against a recipe-IO baseline so the saved-IO vs recipe gap does
+//! not read as a gain. Each trial replaces one PM slot on a type-aggregated clone and re-solves
 //! via [`crate::preview`] with a warm start. Heuristic only — see
 //! [`PM_SEARCH_HEURISTIC`] / [`MAX_PM_TRIALS`].
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use vic3_defs::GameDefs;
 
-use crate::result::{PricesResult, ProductionMethodDelta, SolveOpts, SolveStatus, WorldDelta};
+use crate::result::{
+    PricesResult, ProductionMethodDelta, SolveOpts, SolveStatus, StatePop, WorldDelta,
+};
 use crate::world::{World, WorldBuilding, WorldCountry};
 use crate::{preview, LIMITATIONS};
 
@@ -53,6 +57,8 @@ pub struct OptimizeChange {
 }
 
 /// Score deltas versus the baseline solve (`new − old`).
+// When player buildings carry saved IO the baseline is re-solved on PM recipes
+// first (see `recipe_baseline_delta`), so the delta compares recipe with recipe.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct OptimizeDelta {
     pub income: f64,
@@ -131,9 +137,16 @@ pub fn optimize_pms(
         limitations.push(PM_TECH_GATING_INCOMPLETE.to_string());
     }
 
-    let baseline_scores = scores_from_result(world, baseline, &player_ids, player_states.as_ref());
+    // Trials swap saved IO for recipe IO (`with_methods`); score the baseline on
+    // recipes too so that switch alone never reads as a gain or loss.
+    let recipe_baseline = recipe_baseline_delta(world, &player_ids);
+    let recipe_result = (!recipe_baseline.production_methods.is_empty())
+        .then(|| preview(world, defs, &recipe_baseline, opts.clone()));
+    let base_result = recipe_result.as_ref().unwrap_or(baseline);
+    let baseline_scores =
+        scores_from_result(world, base_result, &player_ids, player_states.as_ref());
     let mut best_scores = baseline_scores;
-    let mut accepted = WorldDelta::default();
+    let mut accepted = recipe_baseline;
     let mut last_prices: Option<OptimizePricesSummary> = None;
     let mut trials = 0u32;
     let ctx = TrialCtx {
@@ -146,12 +159,12 @@ pub fn optimize_pms(
     };
 
     let mut by_type: BTreeMap<String, Vec<&WorldBuilding>> = BTreeMap::new();
+    let mut peers_by_type: BTreeMap<&str, Vec<&WorldBuilding>> = BTreeMap::new();
     for building in &world.buildings {
+        let type_id = building.type_script_id(defs);
+        peers_by_type.entry(type_id).or_default().push(building);
         if player_ids.contains(&building.id) {
-            by_type
-                .entry(building.type_script_id(defs).to_string())
-                .or_default()
-                .push(building);
+            by_type.entry(type_id.to_string()).or_default().push(building);
         }
     }
 
@@ -159,8 +172,11 @@ pub fn optimize_pms(
         if trials >= MAX_PM_TRIALS {
             break;
         }
-        let candidates = candidate_pms(world, defs, &type_id);
-        if candidates.is_empty() {
+        let peers = peers_by_type
+            .get(type_id.as_str())
+            .map_or(&[][..], Vec::as_slice);
+        let candidates = slot_candidates(defs, &type_id, peers);
+        if candidates.iter().all(Vec::is_empty) {
             continue;
         }
         let mut current_methods = buildings
@@ -200,7 +216,7 @@ pub fn optimize_pms(
         while improved && trials < MAX_PM_TRIALS {
             improved = false;
             'slots: for slot in 0..slot_count {
-                for candidate in &candidates {
+                for candidate in candidates.get(slot).into_iter().flatten() {
                     if current_methods
                         .get(slot)
                         .is_some_and(|current| current == candidate)
@@ -232,6 +248,15 @@ pub fn optimize_pms(
         }
     }
 
+    // Drop recipe-baseline no-op entries so applying the delta keeps saved IO there.
+    let current: HashMap<u32, &Vec<String>> = world
+        .buildings
+        .iter()
+        .map(|building| (building.id, &building.production_methods))
+        .collect();
+    accepted
+        .production_methods
+        .retain(|entry| current.get(&entry.building_id) != Some(&&entry.methods));
     let changes = changes_from_delta(world, defs, &accepted);
     OptimizeResult {
         axis,
@@ -243,8 +268,8 @@ pub fn optimize_pms(
             residual: best_scores.residual - baseline_scores.residual,
         },
         prices: last_prices.or(Some(OptimizePricesSummary {
-            residual: baseline.residual,
-            status: baseline.status,
+            residual: base_result.residual,
+            status: base_result.status,
             income: baseline_scores.income,
             productivity: baseline_scores.productivity,
             sol: baseline_scores.sol,
@@ -323,15 +348,74 @@ fn try_type_methods(
     })
 }
 
-fn candidate_pms(world: &World, defs: &GameDefs, building_type: &str) -> Vec<String> {
-    let want = defs.building_index_of(building_type);
-    let mut ids = BTreeSet::new();
-    for building in &world.buildings {
-        if Some(building.building_type_id) == want {
-            ids.extend(building.production_methods.iter().cloned());
-        }
+/// PMs to try in each slot of `type_id`, given `peers` (buildings of that type).
+///
+/// Only PMs some peer already runs are tried (stand-in for tech unlocks), and a
+/// slot only takes PMs from its own `production_method_groups` entry, so no
+/// trial puts two base-group PMs on one building. When defs lack the slot's
+/// group, falls back to PMs peers run at the same slot index.
+pub(crate) fn slot_candidates(
+    defs: &GameDefs,
+    type_id: &str,
+    peers: &[&WorldBuilding],
+) -> Vec<Vec<String>> {
+    let used: BTreeSet<&String> = peers
+        .iter()
+        .flat_map(|building| &building.production_methods)
+        .collect();
+    let slots = peers
+        .iter()
+        .map(|building| building.production_methods.len())
+        .max()
+        .unwrap_or(0);
+    let groups = defs
+        .building_types
+        .get(type_id)
+        .map_or(&[][..], |building_type| {
+            building_type.production_method_groups.as_slice()
+        });
+    (0..slots)
+        .map(|slot| {
+            match groups
+                .get(slot)
+                .and_then(|group| defs.production_method_groups.get(group))
+            {
+                Some(group) => used
+                    .iter()
+                    .filter(|pm| group.contains(**pm))
+                    .map(|pm| (*pm).clone())
+                    .collect(),
+                None => peers
+                    .iter()
+                    .filter_map(|building| building.production_methods.get(slot))
+                    .cloned()
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect(),
+            }
+        })
+        .collect()
+}
+
+/// No-op PM entries (current methods) for player buildings that carry saved IO,
+/// so [`preview`] scores them on recipes like every trial does.
+fn recipe_baseline_delta(world: &World, player_ids: &BTreeSet<u32>) -> WorldDelta {
+    WorldDelta {
+        production_methods: world
+            .buildings
+            .iter()
+            .filter(|building| {
+                player_ids.contains(&building.id)
+                    && !building.production_methods.is_empty()
+                    && (!building.saved_inputs.is_empty() || !building.saved_outputs.is_empty())
+            })
+            .map(|building| ProductionMethodDelta {
+                building_id: building.id,
+                methods: building.production_methods.clone(),
+            })
+            .collect(),
+        ..WorldDelta::default()
     }
-    ids.into_iter().collect()
 }
 
 fn player_state_ids(world: &World) -> Option<BTreeSet<u32>> {
@@ -401,12 +485,17 @@ fn mean_wealth(world: &World, result: &PricesResult, player_states: Option<&BTre
     let mut total = 0.0;
     let mut count = 0.0;
     if !result.state_pops.is_empty() {
+        let base: HashMap<&str, f64> = result
+            .goods
+            .iter()
+            .map(|good| (good.name.as_str(), good.base))
+            .collect();
         for pop in result.state_pops.iter() {
             if !pop_in_scope(pop.state_id, player_states) {
                 continue;
             }
             if let Some(wealth) = pop.wealth {
-                total += f64::from(wealth);
+                total += f64::from(wealth) * purchasing_power(pop, &base);
                 count += 1.0;
             }
         }
@@ -434,6 +523,25 @@ fn mean_wealth(world: &World, result: &PricesResult, player_states: Option<&BTre
         total / count
     } else {
         0.0
+    }
+}
+
+/// Need-basket cost at base prices over its cost at solved local prices (1 when
+/// unknown). Saved wealth never moves on a PM swap; this does, so `Sol` can improve.
+///
+/// shortcut: a price index on the reported basket, not a re-run of wages / wealth
+/// levels; upgrade when the solve models income changes.
+fn purchasing_power(pop: &StatePop, base: &HashMap<&str, f64>) -> f64 {
+    let mut at_base = 0.0;
+    let mut at_local = 0.0;
+    for flow in pop.needs.iter().flat_map(|need| &need.goods) {
+        at_base += flow.quantity * base.get(flow.name.as_str()).copied().unwrap_or(0.0);
+        at_local += flow.value;
+    }
+    if at_base > 0.0 && at_local > 0.0 {
+        at_base / at_local
+    } else {
+        1.0
     }
 }
 
@@ -484,6 +592,7 @@ mod tests {
     use super::*;
     use vic3_defs::{Good, GoodId, ProductionMethod};
 
+    use crate::result::{GoodFlow, PopNeedBasket};
     use crate::solve;
     use crate::world::WorldBuilding;
 
@@ -574,6 +683,115 @@ mod tests {
             .limitations
             .iter()
             .any(|line| line == PM_SEARCH_HEURISTIC));
+    }
+
+    #[test]
+    fn optimizer_keeps_each_pm_in_its_own_group_slot() {
+        let mut defs = grain_defs();
+        for id in ["pm_tools_a", "pm_tools_b"] {
+            defs.production_methods.insert(
+                id.into(),
+                ProductionMethod {
+                    name: id.into(),
+                    ..Default::default()
+                },
+            );
+        }
+        defs.building_types
+            .get_mut("workshop")
+            .unwrap()
+            .production_method_groups = vec!["pmg_base".into(), "pmg_tools".into()];
+        let base = vec!["pm_rich".to_string(), "pm_poor".to_string()];
+        let tools = vec!["pm_tools_a".to_string(), "pm_tools_b".to_string()];
+        defs.production_method_groups
+            .insert("pmg_base".into(), base.clone());
+        defs.production_method_groups
+            .insert("pmg_tools".into(), tools.clone());
+        let mut rich = workshop(&defs, 1, "pm_rich");
+        rich.production_methods.push("pm_tools_a".into());
+        let mut poor = workshop(&defs, 2, "pm_poor");
+        poor.production_methods.push("pm_tools_b".into());
+        let world = World {
+            buildings: vec![rich, poor],
+            ..World::default()
+        };
+        let baseline = solve(&world, &defs, SolveOpts::default());
+        let result = optimize_pms(
+            &world,
+            &defs,
+            &baseline,
+            SolveOpts::default(),
+            OptimizeAxis::Income,
+        );
+        // Without the group check, `[pm_rich, pm_rich]` (two base PMs) wins.
+        for change in &result.changes {
+            assert!(
+                base.contains(&change.to[0]) && tools.contains(&change.to[1]),
+                "illegal PM set {change:?}"
+            );
+        }
+        assert!(result
+            .changes
+            .iter()
+            .any(|change| change.building_id == 2 && change.to[0] == "pm_rich"));
+    }
+
+    #[test]
+    fn optimizer_compares_recipe_with_recipe_when_saved_io_present() {
+        let defs = grain_defs();
+        let grain = GoodId::from_usize(0);
+        let mut poor = workshop(&defs, 2, "pm_poor");
+        // Saved output dwarfs every recipe; a saved-IO baseline rejects pm_rich.
+        poor.saved_outputs = vec![(grain, 1_000.0)];
+        let world = World {
+            buildings: vec![workshop(&defs, 1, "pm_rich"), poor],
+            ..World::default()
+        };
+        let baseline = solve(&world, &defs, SolveOpts::default());
+        let result = optimize_pms(
+            &world,
+            &defs,
+            &baseline,
+            SolveOpts::default(),
+            OptimizeAxis::Income,
+        );
+        assert_eq!(result.changes.len(), 1, "{:?}", result.changes);
+        assert_eq!(result.changes[0].to, ["pm_rich"]);
+        // Recipe-baseline no-ops never leak into the applied delta.
+        assert_eq!(result.world_delta.production_methods.len(), 1);
+    }
+
+    #[test]
+    fn sol_score_moves_with_solved_need_prices() {
+        let base: HashMap<&str, f64> = [("grain", 20.0)].into_iter().collect();
+        let pop = |value: f64| StatePop {
+            state_id: 1,
+            id: None,
+            profession_name: None,
+            profession_label: String::new(),
+            demand_size: Some(1.0),
+            workforce: None,
+            dependents: None,
+            wealth: Some(10),
+            culture_name: None,
+            culture_label: String::new(),
+            literate: None,
+            workplace_id: None,
+            qualifications: Vec::new(),
+            needs: vec![PopNeedBasket {
+                name: "popneed_basic_food".into(),
+                label: String::new(),
+                package_value: 1.0,
+                goods: vec![GoodFlow {
+                    name: "grain".into(),
+                    quantity: 2.0,
+                    value,
+                }],
+            }],
+        };
+        // Same saved wealth; cheaper solved grain must score higher.
+        assert_eq!(purchasing_power(&pop(40.0), &base), 1.0);
+        assert_eq!(purchasing_power(&pop(80.0), &base), 0.5);
     }
 
     #[test]

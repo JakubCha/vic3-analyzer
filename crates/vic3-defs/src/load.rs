@@ -347,10 +347,9 @@ fn absorb_text_file(
         .extend(file.defs.production_methods.clone());
     defs.production_method_groups
         .extend(file.defs.production_method_groups.clone());
-    for (id, building) in &file.defs.building_types {
-        if building.required_construction.is_some() {
-            defs.building_construction_refs.remove(id);
-        }
+    // A redefinition drops any earlier ref, as in `load_building_types`.
+    for id in file.defs.building_types.keys() {
+        defs.building_construction_refs.remove(id);
     }
     defs.building_types.extend(file.defs.building_types.clone());
     defs.building_construction_refs
@@ -740,16 +739,16 @@ fn texture_file_key(path: &str) -> Option<String> {
 
 fn normalize_defs_path(path: &str) -> Option<String> {
     let path = path.replace('\\', "/");
-    for root in ["common/", "localization/", "gfx/"] {
-        if let Some(rest) = path.strip_prefix(root) {
-            return Some(format!("{root}{rest}"));
-        }
-        let needle = format!("/{root}");
-        if let Some(index) = path.find(&needle) {
-            return Some(path[index + 1..].to_string());
-        }
-    }
-    None
+    // Rightmost root wins: Steam installs sit under `steamapps/common/`.
+    ["common/", "localization/", "gfx/"]
+        .iter()
+        .filter_map(|root| {
+            path.rfind(&format!("/{root}"))
+                .map(|index| index + 1)
+                .or_else(|| path.starts_with(root).then_some(0))
+        })
+        .max()
+        .map(|start| path[start..].to_string())
 }
 
 fn resolve_data_root(root: &Path) -> Result<PathBuf, DefsError> {
@@ -817,10 +816,12 @@ fn parse_goods_bytes(
         let Some(raw_good) = raw.remove(&id) else {
             continue;
         };
+        // Keep the slot so later indices match the save's goods table; with
+        // no `goods` entry, `base_price` reads as None.
+        order.push(id.clone());
         let Some(base_price) = raw_good.base_price() else {
             continue;
         };
-        order.push(id.clone());
         goods.insert(
             id.clone(),
             Good {
@@ -1519,6 +1520,47 @@ fn looks_empty(bytes: &[u8]) -> bool {
     })
 }
 
+/// Drop `@name = value` lines and substitute `@name` uses. A serde map would
+/// otherwise read `@name` as an entry and fail the whole file (coa.rs skips
+/// them the same way).
+fn inline_script_constants(bytes: &[u8]) -> std::borrow::Cow<'_, [u8]> {
+    if !bytes.contains(&b'@') {
+        return bytes.into();
+    }
+    let mut constants: Vec<(&[u8], &[u8])> = Vec::new();
+    let mut out = Vec::with_capacity(bytes.len());
+    for line in bytes.split_inclusive(|&b| b == b'\n') {
+        let trimmed = line.trim_ascii_start();
+        let eq = trimmed.iter().position(|&b| b == b'=');
+        match eq {
+            Some(eq) if trimmed.starts_with(b"@") && !trimmed.starts_with(b"@[") => {
+                let value = &trimmed[eq + 1..];
+                let value = value.split(|&b| b == b'#').next().unwrap_or_default();
+                constants.push((trimmed[..eq].trim_ascii(), value.trim_ascii()));
+                out.push(b'\n');
+            }
+            _ => out.extend_from_slice(line),
+        }
+    }
+    // shortcut: plain textual substitution, no `@[ ... ]` math; enough for numeric constants.
+    for (name, value) in constants.iter().rev() {
+        let mut replaced = Vec::with_capacity(out.len());
+        let mut rest = &out[..];
+        while let Some(at) = rest.windows(name.len()).position(|w| w == *name) {
+            let end = at + name.len();
+            let boundary = rest
+                .get(end)
+                .is_none_or(|b| !(b.is_ascii_alphanumeric() || *b == b'_'));
+            replaced.extend_from_slice(&rest[..at]);
+            replaced.extend_from_slice(if boundary { value } else { name });
+            rest = &rest[end..];
+        }
+        replaced.extend_from_slice(rest);
+        out = replaced;
+    }
+    out.into()
+}
+
 fn parse_file<T>(path: &Path) -> Result<T, DefsError>
 where
     T: DeserializeOwned + Default,
@@ -1538,6 +1580,7 @@ where
     if looks_empty(bytes) {
         return Ok(T::default());
     }
+    let bytes = &inline_script_constants(bytes);
     jomini::text::de::from_utf8_slice(bytes)
         .or_else(|_| jomini::text::de::from_windows1252_slice(bytes))
         .map_err(|source| DefsError::Parse {

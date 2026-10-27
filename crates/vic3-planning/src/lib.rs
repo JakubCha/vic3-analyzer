@@ -29,16 +29,16 @@ pub mod world;
 mod test_support;
 
 pub use construction::{
-    allocation_cap_points_per_day, construction_add_for_cs_building, construction_eta_days,
-    construction_points_per_day_from_save, construction_points_per_day_from_sectors,
-    construction_points_per_day_from_world, construction_points_per_day_per_job,
-    construction_sector_levels, construction_wait_days, construction_wait_target,
-    government_construction_share_from_laws, max_parallel_construction_jobs,
-    max_weekly_construction_progress, national_construction_points_per_day,
-    sync_construction_points_per_day, unused_government_construction_points_per_day,
-    ConstructionEtaMode, ConstructionSlots, MissingConstructionSectorPm,
-    BASE_MAX_WEEKLY_CONSTRUCTION_PROGRESS, BUILDING_CONSTRUCTION_SECTOR,
-    LOAD_BASE_CONSTRUCTION_POINTS_PER_DAY,
+    allocation_cap_points_per_day, cheapest_level_work_points, construction_add_for_cs_building,
+    construction_eta_days, construction_points_per_day_from_save,
+    construction_points_per_day_from_sectors, construction_points_per_day_from_world,
+    construction_points_per_day_per_job, construction_sector_levels, construction_wait_days,
+    construction_wait_target, government_construction_share_from_laws,
+    max_parallel_construction_jobs, max_weekly_construction_progress,
+    national_construction_points_per_day, sync_construction_points_per_day,
+    unused_government_construction_points_per_day, ConstructionEtaMode, ConstructionSlots,
+    MissingConstructionSectorPm, BASE_MAX_WEEKLY_CONSTRUCTION_PROGRESS,
+    BUILDING_CONSTRUCTION_SECTOR, LOAD_BASE_CONSTRUCTION_POINTS_PER_DAY,
 };
 pub use goals::{
     compile, evaluate, gaps, gaps_with_defs, parse, Goal, GoalError, InterestKind, Rel,

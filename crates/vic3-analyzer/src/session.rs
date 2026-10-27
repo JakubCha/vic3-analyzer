@@ -134,12 +134,17 @@ impl CompanionSession {
     /// Config write or catalog scan failure.
     pub fn apply_config(&mut self, dto: ConfigDto) -> Result<ConfigDto, String> {
         // Preserve path from disk; ignore client-supplied config_path for writes.
-        let path = self.config_path.clone();
-        self.config = dto.into_config();
-        if self.config.auto_detect {
-            self.config.apply_auto_detect();
+        let mut config = dto.into_config();
+        if config.auto_detect {
+            config.apply_auto_detect();
         }
-        self.config.save(&path).map_err(|e| e.to_string())?;
+        self.commit_config(config)
+    }
+
+    /// Persist `config`, adopt it only once the write succeeded, then unbind.
+    fn commit_config(&mut self, config: AppConfig) -> Result<ConfigDto, String> {
+        config.save(&self.config_path).map_err(|e| e.to_string())?;
+        self.config = config;
         // Defs/tokens/save roots may have changed — drop the engine so the next
         // query/use_save rebuilds with fresh EngineLoadOpts + catalog.
         self.drop_sql();
@@ -153,14 +158,9 @@ impl CompanionSession {
     ///
     /// Config write or catalog scan failure.
     pub fn reset_to_auto_detect(&mut self) -> Result<ConfigDto, String> {
-        self.config.reset_to_auto_detect();
-        self.config
-            .save(&self.config_path)
-            .map_err(|e| e.to_string())?;
-        // Auto-detect may rewrite roots/defs — rebuild the engine on next use.
-        self.drop_sql();
-        self.refresh_catalog()?;
-        Ok(self.config_dto())
+        let mut config = self.config.clone();
+        config.reset_to_auto_detect();
+        self.commit_config(config)
     }
 
     /// Rescan roots into the in-memory catalog (and live SQL engine if open).
@@ -301,9 +301,12 @@ impl CompanionSession {
     ///
     /// Missing/invalid defs, I/O, or encode failures as strings.
     pub fn loaded_defs_icons_json(&self) -> Result<String, String> {
-        let path = self.try_ensure_defs_blob()?;
-        let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
-        vic3_api::defs_icons_json(&bytes).map_err(|e| e.to_string())
+        defs_icons_json(&self.config, &self.app_data)
+    }
+
+    /// Config + app-data snapshot so slow defs work can run without the session lock.
+    pub fn defs_context(&self) -> (AppConfig, PathBuf) {
+        (self.config.clone(), self.app_data.clone())
     }
 
     /// Bound-session save summary JSON via `vic3-api`.
@@ -366,8 +369,14 @@ impl CompanionSession {
             .map_err(|e| e.to_string())
     }
 
+    /// Drop the engine and the analysis it bound, so `loaded_*` / dashboard never
+    /// report a save the new engine does not know about.
     fn drop_sql(&mut self) {
         self.sql = None;
+        // Only clear the process-wide analysis if this session installed it.
+        if self.loaded_stub.take().is_some() {
+            vic3_api::clear_analysis();
+        }
     }
 
     /// Open or rebuild the DataFusion engine against the current catalog.
@@ -413,21 +422,36 @@ impl CompanionSession {
     /// Same path order as MCP bootstrap: explicit blob → app-data cache →
     /// build from game_dir ([`vic3_api::ensure_defs_blob`]).
     fn try_ensure_defs_blob(&self) -> Result<PathBuf, String> {
-        if let Some(game) = &self.config.game_dir {
-            if !vic3_catalog::is_valid_game_dir(game) {
-                return Err(format!(
-                    "game_dir is not a valid Victoria 3 game tree: {}",
-                    game.display()
-                ));
-            }
-        }
-        vic3_api::ensure_defs_blob(
-            self.config.defs_blob.as_deref(),
-            self.config.game_dir.as_deref(),
-            &self.app_data,
-        )
-        .map_err(|e| e.to_string())
+        ensure_defs_for(&self.config, &self.app_data)
     }
+}
+
+/// Goods / extra icons JSON for `config` (see [`CompanionSession::loaded_defs_icons_json`]).
+///
+/// # Errors
+///
+/// Missing/invalid defs, I/O, or encode failures as strings.
+pub fn defs_icons_json(config: &AppConfig, app_data: &std::path::Path) -> Result<String, String> {
+    let path = ensure_defs_for(config, app_data)?;
+    let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+    vic3_api::defs_icons_json(&bytes).map_err(|e| e.to_string())
+}
+
+fn ensure_defs_for(config: &AppConfig, app_data: &std::path::Path) -> Result<PathBuf, String> {
+    if let Some(game) = &config.game_dir {
+        if !vic3_catalog::is_valid_game_dir(game) {
+            return Err(format!(
+                "game_dir is not a valid Victoria 3 game tree: {}",
+                game.display()
+            ));
+        }
+    }
+    vic3_api::ensure_defs_blob(
+        config.defs_blob.as_deref(),
+        config.game_dir.as_deref(),
+        app_data,
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Docs panel payload for Advanced Query / future `vic3://docs/sql`.
@@ -604,7 +628,34 @@ mod tests {
         let s: serde_json::Value = serde_json::from_str(&saves_q).unwrap();
         assert_eq!(s["rows"][0][1], true);
 
+        // Re-applying Settings unbinds SQL *and* the analysis — no half-loaded state.
+        let dto = session.config_dto();
+        session.apply_config(dto).unwrap();
+        assert!(session.loaded_stub.is_none());
+        assert!(session.loaded_prices_json().is_err());
+
         vic3_api::clear_analysis();
+    }
+
+    #[test]
+    fn failed_config_write_keeps_previous_config() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut session = open_for_test(tmp.path());
+        let before = session.config.clone();
+        // A directory at the config path makes the write fail.
+        let blocker = tmp.path().join("blocker");
+        fs::create_dir_all(&blocker).unwrap();
+        session.config_path = blocker;
+        let err = session.apply_config(ConfigDto {
+            game_dir: None,
+            defs_blob: None,
+            save_dirs: vec![tmp.path().join("elsewhere").display().to_string()],
+            tokens_path: None,
+            auto_detect: false,
+            config_path: String::new(),
+        });
+        assert!(err.is_err());
+        assert_eq!(session.config, before);
     }
 
     #[test]

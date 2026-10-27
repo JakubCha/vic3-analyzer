@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal } from './Modal'
 
 export type GoalKind = 'research' | 'gdp' | 'good-price' | 'declare-war' | 'colonize' | 'advanced'
@@ -49,8 +49,16 @@ export function GoalBuilder({ goods, value, onChange, idPrefix, initialKind = 'r
     }
   }, [gdp, good, kind, price, region, relation, state, technology, value])
 
+  // The builder remounts on every view switch; keep a goal that is already set
+  // and only rebuild it after an edit here.
+  const mounted = useRef(false)
   useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true
+      if (value) return
+    }
     if (kind !== 'advanced') onChange(builtGoal)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `value` is read only on mount.
   }, [builtGoal, kind, onChange])
 
   return (

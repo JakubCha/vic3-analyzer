@@ -648,10 +648,15 @@ pub fn construction_wait_days(state: &PlanningState, config: SimConfig) -> Optio
 /// blanket `.max(1)` is not applied when the bound is a multi-day capacity
 /// estimate; a zero-day pending completion still reports `0` so a 0-day
 /// `BuildingCompleted` edge stays consistent.
+///
+/// `level_work` is the work points of the cheapest level the search may queue
+/// ([`cheapest_level_work_points`]); with a spare slot the bound is the sooner
+/// of the next fed finish and one such level.
 pub fn construction_eta_days(
     state: &PlanningState,
     config: SimConfig,
     mode: ConstructionEtaMode,
+    level_work: f64,
 ) -> u32 {
     let fallback = u32::from(config.construction_days.max(1));
     match mode {
@@ -659,15 +664,13 @@ pub fn construction_eta_days(
             .map(u32::from)
             .unwrap_or(fallback),
         ConstructionEtaMode::CapacityOrSlot => {
+            let next_finish = construction_wait_days(state, config).map(u32::from);
             if construction_queue_full(state, config) {
                 // Slot-bound: wait until a fed government job finishes.
-                return construction_wait_days(state, config)
-                    .map(u32::from)
-                    .unwrap_or(fallback)
-                    .max(1);
+                return next_finish.unwrap_or(fallback);
             }
-            // Spare government slot / leftover feed: lower-bound by one level
-            // at the unused (or full) government rate — not next-finish.
+            // Spare government slot / leftover feed: one cheapest level at the
+            // unused (or full) government rate, unless an in-flight job is sooner.
             let rate = {
                 let unused = unused_government_construction_points_per_day(state, config);
                 if unused > 0.0 {
@@ -681,12 +684,21 @@ pub fn construction_eta_days(
                     0.0
                 }
             };
-            let work = f64::from(config.default_construction_cost);
-            crate::tracks::days_for_work(work, rate)
-                .unwrap_or(fallback)
-                .max(1)
+            let new_level = crate::tracks::days_for_work(level_work, rate).unwrap_or(fallback);
+            next_finish.map_or(new_level, |days| days.min(new_level))
         }
     }
+}
+
+/// Work points of the cheapest level any building type can be queued at
+/// (types missing from defs use [`SimConfig::default_construction_cost`]).
+pub fn cheapest_level_work_points(economy: &EconomyContext, config: SimConfig) -> f64 {
+    economy
+        .defs
+        .building_types
+        .keys()
+        .filter_map(|id| construction_work_points_for_enqueue(id, economy, config))
+        .fold(f64::from(config.default_construction_cost), f64::min)
 }
 
 /// True when `building` (+ optional state) has a queue row with non-positive finite `remaining`.
@@ -961,7 +973,7 @@ mod tests {
         };
         // Spare slots, empty queue: ceil(50 / min(5,10)) = 10.
         assert_eq!(
-            construction_eta_days(&state, config, ConstructionEtaMode::CapacityOrSlot),
+            construction_eta_days(&state, config, ConstructionEtaMode::CapacityOrSlot, 50.0),
             10
         );
     }
@@ -996,13 +1008,47 @@ mod tests {
         assert!(construction_queue_full(&state, config));
         // Next finish: 20/5 = 4 days (not default_cost/rate).
         assert_eq!(
-            construction_eta_days(&state, config, ConstructionEtaMode::CapacityOrSlot),
+            construction_eta_days(&state, config, ConstructionEtaMode::CapacityOrSlot, 50.0),
             4
         );
         assert_eq!(
-            construction_eta_days(&state, config, ConstructionEtaMode::NextFinish),
+            construction_eta_days(&state, config, ConstructionEtaMode::NextFinish, 50.0),
             4
         );
+    }
+
+    #[test]
+    fn capacity_eta_is_min_of_in_flight_finish_and_cheapest_level() {
+        let job = |order_id, remaining| PlanningConstruction {
+            order_id,
+            queue: ConstructionQueueKind::Government,
+            state_id: None,
+            building_type_name: "building_a".into(),
+            remaining: Some(remaining),
+        };
+        let config = SimConfig {
+            max_construction_allocation: Some(5),
+            default_construction_cost: 50,
+            ..SimConfig::default()
+        };
+        let mut state = PlanningState::from_parts(PlanningParts {
+            constructions: vec![job(1, 1.0)],
+            construction_points_per_day: 10.0,
+            ..PlanningParts::default()
+        });
+        let eta = |state: &PlanningState, work| {
+            construction_eta_days(state, config, ConstructionEtaMode::CapacityOrSlot, work)
+        };
+        assert!(!construction_queue_full(&state, config));
+        // Spare slot: the in-flight job finishing tomorrow beats a new level (10 days).
+        assert_eq!(eta(&state, 50.0), 1);
+        // Empty queue: a cheaper building type bounds a new level: ceil(10 / 5).
+        state.constructions.clear();
+        assert_eq!(eta(&state, 10.0), 2);
+        // Queue full with a completion due now: 0, not 1.
+        state.constructions = vec![job(1, 0.0), job(2, 100.0)];
+        assert!(construction_queue_full(&state, config));
+        assert_eq!(eta(&state, 50.0), 0);
     }
 
     #[test]

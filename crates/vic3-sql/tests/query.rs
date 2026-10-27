@@ -622,6 +622,15 @@ async fn rejects_ddl() {
     assert!(matches!(err, SqlError::ReadOnly(_)));
 }
 
+#[tokio::test]
+async fn rejects_select_into() {
+    let eng = engine().await;
+    eng.query("SELECT 1 AS a INTO sneaky")
+        .await
+        .expect_err("SELECT INTO must not create a table");
+    assert!(eng.query("SELECT * FROM sneaky").await.is_err());
+}
+
 #[test]
 fn sync_query_helper_works() {
     let rt = tokio::runtime::Builder::new_current_thread()

@@ -132,7 +132,8 @@ pub fn classify_defs_path(path: &str, is_directory: bool) -> DefsPathClass {
                 DefsPathClass::Skip
             };
         }
-        let common = segments.iter().position(|segment| *segment == "common");
+        // Last `common`: Steam installs sit under `steamapps/common/`.
+        let common = segments.iter().rposition(|segment| *segment == "common");
         let supported_common = common.is_some_and(|index| {
             segments
                 .get(index + 1)
@@ -167,7 +168,13 @@ pub fn classify_defs_path(path: &str, is_directory: bool) -> DefsPathClass {
     if PRUNED_DIRS.contains(&name) {
         return DefsPathClass::Prune;
     }
-    if let Some(index) = segments.iter().position(|segment| *segment == "common") {
+    // Only the data `common` (walk root, or under `game`) gates its children;
+    // `steamapps/common/Victoria 3` must still be walked.
+    if let Some(index) = segments
+        .iter()
+        .rposition(|segment| *segment == "common")
+        .filter(|&index| index == 0 || segments[index - 1] == "game")
+    {
         return match segments.get(index + 1) {
             None => DefsPathClass::Descend,
             Some(dir) if COMMON_DIRS.contains(dir) => DefsPathClass::Descend,
@@ -431,6 +438,28 @@ mod tests {
         assert_eq!(
             classify_defs_path("game/common/goods", true),
             DefsPathClass::Descend
+        );
+    }
+
+    #[test]
+    fn steam_library_common_is_not_the_data_common() {
+        let steam = "steamapps/common/Victoria 3";
+        assert_eq!(classify_defs_path(steam, true), DefsPathClass::Descend);
+        assert_eq!(
+            classify_defs_path(&format!("{steam}/game/common/goods"), true),
+            DefsPathClass::Descend
+        );
+        assert_eq!(
+            classify_defs_path(&format!("{steam}/game/common/laws"), true),
+            DefsPathClass::Prune
+        );
+        assert_eq!(
+            classify_defs_path(&format!("{steam}/game/common/goods/00_goods.txt"), false),
+            DefsPathClass::Read
+        );
+        assert_eq!(
+            classify_defs_path("common/laws", true),
+            DefsPathClass::Prune
         );
     }
 }
