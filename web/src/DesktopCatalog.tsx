@@ -28,6 +28,55 @@ interface Props {
   refreshKey?: number
 }
 
+/** Newest stub by mtime: in live play, the autosave the game just wrote. */
+export function newestSave(rows: SaveStub[]): SaveStub | undefined {
+  return rows.reduce<SaveStub | undefined>(
+    (best, row) => (!best || row.mtime > best.mtime ? row : best),
+    undefined,
+  )
+}
+
+/**
+ * Live mode: on each Rust `saves-changed` event, load the newest save.
+ *
+ * Events that land while a load runs collapse into one follow-up load, and an
+ * unchanged newest save (e.g. old autosave rotated out) is not reloaded.
+ * Returns an unsubscribe function; a no-op outside Tauri.
+ */
+export function followNewestSave(load: (stub: SaveStub) => Promise<void>): () => void {
+  const listen = (window as any).__TAURI__?.event?.listen
+  if (!listen) return () => {}
+  let running = false
+  let again = false
+  let lastKey: string | undefined
+  const run = async () => {
+    if (running) {
+      again = true
+      return
+    }
+    running = true
+    try {
+      do {
+        again = false
+        const newest = newestSave(await invokeTauri<SaveStub[]>('list_saves'))
+        const key = newest && `${newest.location}/${newest.name}@${newest.mtime}`
+        if (!newest || key === lastKey) continue
+        lastKey = key
+        // `load` shows its own error; the next autosave retries.
+        await load(newest).catch(() => {})
+      } while (again)
+    } catch {
+      // Catalog rescan failed; the next `saves-changed` retries.
+    } finally {
+      running = false
+    }
+  }
+  const unlisten: Promise<() => void> = listen('saves-changed', () => void run())
+  return () => {
+    void unlisten.then((stop) => stop())
+  }
+}
+
 function formatMtime(mtime: number): string {
   if (!Number.isFinite(mtime) || mtime <= 0) return '—'
   try {

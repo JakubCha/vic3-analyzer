@@ -83,7 +83,7 @@ flowchart TD
 ```
 
 - **Shared Configuration:** The GUI and MCP server share the same configuration file and definition caches.
-- **Save Watcher:** Monitors configured save directories with debouncing and automatically refreshes the catalog when a new autosave or manual save appears.
+- **Save Watcher (live follow):** Monitors configured save directories with debouncing. When a new autosave or manual save appears, the GUI loads the newest one automatically and refreshes prices and alerts, keeping your current tab. A half-written save leaves the previous analysis on screen; the next autosave retries.
 - **Privacy Guarantee:** The application only scans allowlisted save and Steam directories. It never transmits saves, telemetry, or system files over the network.
 
 ---

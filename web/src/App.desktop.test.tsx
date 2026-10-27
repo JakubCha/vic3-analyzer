@@ -155,6 +155,42 @@ describe('App (desktop / Tauri)', () => {
     expect(screen.getByLabelText(/Loaded save/i)).toBeInTheDocument()
   })
 
+  it('follows the newest autosave on saves-changed without leaving the current view', async () => {
+    let fire: (() => void) | undefined
+    const listen = vi.fn(async (event: string, handler: () => void) => {
+      if (event === 'saves-changed') fire = handler
+      return () => {}
+    })
+    ;(window as any).__TAURI__ = { event: { listen } }
+    const newer = { ...saveStub, name: 'autosave.v3', mtime: 5, in_game_date: '1840.2.1' }
+    const base = invoke.getMockImplementation()!
+    invoke.mockImplementation(async (cmd, args) =>
+      cmd === 'list_saves' ? [saveStub, newer] : base(cmd, args),
+    )
+    try {
+      const user = userEvent.setup()
+      render(<App />)
+      await waitFor(() => expect(fire).toBeDefined())
+      await user.click(screen.getByRole('button', { name: 'States' }))
+
+      fire!()
+      await waitFor(() => {
+        expect(invoke).toHaveBeenCalledWith('use_save', { name: 'autosave.v3', location: 'local' })
+      })
+      expect(await screen.findByRole('link', { name: /Badger/ })).toBeInTheDocument()
+      expect(window.location.hash).not.toContain('prices')
+
+      // Same newest save again (e.g. an old autosave rotated out): no reload.
+      fire!()
+      await waitFor(() => {
+        expect(invoke.mock.calls.filter(([cmd]) => cmd === 'list_saves').length).toBeGreaterThan(2)
+      })
+      expect(invoke.mock.calls.filter(([cmd]) => cmd === 'use_save')).toHaveLength(1)
+    } finally {
+      delete (window as any).__TAURI__
+    }
+  })
+
   it('loads goods icons and foreign state flags after binding a catalog save', async () => {
     const user = userEvent.setup()
     const { container } = render(<App />)

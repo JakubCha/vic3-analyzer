@@ -1,6 +1,7 @@
 //! Debounced filesystem watch over configured save roots.
 //!
-//! Emits WebView event [`SAVES_CHANGED_EVENT`] so the GUI list refreshes. Does
+//! Emits WebView event [`SAVES_CHANGED_EVENT`]; the GUI then re-binds the newest save
+//! (live follow, `followNewestSave` in `web/src/DesktopCatalog.tsx`). Does
 //! **not** auto-run A* / `plan(...)`. MCP catalog notifications are separate
 //! (`docs/mcp.md`).
 

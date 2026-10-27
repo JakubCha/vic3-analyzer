@@ -41,7 +41,7 @@ import { PriceExplorer } from './PriceExplorer'
 import { QueryPane } from './QueryPane'
 import { StatesPane } from './StatesPane'
 import { ProgressBar } from './ProgressBar'
-import { DesktopCatalog, DesktopSaveChip, type SaveStub } from './DesktopCatalog'
+import { DesktopCatalog, DesktopSaveChip, followNewestSave, type SaveStub } from './DesktopCatalog'
 import { isTauri } from './env'
 import { SettingsPane } from './SettingsPane'
 import {
@@ -394,9 +394,14 @@ function App({ wasmApi }: Props) {
     setPendingApply(undefined)
   }
 
-  /** Desktop: bind a catalog stub via Rust (`use_save`) and hydrate prices. */
-  const useDesktopSave = async (stub: SaveStub) => {
-    clearAnalysisUi()
+  /**
+   * Desktop: bind a catalog stub via Rust (`use_save`) and hydrate prices.
+   *
+   * `live` (autosave follow) keeps the current view and old analysis on screen
+   * until the new one is ready, and keeps it on failure (e.g. a half-written autosave).
+   */
+  const useDesktopSave = async (stub: SaveStub, live = false) => {
+    if (!live) clearAnalysisUi()
     setBusy(true)
     setError(undefined)
     try {
@@ -418,16 +423,33 @@ function App({ wasmApi }: Props) {
       const pricesJson = await invokeTauri<string>('loaded_prices')
       setResult(JSON.parse(pricesJson) as PricesResult)
       setAnalysisReady(true)
-      selectView('prices')
+      if (live) {
+        // A pending Apply was built against the previous save's buildings.
+        setPendingApply(undefined)
+      } else {
+        selectView('prices')
+      }
     } catch (reason) {
-      setDesktopSaveName(undefined)
-      clearAnalysisUi()
+      if (!live) {
+        setDesktopSaveName(undefined)
+        clearAnalysisUi()
+      }
       setError(reason instanceof Error ? reason.message : String(reason))
       throw reason
     } finally {
       setBusy(false)
     }
   }
+
+  // Live play: every autosave re-binds the newest save, which refreshes prices and alerts.
+  const liveLoad = useRef(useDesktopSave)
+  useEffect(() => {
+    liveLoad.current = useDesktopSave
+  })
+  useEffect(() => {
+    if (!desktop) return
+    return followNewestSave((stub) => liveLoad.current(stub, true))
+  }, [desktop])
 
   useEffect(() => {
     if (desktop) return
