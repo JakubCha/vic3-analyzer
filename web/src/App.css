@@ -679,3 +679,10 @@ h2 > .good-icon { margin-right: .45rem; }
 .advisor-why summary { cursor: pointer; }
 .advisor.overlay { padding: .5rem; font-size: .9em; }
 .advisor.overlay .advisor-list { margin-top: .5rem; gap: .5rem; }
+.advisor-live { margin: 0 0 .5rem; padding: .35rem .6rem; border-left: 4px solid var(--accent); background: var(--panel); }
+.history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: .75rem; }
+.history-card { margin: 0; border: 1px solid var(--line); padding: .5rem .6rem; background: #fff; }
+.history-card figcaption { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: baseline; margin-bottom: .25rem; }
+.history-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .2rem .8rem; margin: 0; padding: 0; font-size: .9em; }
+.history-swatch { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; vertical-align: -1px; }
+.history-svg svg { width: 100%; height: auto; display: block; }

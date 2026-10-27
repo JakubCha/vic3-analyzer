@@ -31,6 +31,26 @@ describe('OverlayView', () => {
     expect(await screen.findByText('Deficit 3.1K')).toBeInTheDocument()
   })
 
+  it('shows the live in-game line from the mod', async () => {
+    const api = { loaded_advice: vi.fn(async () => JSON.stringify(result('Deficit'))) } as unknown as WasmApi
+    const live = vi.fn(async () => ({
+      country: 'PRU',
+      date: '1 marca 1836',
+      logged_at: '21:02:59',
+      weekly_balance: -7231,
+      weekly_income: 57845,
+      treasury: 486803,
+      debt_share: 0,
+      military_share: 0.618,
+      weeks_to_debt: 67,
+      gdp: 9720602,
+    }))
+    render(<OverlayView api={api} live={live} />)
+    expect(await screen.findByLabelText('Live')).toHaveTextContent(
+      /In game 1 marca 1836.*−7\.2K\/week.*lasts ~67 weeks.*military 62% of spending/,
+    )
+  })
+
   it('asks for a save when none is loaded', async () => {
     const api = { loaded_advice: vi.fn().mockRejectedValue(new Error('no loaded analysis')) } as unknown as WasmApi
     render(<OverlayView api={api} />)

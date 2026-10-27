@@ -22,4 +22,6 @@ commands.allow = [
   "sql_query",
   "sql_docs",
   "toggle_overlay",
+  "live_status",
+  "loaded_history",
 ]

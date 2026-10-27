@@ -115,6 +115,7 @@ async fn world_tables_include_foreign_when_present() {
         weekly_income: None,
         weekly_expenses: None,
         budget_lines: Vec::new(),
+        trends: None,
     });
     world.states.push(WorldState {
         id: 999,

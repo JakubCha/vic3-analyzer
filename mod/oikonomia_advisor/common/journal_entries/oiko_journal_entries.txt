@@ -83,3 +83,17 @@ je_oiko_pru_germany = {
 	should_be_pinned_by_default_uninvolved_or_context = yes
 	weight = 800
 }
+
+# Always-on dashboard: live budget numbers, and the weekly line the analyzer reads.
+je_oiko_dashboard = {
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+	group = je_group_internal_affairs
+
+	on_weekly_pulse = {
+		effect = {
+			oiko_log_status = yes
+		}
+	}
+
+	weight = 100
+}

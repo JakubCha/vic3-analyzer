@@ -7,6 +7,7 @@ Player-only journal entries with live values computed by the game every tick. Th
 - **Playbook: Road to Germany** (PRU / NGF) – public schools, nationalism, Schleswig-Holstein solved, debt under 30% of credit, North German Federation, pan-nationalism. Completes when Germany is formed.
 
 - **Playbook entries for every country** – one journal entry per analyzer playbook rule (general rules plus Prussia, Britain, France, Austria, Sardinia/Italy, USA), added while its conditions hold, with the mechanic explained and sources. Generated: run `vic3-cli mod generate --out mod/oikonomia_advisor` after editing `crates/vic3-api/playbook/*.toml` (a test fails when the files are stale). Rules whose conditions the game script cannot check (share of one budget line) stay analyzer-only.
+- **Oikonomia: Budget Dashboard** – always-on entry with the live numbers; every week it writes one `OIKO1;country;date;balance;income;treasury;debt‰;military‰;weeks;gdp` line to `logs\debug.log` (works without debug mode). The analyzer's overlay and the MCP tool `live_status` read it, so they see in-game values without waiting for a save.
 - **Budget alarm event** – a popup when the state is losing money and debt passes 85% of the credit limit (or in default), at most every six months.
 
 Hand-written texts are in Polish and English; generated playbook texts are in English.

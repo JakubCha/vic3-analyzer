@@ -25,3 +25,7 @@
  oiko.1.d:0 "Państwo pożycza na bieżące wydatki, a dług zbliża się do limitu kredytu.\n\n$oiko_numbers$\n\n#bold Co zrobić od razu:#! podnieś podatki o jeden poziom, obniż płace wojska i urzędników o jeden poziom, wstrzymaj najdroższe budowy i nie zaczynaj wojny. Szczegóły i dźwignie: dziennik #bold Strażnik budżetu#!."
  oiko.1.f:0 "Po przekroczeniu limitu kredytu przychodzi niewypłacalność: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień aż do -50%."
  oiko.1.a:0 "Biorę się za budżet"
+
+ je_oiko_dashboard:0 "Oikonomia: panel budżetu"
+ je_oiko_dashboard_reason:0 "Bieżące liczby budżetu. Co tydzień ten wpis zapisuje je też do logu gry, skąd Oikonomia Analyzer (overlay i Muse) czyta je na żywo, bez czekania na autozapis."
+ je_oiko_dashboard_status:0 "$oiko_numbers$"

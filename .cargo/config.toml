@@ -2,3 +2,8 @@
 # than MSVC link.exe.
 [target.x86_64-pc-windows-msvc]
 linker = "rust-lld.exe"
+
+[alias]
+# Quick tests without doctests (each doctest is its own binary: ~12 s of ~17 s).
+# Full `cargo test --workspace` still runs them before commits.
+t = "test --workspace --lib --bins --tests"

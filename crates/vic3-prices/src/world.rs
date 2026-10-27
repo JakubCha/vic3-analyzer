@@ -202,6 +202,8 @@ pub struct WorldCountry {
     /// Labelled per-building budget lines; their sum is less than the totals
     /// (interest, diplomacy, consumption taxes etc. are not per building).
     pub budget_lines: Vec<BudgetLine>,
+    /// The save's sampled histories, kept for the played country only.
+    pub trends: Option<Box<vic3_load::CountryTrends>>,
 }
 
 /// One `country_building_budget` entry, e.g. military wages of barracks.
@@ -385,6 +387,7 @@ impl World {
     /// empty type id, and state trade entries with unknown goods-table indices
     /// are skipped.
     pub fn from_save(save: &impl WorldSnapshot, defs: &GameDefs) -> Self {
+        let player = player_tag(save);
         let mut names = Intern::default();
         for profession in VANILLA_POP_TYPES {
             names.intern(profession);
@@ -433,6 +436,8 @@ impl World {
                                 })
                         })
                         .collect(),
+                    trends: (player.as_deref() == Some(country.definition.as_str()))
+                        .then(|| Box::new(country.trends())),
                     debt_principal: budget.principal.filter(|value| value.is_finite()),
                     credit_limit: budget.credit.filter(|value| value.is_finite()),
                     credit_headroom: budget.credit_headroom(),

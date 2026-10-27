@@ -292,6 +292,18 @@ pub struct Country {
     pub infamy: Option<f64>,
     #[serde(default)]
     pub budget: Budget,
+    /// Histories the game samples for its own graphs.
+    #[serde(default)]
+    pub gdp: Option<TrendSeries>,
+    #[serde(default)]
+    pub prestige: Option<TrendSeries>,
+    #[serde(default)]
+    pub literacy: Option<TrendSeries>,
+    /// Average standard of living.
+    #[serde(default)]
+    pub avgsoltrend: Option<TrendSeries>,
+    #[serde(default)]
+    pub pop_statistics: Option<CountryPopStatistics>,
     #[serde(default, deserialize_with = "optional_id")]
     pub market: Option<u32>,
     #[serde(default, deserialize_with = "optional_id")]
@@ -389,6 +401,114 @@ pub struct Budget {
 pub struct Trend {
     #[serde(default)]
     pub current: Option<f64>,
+}
+
+/// Sampled history kept by the game (`gdp`, `pop_statistics.trend_population`, …):
+/// a ring buffer per channel, sampled every `sample_rate / 4` days.
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct TrendSeries {
+    #[serde(default)]
+    pub sample_rate: Option<f64>,
+    #[serde(default)]
+    pub count: Option<usize>,
+    #[serde(default)]
+    pub channels: BTreeMap<String, TrendChannel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct TrendChannel {
+    /// Date of the newest sample.
+    #[serde(default)]
+    pub date: Option<Vic3Date>,
+    /// Write position in the ring buffer.
+    #[serde(default)]
+    pub index: Option<usize>,
+    /// Samples thinned to at most [`TREND_MAX_SAMPLES`], newest kept.
+    #[serde(default, deserialize_with = "thin_samples")]
+    pub values: ThinSamples,
+}
+
+/// Samples kept per trend channel: daily population histories reach 36,500
+/// values per series, which across every country would cost hundreds of MB.
+pub const TREND_MAX_SAMPLES: usize = 600;
+
+/// Every `stride`-th sample counted back from the newest.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ThinSamples {
+    pub values: Vec<f64>,
+    pub stride: usize,
+    /// Sample count before thinning.
+    pub raw_len: usize,
+}
+
+fn thin_samples<'de, D: Deserializer<'de>>(deserializer: D) -> Result<ThinSamples, D::Error> {
+    let raw = Vec::<f64>::deserialize(deserializer)?;
+    let stride = raw.len().div_ceil(TREND_MAX_SAMPLES).max(1);
+    let n = raw.len();
+    let values = raw.into_iter().enumerate().filter(|(i, _)| (n - 1 - i) % stride == 0).map(|(_, v)| v).collect();
+    Ok(ThinSamples { values, stride, raw_len: n })
+}
+
+impl TrendSeries {
+    /// Days between kept samples (`sample_rate` counts quarter days: 4 = daily, 28 = weekly).
+    pub fn interval_days(&self) -> f64 {
+        let stride = self.channels.get("0").map_or(1, |c| c.values.stride.max(1));
+        self.sample_rate.filter(|r| *r > 0.0).map_or(1.0, |r| r / 4.0) * stride as f64
+    }
+
+    /// Channel `0` values oldest first, with the newest sample's date.
+    pub fn chronological(&self) -> Option<(Vic3Date, Vec<f64>)> {
+        let channel = self.channels.get("0")?;
+        let date = channel.date?;
+        let mut values = channel.values.values.clone();
+        // A full, unthinned ring buffer continues at the write position (after
+        // about a century of samples); thinned buffers have not wrapped yet.
+        if let (Some(count), Some(index)) = (self.count, channel.index) {
+            if channel.values.stride == 1 && values.len() == count && index < count {
+                values.rotate_left(index);
+            }
+        }
+        Some((date, values))
+    }
+}
+
+/// The histories a country keeps, for charts.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct CountryTrends {
+    pub gdp: Option<TrendSeries>,
+    pub prestige: Option<TrendSeries>,
+    pub literacy: Option<TrendSeries>,
+    pub avgsoltrend: Option<TrendSeries>,
+    pub pop_statistics: Option<CountryPopStatistics>,
+}
+
+impl Country {
+    pub fn trends(&self) -> CountryTrends {
+        CountryTrends {
+            gdp: self.gdp.clone(),
+            prestige: self.prestige.clone(),
+            literacy: self.literacy.clone(),
+            avgsoltrend: self.avgsoltrend.clone(),
+            pop_statistics: self.pop_statistics.clone(),
+        }
+    }
+}
+
+/// Country-level `pop_statistics` trends.
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+pub struct CountryPopStatistics {
+    #[serde(default)]
+    pub trend_population: Option<TrendSeries>,
+    #[serde(default)]
+    pub trend_population_lower_strata: Option<TrendSeries>,
+    #[serde(default)]
+    pub trend_population_middle_strata: Option<TrendSeries>,
+    #[serde(default)]
+    pub trend_population_upper_strata: Option<TrendSeries>,
+    #[serde(default)]
+    pub trend_radicals: Option<TrendSeries>,
+    #[serde(default)]
+    pub trend_loyalists: Option<TrendSeries>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]

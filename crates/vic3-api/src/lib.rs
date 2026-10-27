@@ -51,6 +51,8 @@
 
 pub mod advice;
 pub mod budget;
+pub mod history;
+pub mod live;
 pub mod modgen;
 pub mod playbook;
 mod error;
@@ -824,6 +826,43 @@ pub fn loaded_advice_json() -> Result<String, ApiError> {
         let result = advice::advice(&loaded.world, &loaded.defs, &loaded.prices);
         Ok(serde_json::to_string(&result)?)
     })
+}
+
+/// Charts for the played country in `world`: budget history from the mod's log lines
+/// (`live`, any order) first, then the histories the save keeps.
+pub fn world_charts(world: &World, live: &[live::LiveStatus]) -> Vec<history::Chart> {
+    let Some(tag) = world.player_tag.as_deref() else {
+        return Vec::new();
+    };
+    let mut charts = history::budget_charts(live, tag);
+    if charts.is_empty() {
+        // The mod may log the country's name instead of its tag; a game logs only its player.
+        if let Some(name) = live.last().map(|s| s.country.clone()) {
+            charts = history::budget_charts(live, &name);
+        }
+    }
+    if let Some(trends) = world.country_by_tag(tag).and_then(|c| c.trends.as_deref()) {
+        charts.extend(history::country_charts(trends));
+    }
+    charts
+}
+
+/// Rendered charts over time (SVG plus first/last values) for the loaded save.
+///
+/// # Errors
+///
+/// [`ApiError::NoLoadedAnalysis`].
+pub fn loaded_history_json(live: &[live::LiveStatus]) -> Result<String, ApiError> {
+    with_loaded_analysis(|loaded| Ok(serde_json::to_string(&history::render_all(&world_charts(&loaded.world, live)))?))
+}
+
+/// The same charts as numbers, `points` per line, for agents.
+///
+/// # Errors
+///
+/// [`ApiError::NoLoadedAnalysis`].
+pub fn loaded_history_summary(live: &[live::LiveStatus], points: usize) -> Result<serde_json::Value, ApiError> {
+    with_loaded_analysis(|loaded| Ok(history::summarize(&world_charts(&loaded.world, live), points)))
 }
 
 /// Evaluate tracked [`advice::Check`]s (JSON array) on the loaded save; returns a JSON `bool` array.

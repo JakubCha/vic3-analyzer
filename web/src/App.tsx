@@ -22,6 +22,7 @@ import {
   storeSaveAnalysis,
 } from './saveStore'
 import { AdvisorPane } from './AdvisorPane'
+import { HistoryPane } from './HistoryPane'
 import { AlertsPane } from './AlertsPane'
 import { BuildingsPane } from './BuildingsPane'
 import { BuildQueuesPane } from './BuildQueuesPane'
@@ -1397,6 +1398,20 @@ function App({ wasmApi }: Props) {
             <AdvisorPane api={api} analysisKey={result} tag={summary?.tag} date={summary?.date} />
           ) : (
             <p>Advice appears after a save is priced. With the game running, each autosave refreshes it.</p>
+          )}
+        </section>
+      )}
+
+      {activeView === 'history' && (
+        <section
+          className={gated ? 'workspace-page needs-defs' : 'workspace-page'}
+          aria-labelledby="history-heading"
+        >
+          <h2 id="history-heading">History</h2>
+          {api && result && analysisReady ? (
+            <HistoryPane api={api} analysisKey={result} />
+          ) : (
+            <p>Charts appear after a save is priced: GDP, standard of living, population and more since 1836.</p>
           )}
         </section>
       )}

@@ -159,6 +159,13 @@ pub fn loaded_advice() -> Result<String, JsError> {
     vic3_api::loaded_advice_json().map_err(to_js)
 }
 
+/// Charts over time from the current analysis (rendered SVG). The browser has no
+/// game log, so budget history from the mod is desktop-only.
+#[wasm_bindgen]
+pub fn loaded_history() -> Result<String, JsError> {
+    vic3_api::loaded_history_json(&[]).map_err(to_js)
+}
+
 /// Evaluate tracked advice checks (JSON array) on the current analysis; JSON `bool` array.
 #[wasm_bindgen]
 pub fn loaded_checks(checks_json: &str) -> Result<String, JsError> {

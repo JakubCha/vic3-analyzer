@@ -147,6 +147,43 @@ pub async fn use_save(
     result
 }
 
+/// Newest in-game line from the Oikonomia Advisor mod (`logs/debug.log`), if any.
+///
+/// Returns `None` while a save is loading (the session lock is busy) so polling
+/// never waits behind `use_save`.
+#[tauri::command(async)]
+pub fn live_status(state: State<'_, AppState>) -> Option<vic3_api::live::LiveStatus> {
+    let dirs = state.inner.try_lock().ok()?.save_dirs().to_vec();
+    let latest = vic3_api::live::latest(&dirs)?;
+    // Keep the line: the game rotates its logs away after a few sessions.
+    if let Some(store) = live_store() {
+        let _ = vic3_api::live::merge_history(&store, std::slice::from_ref(&latest));
+    }
+    Some(latest)
+}
+
+/// Budget history kept across game sessions (`<app data>/live_history.jsonl`).
+fn live_store() -> Option<std::path::PathBuf> {
+    vic3_catalog::app_data_dir().ok().map(|dir| dir.join("live_history.jsonl"))
+}
+
+/// Charts over time for the loaded save: budget from the mod's log lines (all
+/// sessions seen so far) and the histories stored in the save.
+///
+/// # Errors
+///
+/// No loaded analysis.
+#[tauri::command(async)]
+pub fn loaded_history(state: State<'_, AppState>) -> Result<String, String> {
+    let dirs = state.inner.lock().map_err(|_| "state lock poisoned")?.save_dirs().to_vec();
+    let lines = vic3_api::live::read_all_logs(&dirs);
+    let lines = match live_store() {
+        Some(store) => vic3_api::live::merge_history(&store, &lines).unwrap_or(lines),
+        None => lines,
+    };
+    vic3_api::loaded_history_json(&lines).map_err(|e| e.to_string())
+}
+
 /// Event emitted to every window after `use_save` binds a new analysis.
 pub const ANALYSIS_LOADED_EVENT: &str = "analysis-loaded";
 

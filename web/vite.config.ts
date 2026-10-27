@@ -39,7 +39,8 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     test: {
-      fileParallelism: false,
+      // Files run in parallel: each jsdom setup costs seconds, and all suites
+      // reset their own state (localStorage, fake IndexedDB) per test.
       projects: [
         {
           extends: true,

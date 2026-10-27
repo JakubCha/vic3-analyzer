@@ -41,7 +41,7 @@ const FLOW_MARKDOWN: &str = r#"# Vic3 Analyzer MCP flow
 1. Discover saves: tool `query` on `saves`, or read resource `vic3://saves`.
 2. Bind session: tool `use_save` with `{ "name": "autosave" }` or `{ "selector": "latest_autosave" }`.
 3. Prefer tool `campaign_brief` for a compact session overview, then query / `preview_delta` as needed (`alerts()` is player-scoped; use `alerts('all')` for the full save).
-4. Money, debt or bankruptcy: tool `budget` first. For "what should I do next": tool `advice` (optionally `{ "domain": "economy" | "laws" | "war" }`). After the player acts and a newer save is bound, pass the items' `check` objects to `check_advice` to see which are done.
+4. Money, debt or bankruptcy: tool `live_status` for the current in-game numbers (if the mod runs), `budget` for the breakdown. For "what should I do next": tool `advice` (optionally `{ "domain": "economy" | "laws" | "war" }`). After the player acts and a newer save is bound, pass the items' `check` objects to `check_advice` to see which are done.
 
 Rules:
 - Answer about this campaign from these tools, not from memory: Victoria 3 mechanics changed across patches. Explain with the items' `why` text.
@@ -136,6 +136,14 @@ pub struct UseSaveArgs {
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RefreshCatalogArgs {
     // No fields — schemars still emits an object schema.
+}
+
+/// Args for tool `history`.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct HistoryArgs {
+    /// Points per line (default 24).
+    #[serde(default)]
+    pub points: Option<usize>,
 }
 
 /// Args for tool `campaign_brief`: empty object so clients can send `{}`.
@@ -303,6 +311,32 @@ impl Vic3McpServer {
         }
     }
 
+    /// Trends over time for the played country.
+    #[tool(
+        description = "After use_save: trends over time as numbers, {charts:[{key, title, unit (money|count|share|plain), lines:[{label, points:[[year, value]]}]}]}. From the save: GDP, standard of living, literacy, prestige, population by strata, radicals and loyalists since 1836; from the Oikonomia Advisor mod's weekly log: income, balance, treasury, debt and military share. Optional `points` per line (default 24, max 200). Use it to judge whether a decision worked."
+    )]
+    async fn history(
+        &self,
+        Parameters(args): Parameters<HistoryArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        let points = args.points.unwrap_or(24).clamp(3, 200);
+        match self.runtime.history(points).await {
+            Ok(body) => Ok(tool_ok_json(&body)),
+            Err(e) => Ok(sql_to_tool_result(e)),
+        }
+    }
+
+    /// Live in-game budget line written by the Oikonomia Advisor mod.
+    #[tool(
+        description = "Live values from the running game, newer than any save: {country, date (in-game, localized), logged_at (wall clock), weekly_balance, weekly_income, treasury, debt_share (debt / credit limit), military_share (of spending), weeks_to_debt, gdp}. Written weekly by the Oikonomia Advisor mod to the game log; null when the mod has not logged yet. No use_save needed. Prefer it over `budget` for the current numbers; use `budget`/`advice` for the breakdown and advice."
+    )]
+    async fn live_status(
+        &self,
+        Parameters(_args): Parameters<CampaignBriefArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_ok_json(&json!(self.runtime.live_status())))
+    }
+
     /// Budget guard for the played country.
     #[tool(
         description = "After use_save: the played country's budget straight from the save: risk (safe | deficit | danger | critical), treasury, weekly_balance/income/expenses, debt, credit_limit, weeks_to_debt, weeks_to_default, and expenses/incomes per category with their largest buildings. Call it first when the player asks about money, debt or bankruptcy; null when the save has no budget."
@@ -462,7 +496,7 @@ impl ServerHandler for Vic3McpServer {
                 .build(),
         )
         .with_instructions(
-            "Vic3 Analyzer MCP: discover saves → use_save → campaign_brief / budget / advice / query / preview_delta; check_advice confirms done suggestions on a newer save. \
+            "Vic3 Analyzer MCP: discover saves → use_save → live_status / campaign_brief / budget / advice / query / preview_delta; check_advice confirms done suggestions on a newer save. \
              Stubs only (no paths). Answer about the campaign from these tools, not from memory: Victoria 3 mechanics changed across patches; explain with each advice item's `why`. Resources: vic3://schema|saves|session|docs/*."
                 .to_string(),
         )

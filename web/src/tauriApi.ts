@@ -50,6 +50,7 @@ export function createTauriApi(): WasmApi {
     loaded_plan: async (planOptsJson) => await invokeTauri<string>('loaded_plan', { planOptsJson }),
     loaded_alerts: async () => await invokeTauri<string>('loaded_alerts'),
     loaded_advice: async () => await invokeTauri<string>('loaded_advice'),
+    loaded_history: async () => await invokeTauri<string>('loaded_history'),
     loaded_checks: async (checksJson) => await invokeTauri<string>('loaded_checks', { checks: checksJson }),
     // shortcut: no desktop PM recipes yet (empty list), add a Tauri command when Buildings needs them.
     loaded_production_methods: async () => "[]",

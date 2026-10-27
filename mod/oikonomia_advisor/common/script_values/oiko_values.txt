@@ -110,3 +110,16 @@ oiko_has_pan_nationalism = {
 		value = 1
 	}
 }
+
+# --- Live link (scripted_effects/oiko_effects.txt) ---
+
+oiko_income = { value = fixed_income }
+oiko_gdp = { value = gdp }
+oiko_debt_permille = {
+	value = scaled_debt
+	multiply = 1000
+}
+oiko_military_permille = {
+	value = military_expenses_share
+	multiply = 1000
+}

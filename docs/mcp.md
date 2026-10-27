@@ -179,7 +179,17 @@ After binding a newer save, reports which earlier suggestions were carried out.
 
 - **Output:** `{ done: [bool] }` in the same order.
 
-### 9. `budget`
+### 9. `live_status`
+The newest in-game line written weekly by the Oikonomia Advisor mod to `logs/debug.log` beside the save folders, newer than any save. Takes `{}`; needs no bound save.
+
+- **Output:** `country`, `date` (in-game, localized), `logged_at` (wall clock), `weekly_balance`, `weekly_income`, `treasury`, `debt_share`, `military_share`, `weeks_to_debt`, `gdp`; `null` when the mod has not logged yet.
+
+### 10. `history`
+Trends over time for the played country as numbers. Optional `{ "points": 24 }` per line (3–200).
+
+- **Output:** `{ charts: [{ key, title, unit, lines: [{ label, points: [[year, value]] }] }] }`: GDP, standard of living, literacy, prestige, population by strata, radicals and loyalists from the save; weekly income, balance, treasury, debt and military share from the mod's log (kept across game sessions in `<app data>/live_history.jsonl`).
+
+### 11. `budget`
 The played country's budget straight from the save, no market solve. Takes `{}`.
 
 - **Output:** `risk` (`safe` | `deficit` | `danger` | `critical`), `treasury`, `weekly_balance` / `weekly_income` / `weekly_expenses`, `debt`, `credit_limit`, `weeks_to_debt`, `weeks_to_default`, and `expenses` / `incomes` per budget category with their largest buildings. `null` when the save has no budget.

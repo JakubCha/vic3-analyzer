@@ -14,8 +14,10 @@ workspace = true
 arc-swap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+jomini.workspace = true
 thiserror.workspace = true
 toml = "1.1"
+plotters = { version = "0.3", default-features = false, features = ["svg_backend", "line_series", "area_series"] }
 vic3-defs = { path = "../vic3-defs" }
 vic3-load = { path = "../vic3-load" }
 vic3-planning = { path = "../vic3-planning" }
@@ -24,3 +26,4 @@ vic3save.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
+jomini.workspace = true

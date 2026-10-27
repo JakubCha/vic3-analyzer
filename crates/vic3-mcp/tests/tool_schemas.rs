@@ -72,6 +72,8 @@ async fn tool_schemas_match_mcp_contract() {
             "advice",
             "check_advice",
             "budget",
+            "live_status",
+            "history",
         ])
     );
 

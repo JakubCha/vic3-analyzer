@@ -1,0 +1,6 @@
+﻿# Oikonomia Advisor: one line per call in logs/debug.log, read live by the analyzer
+# (vic3-api `live`). Integers only so the game's number formatting cannot break parsing.
+# OIKO1;tag;date;balance;income;treasury;debt per mille of credit;military per mille of spending;weeks to debt;gdp
+oiko_log_status = {
+	debug_log = "OIKO1;[GetPlayer.GetTagName];[TimeKeeper.GetCurrentDate.GetString];[GetPlayer.MakeScope.ScriptValue('oiko_balance')|0];[GetPlayer.MakeScope.ScriptValue('oiko_income')|0];[GetPlayer.MakeScope.ScriptValue('oiko_treasury')|0];[GetPlayer.MakeScope.ScriptValue('oiko_debt_permille')|0];[GetPlayer.MakeScope.ScriptValue('oiko_military_permille')|0];[GetPlayer.MakeScope.ScriptValue('oiko_weeks_to_debt')|0];[GetPlayer.MakeScope.ScriptValue('oiko_gdp')|0]"
+}

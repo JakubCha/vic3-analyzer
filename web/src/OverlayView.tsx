@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { adviceInTab, BudgetBanner, loadGoals } from './AdvisorPane'
-import type { AdviceResult } from './types'
+import { adviceInTab, BudgetBanner, loadGoals, money } from './AdvisorPane'
+import type { AdviceResult, LiveStatus } from './types'
 import type { WasmApi } from './wasm'
 
 /** Event the desktop app emits after a save is loaded (`ANALYSIS_LOADED_EVENT`). */
 export const ANALYSIS_LOADED = 'analysis-loaded'
+/** How often the overlay rereads the mod's live line from the game log. */
+export const LIVE_POLL_MS = 5000
 
 type Listen = (event: string, handler: () => void) => Promise<() => void>
 
@@ -12,12 +14,43 @@ interface Props {
   api: WasmApi
   /** Tauri's `event.listen`; absent outside the desktop app. */
   listen?: Listen
+  /** Reads the mod's newest in-game line (`live_status`); absent outside the desktop app. */
+  live?: () => Promise<LiveStatus | null>
 }
 
-/** Compact always-on-top window: budget bar and the Now list, refreshed per loaded save. */
-export function OverlayView({ api, listen }: Props) {
+/** In-game numbers from the mod, newer than any save. */
+function LiveBar({ live: s }: { live: LiveStatus }) {
+  return (
+    <p className="advisor-live" aria-label="Live">
+      <strong>In game {s.date}</strong> · balance {money(s.weekly_balance)}/week · treasury {money(s.treasury)}
+      {s.weekly_balance < 0 && s.debt_share === 0 && <> · lasts ~{s.weeks_to_debt} weeks</>}
+      {s.debt_share > 0 && <> · debt {Math.round(s.debt_share * 100)}% of credit</>} · military{' '}
+      {Math.round(s.military_share * 100)}% of spending
+    </p>
+  )
+}
+
+/** Compact always-on-top window: live line, budget bar and the Now list, refreshed per loaded save. */
+export function OverlayView({ api, listen, live }: Props) {
   const [result, setResult] = useState<AdviceResult>()
   const [error, setError] = useState<string>()
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>()
+
+  useEffect(() => {
+    if (!live) return
+    let cancelled = false
+    const poll = async () => {
+      // Keep the last line when the log is busy or unreadable.
+      const next = await live().catch(() => null)
+      if (!cancelled && next) setLiveStatus(next)
+    }
+    void poll()
+    const timer = setInterval(() => void poll(), LIVE_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [live])
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +77,7 @@ export function OverlayView({ api, listen }: Props) {
   const items = adviceInTab(result?.advice ?? [], 'now', loadGoals())
   return (
     <div className="advisor overlay">
+      {liveStatus && <LiveBar live={liveStatus} />}
       {error && <p role="alert">Load a save in the main window first. ({error})</p>}
       {result?.budget && <BudgetBanner budget={result.budget} />}
       <ol className="advisor-list" aria-label="Now">

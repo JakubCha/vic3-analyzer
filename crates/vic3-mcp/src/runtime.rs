@@ -244,6 +244,28 @@ impl McpRuntime {
         Ok(result)
     }
 
+    /// Newest in-game line from the Oikonomia Advisor mod, read from the game log
+    /// beside the configured save folders. Needs no bound save.
+    pub fn live_status(&self) -> Option<vic3_api::live::LiveStatus> {
+        vic3_api::live::latest(&self.config.save_dirs)
+    }
+
+    /// Charts over time as numbers (`points` per line): budget from the mod's
+    /// log lines (kept in `<app data>/live_history.jsonl`) and the save's own histories.
+    ///
+    /// # Errors
+    ///
+    /// [`SqlError::Unbound`] when no save is bound.
+    pub async fn history(&self, points: usize) -> Result<Value, SqlError> {
+        let binding = self.engine.lock().await.active_binding().ok_or(SqlError::Unbound)?;
+        let lines = vic3_api::live::read_all_logs(&self.config.save_dirs);
+        let lines = match vic3_catalog::app_data_dir() {
+            Ok(dir) => vic3_api::live::merge_history(&dir.join("live_history.jsonl"), &lines).unwrap_or(lines),
+            Err(_) => lines,
+        };
+        Ok(vic3_api::history::summarize(&vic3_api::world_charts(&binding.world, &lines), points))
+    }
+
     /// Budget guard for the played country (`None` without a player or budget).
     ///
     /// # Errors

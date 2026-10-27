@@ -49,6 +49,7 @@ export interface WasmApi {
   loaded_alerts(): string | Promise<string>
   loaded_advice(): string | Promise<string>
   loaded_checks(checksJson: string): string | Promise<string>
+  loaded_history(): string | Promise<string>
   loaded_production_methods(): string | Promise<string>
   prices(
     save: Uint8Array,

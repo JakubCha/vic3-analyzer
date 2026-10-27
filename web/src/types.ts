@@ -597,3 +597,26 @@ export interface CurrentPointer {
   timeline_id: string
   step_id: string
 }
+
+/** Live in-game line from the Oikonomia Advisor mod (`vic3_api::live::LiveStatus`). */
+export interface LiveStatus {
+  country: string
+  date: string
+  logged_at: string
+  weekly_balance: number
+  weekly_income: number
+  treasury: number
+  debt_share: number
+  military_share: number
+  weeks_to_debt: number
+  gdp: number
+}
+
+/** One chart over time, drawn as SVG by `vic3_api::history`. */
+export interface RenderedChart {
+  key: string
+  title: string
+  unit: 'money' | 'count' | 'share' | 'plain'
+  svg: string
+  lines: { label: string; first?: number | null; last?: number | null }[]
+}

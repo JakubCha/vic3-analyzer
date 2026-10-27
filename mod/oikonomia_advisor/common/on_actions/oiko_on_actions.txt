@@ -15,6 +15,12 @@ oiko_monthly_country = {
 		oiko.1
 	}
 	effect = {
+		# Dashboard: logs the live line weekly; log one now so the analyzer has data at once.
+		if = {
+			limit = { NOT = { has_journal_entry = je_oiko_dashboard } }
+			add_journal_entry = { type = je_oiko_dashboard }
+		}
+		oiko_log_status = yes
 		# Budget guard: back with every deficit, gone (invalid) once the balance is positive.
 		if = {
 			limit = {

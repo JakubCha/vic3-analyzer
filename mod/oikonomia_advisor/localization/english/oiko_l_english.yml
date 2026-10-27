@@ -25,3 +25,7 @@
  oiko.1.d:0 "The state borrows to pay its running costs and debt is approaching the credit limit.\n\n$oiko_numbers$\n\n#bold Do it now:#! raise taxes one level, lower military and government wages one level, pause the most expensive construction and start no war. Details and levers: the #bold Budget Guard#! journal entry."
  oiko.1.f:0 "Past the credit limit comes default: construction stops, and penalties to production, offense and defense grow every week up to -50%."
  oiko.1.a:0 "I'll fix the budget"
+
+ je_oiko_dashboard:0 "Oikonomia: Budget Dashboard"
+ je_oiko_dashboard_reason:0 "Live budget numbers. Every week this entry also writes them to the game log, where the Oikonomia Analyzer (overlay and Muse) reads them live, without waiting for an autosave."
+ je_oiko_dashboard_status:0 "$oiko_numbers$"

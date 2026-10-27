@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { OverlayView } from './OverlayView.tsx'
-import { createTauriApi } from './tauriApi.ts'
+import { createTauriApi, invokeTauri } from './tauriApi.ts'
+import type { LiveStatus } from './types.ts'
 
 // Guest WDIO harness for Tauri e2e / docs screenshots (`vite build --mode desktop`).
 // Sets window.__wdio_original_core__ / window.wdioTauri for @wdio/tauri-service.
@@ -17,7 +18,11 @@ const overlay = new URLSearchParams(window.location.search).has('overlay')
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {overlay ? (
-      <OverlayView api={createTauriApi()} listen={(window as any).__TAURI__?.event?.listen} />
+      <OverlayView
+        api={createTauriApi()}
+        listen={(window as any).__TAURI__?.event?.listen}
+        live={() => invokeTauri<LiveStatus | null>('live_status')}
+      />
     ) : (
       <App />
     )}
