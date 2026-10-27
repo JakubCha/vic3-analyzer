@@ -14,7 +14,6 @@ oiko_playbook_monthly = {
 				scaled_debt >= 0.5
 				scaled_debt < 0.85
 				NOT = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy }
-				NOT = { has_variable = je_oiko_pb_gen_debt_unhealthy_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_debt_unhealthy }
 		}
@@ -29,9 +28,9 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				scaled_debt <= 0
 				net_fixed_income < 0
-				oiko_weeks_to_debt < 26
+				scaled_debt >= 0.35
+				scaled_debt < 0.85
 				NOT = { has_journal_entry = je_oiko_pb_gen_tax_bridge }
 				NOT = { has_variable = je_oiko_pb_gen_tax_bridge_done }
 			}
@@ -42,7 +41,6 @@ oiko_playbook_monthly = {
 				oiko_pb_balance_share >= 0.15
 				scaled_debt <= 0
 				NOT = { has_journal_entry = je_oiko_pb_gen_lower_taxes_when_rich }
-				NOT = { has_variable = je_oiko_pb_gen_lower_taxes_when_rich_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_lower_taxes_when_rich }
 		}
@@ -51,7 +49,6 @@ oiko_playbook_monthly = {
 				net_fixed_income < 0
 				military_expenses_share >= 0.45
 				NOT = { has_journal_entry = je_oiko_pb_gen_army_share }
-				NOT = { has_variable = je_oiko_pb_gen_army_share_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_army_share }
 		}
@@ -60,7 +57,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = gunsmithing
 				market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_small_arms }
-				NOT = { has_variable = je_oiko_pb_gen_small_arms_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_small_arms }
 		}
@@ -69,7 +65,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = percussion_cap
 				market_capital.market = { mg:ammunition = { market_goods_pricier >= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_ammunition }
-				NOT = { has_variable = je_oiko_pb_gen_ammunition_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_ammunition }
 		}
@@ -77,7 +72,6 @@ oiko_playbook_monthly = {
 			limit = {
 				market_capital.market = { mg:grain = { market_goods_pricier >= 0.15 } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_grain }
-				NOT = { has_variable = je_oiko_pb_gen_grain_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_grain }
 		}
@@ -86,7 +80,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_construction_sector >= 1
 				OR = { market_capital.market = { mg:fabric = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:tools = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:wood = { market_goods_pricier >= 0.15 } } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_construction_inputs }
-				NOT = { has_variable = je_oiko_pb_gen_construction_inputs_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_construction_inputs }
 		}
@@ -96,7 +89,6 @@ oiko_playbook_monthly = {
 				market_capital.market = { mg:iron = { market_goods_pricier <= 0 } }
 				market_capital.market = { mg:tools = { market_goods_pricier <= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_iron_frame }
-				NOT = { has_variable = je_oiko_pb_gen_iron_frame_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_iron_frame }
 		}
@@ -107,7 +99,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_iron_mine >= 1
 				market_capital.market = { mg:steel = { market_goods_pricier >= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_steel }
-				NOT = { has_variable = je_oiko_pb_gen_steel_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_steel }
 		}
@@ -116,7 +107,6 @@ oiko_playbook_monthly = {
 				oiko_pb_balance_share >= 0.05
 				scaled_debt < 0.25
 				NOT = { has_journal_entry = je_oiko_pb_gen_sector_pacing }
-				NOT = { has_variable = je_oiko_pb_gen_sector_pacing_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_sector_pacing }
 		}
@@ -135,7 +125,6 @@ oiko_playbook_monthly = {
 				ig:ig_industrialists ?= { is_in_government = no }
 				ig:ig_industrialists ?= { ig_clout >= 0.15 }
 				NOT = { has_journal_entry = je_oiko_pb_gen_industrialists_in }
-				NOT = { has_variable = je_oiko_pb_gen_industrialists_in_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_industrialists_in }
 		}
@@ -153,7 +142,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_autocracy
 				has_technology_researched = democracy
 				NOT = { has_journal_entry = je_oiko_pb_gen_voting }
-				NOT = { has_variable = je_oiko_pb_gen_voting_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_voting }
 		}
@@ -193,7 +181,6 @@ oiko_playbook_monthly = {
 				OR = { c:PRU ?= root }
 				game_date < 1839.1.1
 				NOT = { has_journal_entry = je_oiko_pb_pru_opening_plan }
-				NOT = { has_variable = je_oiko_pb_pru_opening_plan_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_pru_opening_plan }
 		}
@@ -204,7 +191,6 @@ oiko_playbook_monthly = {
 				game_date < 1856.1.1
 				oiko_lvl_building_steel_mill < 5
 				NOT = { has_journal_entry = je_oiko_pb_pru_industry_chain }
-				NOT = { has_variable = je_oiko_pb_pru_industry_chain_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_pru_industry_chain }
 		}
@@ -223,7 +209,6 @@ oiko_playbook_monthly = {
 				game_date >= 1838.1.1
 				NOT = { has_technology_researched = nationalism }
 				NOT = { has_journal_entry = je_oiko_pb_pru_nationalism }
-				NOT = { has_variable = je_oiko_pb_pru_nationalism_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_pru_nationalism }
 		}
@@ -234,7 +219,6 @@ oiko_playbook_monthly = {
 				game_date < 1866.1.1
 				has_technology_researched = nationalism
 				NOT = { has_journal_entry = je_oiko_pb_pru_schleswig_holstein }
-				NOT = { has_variable = je_oiko_pb_pru_schleswig_holstein_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_pru_schleswig_holstein }
 		}
@@ -245,7 +229,6 @@ oiko_playbook_monthly = {
 				net_fixed_income >= 0
 				scaled_debt < 0.3
 				NOT = { has_journal_entry = je_oiko_pb_pru_leadership_war }
-				NOT = { has_variable = je_oiko_pb_pru_leadership_war_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_pru_leadership_war }
 		}
@@ -256,7 +239,6 @@ oiko_playbook_monthly = {
 				game_date < 1872.1.1
 				scaled_debt >= 0.3
 				NOT = { has_journal_entry = je_oiko_pb_pru_war_chest }
-				NOT = { has_variable = je_oiko_pb_pru_war_chest_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_pru_war_chest }
 		}
@@ -267,7 +249,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = nationalism
 				NOT = { has_technology_researched = pan-nationalism }
 				NOT = { has_journal_entry = je_oiko_pb_ngf_pan_nationalism }
-				NOT = { has_variable = je_oiko_pb_ngf_pan_nationalism_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_ngf_pan_nationalism }
 		}
@@ -278,7 +259,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_naval_administration >= 100
 				net_fixed_income < 0
 				NOT = { has_journal_entry = je_oiko_pb_gbr_no_new_navy }
-				NOT = { has_variable = je_oiko_pb_gbr_no_new_navy_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_no_new_navy }
 		}
@@ -289,7 +269,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_construction_sector < 20
 				net_fixed_income >= 0
 				NOT = { has_journal_entry = je_oiko_pb_gbr_construction }
-				NOT = { has_variable = je_oiko_pb_gbr_construction_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_construction }
 		}
@@ -310,7 +289,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_protectionism
 				market_capital.market = { mg:grain = { market_goods_pricier >= 0.25 } }
 				NOT = { has_journal_entry = je_oiko_pb_gbr_grain_warning }
-				NOT = { has_variable = je_oiko_pb_gbr_grain_warning_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_grain_warning }
 		}
@@ -320,7 +298,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_textile_mill >= 40
 				market_capital.market = { mg:fabric = { market_goods_pricier <= -0.2 } }
 				NOT = { has_journal_entry = je_oiko_pb_gbr_fabric_glut }
-				NOT = { has_variable = je_oiko_pb_gbr_fabric_glut_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_fabric_glut }
 		}
@@ -342,7 +319,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = labor_movement
 				ig:ig_trade_unions ?= { ig_clout >= 0.12 }
 				NOT = { has_journal_entry = je_oiko_pb_gbr_labour_laws }
-				NOT = { has_variable = je_oiko_pb_gbr_labour_laws_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_labour_laws }
 		}
@@ -353,7 +329,6 @@ oiko_playbook_monthly = {
 				game_date < 1887.1.1
 				net_fixed_income >= 0
 				NOT = { has_journal_entry = je_oiko_pb_gbr_brazil_slave_trade }
-				NOT = { has_variable = je_oiko_pb_gbr_brazil_slave_trade_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_brazil_slave_trade }
 		}
@@ -364,7 +339,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = civilizing_mission
 				net_fixed_income >= 0
 				NOT = { has_journal_entry = je_oiko_pb_gbr_raj }
-				NOT = { has_variable = je_oiko_pb_gbr_raj_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_raj }
 		}
@@ -375,7 +349,6 @@ oiko_playbook_monthly = {
 				NOT = { has_technology_researched = ironclad_tech }
 				oiko_lvl_building_shipyard < 25
 				NOT = { has_journal_entry = je_oiko_pb_gbr_ironclads }
-				NOT = { has_variable = je_oiko_pb_gbr_ironclads_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_ironclads }
 		}
@@ -385,7 +358,6 @@ oiko_playbook_monthly = {
 				game_date < 1881.1.1
 				has_technology_researched = nationalism
 				NOT = { has_journal_entry = je_oiko_pb_gbr_dominions }
-				NOT = { has_variable = je_oiko_pb_gbr_dominions_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_gbr_dominions }
 		}
@@ -396,7 +368,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_construction_sector < 10
 				net_fixed_income >= 0
 				NOT = { has_journal_entry = je_oiko_pb_usa_construction_sectors }
-				NOT = { has_variable = je_oiko_pb_usa_construction_sectors_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_construction_sectors }
 		}
@@ -407,7 +378,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_per_capita_based_taxation
 				net_fixed_income < 0
 				NOT = { has_journal_entry = je_oiko_pb_usa_luxury_taxes }
-				NOT = { has_variable = je_oiko_pb_usa_luxury_taxes_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_luxury_taxes }
 		}
@@ -416,7 +386,6 @@ oiko_playbook_monthly = {
 				OR = { c:USA ?= root }
 				has_law_or_variant = law_type:law_legacy_slavery
 				NOT = { has_journal_entry = je_oiko_pb_usa_build_north }
-				NOT = { has_variable = je_oiko_pb_usa_build_north_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_build_north }
 		}
@@ -438,7 +407,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_legacy_slavery
 				ig:ig_landowners ?= { ig_clout >= 0.15 }
 				NOT = { has_journal_entry = je_oiko_pb_usa_not_yet_abolition }
-				NOT = { has_variable = je_oiko_pb_usa_not_yet_abolition_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_not_yet_abolition }
 		}
@@ -463,7 +431,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_legacy_slavery
 				oiko_lvl_building_arms_industry < 8
 				NOT = { has_journal_entry = je_oiko_pb_usa_war_industry }
-				NOT = { has_variable = je_oiko_pb_usa_war_industry_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_war_industry }
 		}
@@ -473,7 +440,6 @@ oiko_playbook_monthly = {
 				game_date < 1851.1.1
 				has_technology_researched = nationalism
 				NOT = { has_journal_entry = je_oiko_pb_usa_manifest_destiny }
-				NOT = { has_variable = je_oiko_pb_usa_manifest_destiny_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_manifest_destiny }
 		}
@@ -482,7 +448,6 @@ oiko_playbook_monthly = {
 				OR = { c:USA ?= root }
 				game_date < 1846.1.1
 				NOT = { has_journal_entry = je_oiko_pb_usa_texas }
-				NOT = { has_variable = je_oiko_pb_usa_texas_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_texas }
 		}
@@ -492,7 +457,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_frontier_colonization
 				NOT = { has_technology_researched = quinine }
 				NOT = { has_journal_entry = je_oiko_pb_usa_quinine }
-				NOT = { has_variable = je_oiko_pb_usa_quinine_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_quinine }
 		}
@@ -524,7 +488,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_slavery_banned
 				scaled_debt >= 0.5
 				NOT = { has_journal_entry = je_oiko_pb_usa_debt_during_debate }
-				NOT = { has_variable = je_oiko_pb_usa_debt_during_debate_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_debt_during_debate }
 		}
@@ -534,7 +497,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_slavery_banned
 				ig:ig_landowners ?= { is_in_government = yes }
 				NOT = { has_journal_entry = je_oiko_pb_usa_planters_out }
-				NOT = { has_variable = je_oiko_pb_usa_planters_out_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_usa_planters_out }
 		}
@@ -545,7 +507,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_construction_sector < 3
 				net_fixed_income >= 0
 				NOT = { has_journal_entry = je_oiko_pb_sar_construction }
-				NOT = { has_variable = je_oiko_pb_sar_construction_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_construction }
 		}
@@ -555,7 +516,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = atmospheric_engine
 				oiko_lvl_building_coal_mine < 1
 				NOT = { has_journal_entry = je_oiko_pb_sar_coal }
-				NOT = { has_variable = je_oiko_pb_sar_coal_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_coal }
 		}
@@ -566,7 +526,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = atmospheric_engine
 				NOT = { has_technology_researched = railways }
 				NOT = { has_journal_entry = je_oiko_pb_sar_railways_research }
-				NOT = { has_variable = je_oiko_pb_sar_railways_research_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_railways_research }
 		}
@@ -576,7 +535,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_sulfur_mine < 1
 				market_capital.market = { mg:sulfur = { market_goods_pricier >= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_sar_sulfur }
-				NOT = { has_variable = je_oiko_pb_sar_sulfur_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_sulfur }
 		}
@@ -586,7 +544,6 @@ oiko_playbook_monthly = {
 				game_date < 1841.1.1
 				net_fixed_income < 0
 				NOT = { has_journal_entry = je_oiko_pb_sar_subventions }
-				NOT = { has_variable = je_oiko_pb_sar_subventions_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_subventions }
 		}
@@ -596,7 +553,6 @@ oiko_playbook_monthly = {
 				game_date < 1851.1.1
 				military_expenses_share >= 0.3
 				NOT = { has_journal_entry = je_oiko_pb_sar_no_early_wars }
-				NOT = { has_variable = je_oiko_pb_sar_no_early_wars_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_no_early_wars }
 		}
@@ -606,7 +562,6 @@ oiko_playbook_monthly = {
 				game_date >= 1837.1.1
 				NOT = { has_technology_researched = nationalism }
 				NOT = { has_journal_entry = je_oiko_pb_sar_nationalism }
-				NOT = { has_variable = je_oiko_pb_sar_nationalism_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_nationalism }
 		}
@@ -618,7 +573,6 @@ oiko_playbook_monthly = {
 				ig:ig_devout ?= { is_in_government = yes }
 				ig:ig_landowners ?= { is_in_government = yes }
 				NOT = { has_journal_entry = je_oiko_pb_sar_risorgimento }
-				NOT = { has_variable = je_oiko_pb_sar_risorgimento_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_risorgimento }
 		}
@@ -627,7 +581,6 @@ oiko_playbook_monthly = {
 				OR = { c:SAR ?= root }
 				has_technology_researched = nationalism
 				NOT = { has_journal_entry = je_oiko_pb_sar_two_sicilies }
-				NOT = { has_variable = je_oiko_pb_sar_two_sicilies_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_two_sicilies }
 		}
@@ -638,7 +591,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = nationalism
 				scaled_debt >= 0.3
 				NOT = { has_journal_entry = je_oiko_pb_sar_war_chest }
-				NOT = { has_variable = je_oiko_pb_sar_war_chest_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_war_chest }
 		}
@@ -648,7 +600,6 @@ oiko_playbook_monthly = {
 				game_date >= 1850.1.1
 				has_technology_researched = nationalism
 				NOT = { has_journal_entry = je_oiko_pb_sar_turin }
-				NOT = { has_variable = je_oiko_pb_sar_turin_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_sar_turin }
 		}
@@ -657,7 +608,6 @@ oiko_playbook_monthly = {
 				OR = { c:ITA ?= root }
 				net_fixed_income < 0
 				NOT = { has_journal_entry = je_oiko_pb_ita_integrate }
-				NOT = { has_variable = je_oiko_pb_ita_integrate_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_ita_integrate }
 		}
@@ -668,7 +618,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_iron_mine < 15
 				market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } }
 				NOT = { has_journal_entry = je_oiko_pb_fra_iron }
-				NOT = { has_variable = je_oiko_pb_fra_iron_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_iron }
 		}
@@ -679,7 +628,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_motor_industry < 1
 				market_capital.market = { mg:engines = { market_goods_pricier >= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_fra_engines }
-				NOT = { has_variable = je_oiko_pb_fra_engines_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_engines }
 		}
@@ -690,7 +638,6 @@ oiko_playbook_monthly = {
 				net_fixed_income >= 0
 				oiko_pb_balance_share < 0.1
 				NOT = { has_journal_entry = je_oiko_pb_fra_haiti_margin }
-				NOT = { has_variable = je_oiko_pb_fra_haiti_margin_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_haiti_margin }
 		}
@@ -713,7 +660,6 @@ oiko_playbook_monthly = {
 				has_law_or_variant = law_type:law_monarchy
 				ig:ig_industrialists ?= { is_in_government = no }
 				NOT = { has_journal_entry = je_oiko_pb_fra_orleanists }
-				NOT = { has_variable = je_oiko_pb_fra_orleanists_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_orleanists }
 		}
@@ -723,7 +669,6 @@ oiko_playbook_monthly = {
 				game_date < 1851.1.1
 				net_fixed_income >= 0
 				NOT = { has_journal_entry = je_oiko_pb_fra_algeria }
-				NOT = { has_variable = je_oiko_pb_fra_algeria_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_algeria }
 		}
@@ -735,7 +680,6 @@ oiko_playbook_monthly = {
 				market_capital.market = { mg:coal = { market_goods_pricier <= 0.1 } }
 				market_capital.market = { mg:iron = { market_goods_pricier <= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_fra_schneider }
-				NOT = { has_variable = je_oiko_pb_fra_schneider_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_schneider }
 		}
@@ -745,7 +689,6 @@ oiko_playbook_monthly = {
 				oiko_lvl_building_vineyard >= 60
 				market_capital.market = { mg:wine = { market_goods_pricier <= -0.15 } }
 				NOT = { has_journal_entry = je_oiko_pb_fra_vineyards }
-				NOT = { has_variable = je_oiko_pb_fra_vineyards_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_vineyards }
 		}
@@ -756,7 +699,6 @@ oiko_playbook_monthly = {
 				game_date < 1861.1.1
 				OR = { market_capital.market = { mg:artillery = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.1 } } }
 				NOT = { has_journal_entry = je_oiko_pb_fra_egypt_treaty }
-				NOT = { has_variable = je_oiko_pb_fra_egypt_treaty_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_egypt_treaty }
 		}
@@ -766,7 +708,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = nationalism
 				net_fixed_income < 0
 				NOT = { has_journal_entry = je_oiko_pb_fra_natural_borders }
-				NOT = { has_variable = je_oiko_pb_fra_natural_borders_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_fra_natural_borders }
 		}
@@ -797,7 +738,6 @@ oiko_playbook_monthly = {
 				game_date < 1851.1.1
 				oiko_lvl_building_government_administration < 60
 				NOT = { has_journal_entry = je_oiko_pb_aus_tax_capacity }
-				NOT = { has_variable = je_oiko_pb_aus_tax_capacity_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_tax_capacity }
 		}
@@ -809,7 +749,6 @@ oiko_playbook_monthly = {
 				net_fixed_income >= 0
 				scaled_debt <= 0
 				NOT = { has_journal_entry = je_oiko_pb_aus_construction }
-				NOT = { has_variable = je_oiko_pb_aus_construction_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_construction }
 		}
@@ -819,7 +758,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = railways
 				oiko_lvl_building_motor_industry < 1
 				NOT = { has_journal_entry = je_oiko_pb_aus_engines_first }
-				NOT = { has_variable = je_oiko_pb_aus_engines_first_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_engines_first }
 		}
@@ -828,7 +766,6 @@ oiko_playbook_monthly = {
 				OR = { c:AUS ?= root }
 				market_capital.market = { mg:coal = { market_goods_pricier >= 0.15 } }
 				NOT = { has_journal_entry = je_oiko_pb_aus_coal }
-				NOT = { has_variable = je_oiko_pb_aus_coal_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_coal }
 		}
@@ -837,7 +774,6 @@ oiko_playbook_monthly = {
 				OR = { c:AUS ?= root }
 				OR = { market_capital.market = { mg:artillery = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.15 } } }
 				NOT = { has_journal_entry = je_oiko_pb_aus_arms_out_of_lombardy }
-				NOT = { has_variable = je_oiko_pb_aus_arms_out_of_lombardy_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_arms_out_of_lombardy }
 		}
@@ -847,7 +783,6 @@ oiko_playbook_monthly = {
 				game_date < 1851.1.1
 				military_expenses_share >= 0.35
 				NOT = { has_journal_entry = je_oiko_pb_aus_no_army_growth }
-				NOT = { has_variable = je_oiko_pb_aus_no_army_growth_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_no_army_growth }
 		}
@@ -857,7 +792,6 @@ oiko_playbook_monthly = {
 				game_date < 1851.1.1
 				ig:ig_landowners ?= { is_in_government = no }
 				NOT = { has_journal_entry = je_oiko_pb_aus_metternich }
-				NOT = { has_variable = je_oiko_pb_aus_metternich_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_metternich }
 		}
@@ -889,7 +823,6 @@ oiko_playbook_monthly = {
 				game_date < 1849.1.1
 				has_law_or_variant = law_type:law_crownland_diets
 				NOT = { has_journal_entry = je_oiko_pb_aus_hungary_later }
-				NOT = { has_variable = je_oiko_pb_aus_hungary_later_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_hungary_later }
 		}
@@ -900,7 +833,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = philosophical_pragmatism
 				has_technology_researched = nationalism
 				NOT = { has_journal_entry = je_oiko_pb_aus_dual_monarchy_blocks_germany }
-				NOT = { has_variable = je_oiko_pb_aus_dual_monarchy_blocks_germany_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_dual_monarchy_blocks_germany }
 		}
@@ -911,7 +843,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = nationalism
 				NOT = { has_technology_researched = pan-nationalism }
 				NOT = { has_journal_entry = je_oiko_pb_aus_pan_nationalism }
-				NOT = { has_variable = je_oiko_pb_aus_pan_nationalism_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_pan_nationalism }
 		}
@@ -921,7 +852,6 @@ oiko_playbook_monthly = {
 				has_technology_researched = pan-nationalism
 				scaled_debt >= 0.25
 				NOT = { has_journal_entry = je_oiko_pb_aus_no_war_on_credit }
-				NOT = { has_variable = je_oiko_pb_aus_no_war_on_credit_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_no_war_on_credit }
 		}
@@ -930,7 +860,6 @@ oiko_playbook_monthly = {
 				OR = { c:AUS ?= root }
 				market_capital.market = { mg:sulfur = { market_goods_pricier >= 0.15 } }
 				NOT = { has_journal_entry = je_oiko_pb_aus_venetia_sulfur }
-				NOT = { has_variable = je_oiko_pb_aus_venetia_sulfur_done }
 			}
 			add_journal_entry = { type = je_oiko_pb_aus_venetia_sulfur }
 		}

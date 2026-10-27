@@ -40,14 +40,16 @@ domain = "economy"
 priority = 1
 goal = "budget"
 phase = "any"
-title = "Treasury lasts under half a year: raise taxes one level as a bridge"
+title = "Debt is nearing half the credit limit: raise taxes one level as a bridge"
 detail = "Raise the tax level one step in the Budget panel now, and plan to lower it again once spending is cut or new industry pays taxes."
-why = "Under per-capita taxation, going from Medium to High raises the per-capita rate from 0.70 to 0.85 and the land rate from 0.35 to 0.425, about +20% on poll taxes. It costs -10% legitimacy, +50% radicals from movements and squeezes the poorest pops, so it is a bridge, not a policy."
-sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/laws/00_taxation.txt"]
+why = "An empty treasury alone is no reason: the state then borrows cheaply. Once debt approaches half the credit limit, the game's unhealthy line, interest starts to bite and a tax bridge buys time. Under per-capita taxation, going from Medium to High raises the per-capita rate from 0.70 to 0.85 and the land rate from 0.35 to 0.425, about +20% on poll taxes. It costs -10% legitimacy, +50% radicals from movements and squeezes the poorest pops, so it is a bridge, not a policy."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/laws/00_taxation.txt, common/defines (CREDIT_RATIO_HEALTH_THRESHOLD = 0.5)"]
 patch = "1.13"
 done = { type = "weekly_balance", at_least = 0.0 }
 [rule.when]
-runway_weeks_below = 26.0
+balance_below = 0.0
+debt_share_of_limit_at_least = 0.35
+debt_share_of_limit_below = 0.85
 
 [[rule]]
 id = "gen.keep-per-capita"

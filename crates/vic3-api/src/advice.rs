@@ -328,7 +328,12 @@ struct Site {
     revenue: f64,
     outputs: BTreeSet<String>,
     short_inputs: BTreeSet<String>,
+    /// Construction points for one level (`required_construction`).
+    construction: f64,
 }
+
+/// shortcut: used when the defs omit `required_construction`; vanilla mid-size buildings cost a few hundred points.
+const FALLBACK_CONSTRUCTION: f64 = 300.0;
 
 impl Site {
     fn profit_per_level(&self) -> f64 {
@@ -394,6 +399,8 @@ struct Market<'a> {
     local: BTreeMap<&'a str, LocalGood>,
     sites: Vec<Site>,
     consumer_goods: BTreeSet<String>,
+    /// Money per construction point at today's construction spending, when known.
+    point_cost: Option<f64>,
 }
 
 impl<'a> Market<'a> {
@@ -404,6 +411,7 @@ impl<'a> Market<'a> {
         states: &'a BTreeSet<u32>,
         idle_states: &'a BTreeSet<u32>,
         needy_states: &'a BTreeSet<u32>,
+        point_cost: Option<f64>,
     ) -> Self {
         let mut local: BTreeMap<&str, LocalGood> = BTreeMap::new();
         for sg in prices.state_goods.iter().filter(|g| states.contains(&g.state_id)) {
@@ -432,6 +440,11 @@ impl<'a> Market<'a> {
                     revenue: 0.0,
                     outputs: BTreeSet::new(),
                     short_inputs: BTreeSet::new(),
+                    construction: defs
+                        .resolve_building_type_index(&b.building_type_name)
+                        .and_then(|i| defs.building_type(i).required_construction)
+                        .filter(|c| *c > 0.0)
+                        .unwrap_or(FALLBACK_CONSTRUCTION),
                 });
             site.levels += b.level;
             site.staffing += b.staffing;
@@ -456,6 +469,7 @@ impl<'a> Market<'a> {
             local,
             sites: sites.into_values().collect(),
             consumer_goods,
+            point_cost,
         }
     }
 
@@ -523,7 +537,21 @@ impl<'a> Market<'a> {
     }
 
     /// Expansion score for a profitable, fully staffed site; `None` = not relevant to `focus`.
+    /// Weeks until a new level's profit repays its construction, when the point cost is known.
+    fn payback_weeks(&self, s: &Site) -> Option<f64> {
+        let ppl = s.profit_per_level();
+        (ppl > 0.0).then_some(())?;
+        Some(s.construction * self.point_cost? / ppl)
+    }
+
+    /// Goal score per construction point: the same order as payback time, since
+    /// every level of a country is built at the same price per point.
     fn expand_score(&self, focus: Focus, s: &Site) -> Option<f64> {
+        let per_point = 100.0 / s.construction.max(1.0);
+        Some(self.goal_score(focus, s)? * per_point)
+    }
+
+    fn goal_score(&self, focus: Focus, s: &Site) -> Option<f64> {
         let (good, signal) = self.best_output(focus, s)?;
         let ppl = s.profit_per_level();
         let idle = if self.idle_states.contains(&s.state_id) { 1.25 } else { 1.0 };
@@ -581,10 +609,14 @@ impl<'a> Market<'a> {
         let mut suggested: BTreeSet<(String, u32)> = BTreeSet::new();
         for (rank, (_, site)) in ranked.iter().take(5).enumerate() {
             let mut detail = format!(
-                "Each level earns about {:.0} profit and is {:.0}% staffed.",
+                "Each level earns about {:.0} profit a week for {:.0} construction points and is {:.0}% staffed.",
                 site.profit_per_level(),
+                site.construction,
                 site.staffed() * 100.0
             );
+            if let Some(weeks) = self.payback_weeks(site) {
+                detail.push_str(&format!(" A new level pays back its construction in about {weeks:.0} weeks."));
+            }
             if let Some((good, _)) = self.best_output(focus, site) {
                 detail.push_str(&format!(
                     " It sells {} at {} vs base price.",
@@ -604,7 +636,7 @@ impl<'a> Market<'a> {
                 priority: if rank < 2 { 1 } else { 2 },
                 title: format!("Expand {} in {}", site.type_label, self.state_label(site.state_id)),
                 detail,
-                why: None,
+                why: Some("Ranked by profit per construction point. Construction capacity is the scarce resource early on, so the level that repays its construction soonest compounds growth fastest; its wages and profits are also taxed. Profit is today's, at current prices: a level that floods its own market earns less.".into()),
                 check: Some(Check::BuildingLevels {
                     building_type: site.type_name.clone(),
                     state_id: Some(site.state_id),
@@ -814,9 +846,10 @@ fn market_advice(
     states: &BTreeSet<u32>,
     idle_states: &BTreeSet<u32>,
     needy_states: &BTreeSet<u32>,
+    point_cost: Option<f64>,
     out: &mut Vec<Advice>,
 ) {
-    let market = Market::new(world, defs, prices, states, idle_states, needy_states);
+    let market = Market::new(world, defs, prices, states, idle_states, needy_states, point_cost);
     market.construction_advice(out);
     for goal in [
         EconomyGoal::Growth,
@@ -877,7 +910,13 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
 
     let mut advice = Vec::new();
     let needy_states: BTreeSet<u32> = in_states(AlertKind::NeedsUnmet).into_keys().collect();
-    market_advice(world, defs, prices, &states, &idle_states, &needy_states, &mut advice);
+    let budget = crate::budget::report(defs, country);
+    // Money per construction point: this week's construction spending over the points it buys.
+    let point_cost = budget.as_ref().map(crate::budget::BudgetReport::construction_spend).filter(|s| *s > 0.0).and_then(|spend| {
+        let per_day = vic3_planning::construction_points_per_day_from_world(world, country.id, defs).ok()?;
+        (per_day > 0.0).then(|| spend / (per_day * 7.0))
+    });
+    market_advice(world, defs, prices, &states, &idle_states, &needy_states, point_cost, &mut advice);
 
     if let Some((&state_id, &count)) = unfilled.iter().max_by_key(|(_, n)| **n) {
         let total: usize = unfilled.values().sum();
@@ -907,7 +946,6 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
     law_advice(defs, country, education_short, &mut advice);
 
     // Budget guard first: its ids ("budget:…") sort ahead within each priority.
-    let budget = crate::budget::report(defs, country);
     if let Some(report) = &budget {
         crate::budget::budget_advice(report, &mut advice);
     }

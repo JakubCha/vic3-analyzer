@@ -408,6 +408,9 @@ export interface BudgetReport {
   credit_limit?: number | null
   weeks_to_debt?: number | null
   weeks_to_default?: number | null
+  /** Weeks until debt reaches half the credit limit (the game's unhealthy line). */
+  weeks_to_unhealthy?: number | null
+  deficit_kind?: 'investment' | 'upkeep' | null
   expenses: BudgetGroup[]
   incomes: BudgetGroup[]
 }

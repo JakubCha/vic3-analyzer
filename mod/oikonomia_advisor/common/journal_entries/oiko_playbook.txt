@@ -39,7 +39,7 @@ je_oiko_pb_gen_tax_bridge = {
 		set_variable = je_oiko_pb_gen_tax_bridge_done
 	}
 	invalid = {
-		NOT = { AND = { scaled_debt <= 0 net_fixed_income < 0 oiko_weeks_to_debt < 26 } }
+		NOT = { AND = { net_fixed_income < 0 scaled_debt >= 0.35 scaled_debt < 0.85 } }
 		NOT = { net_fixed_income >= 0 }
 	}
 	should_be_pinned_by_default_uninvolved_or_context = yes

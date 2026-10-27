@@ -310,10 +310,15 @@ export function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
   return (
     <section className={`advisor-budget risk-${b.risk}`} aria-label="Budget">
       <p>
-        <strong>{RISK_LABEL[b.risk]}</strong> · balance {b.weekly_balance != null ? money(b.weekly_balance) : '?'}/week ·
+        <strong>{b.risk === 'deficit' && b.deficit_kind === 'investment' ? 'Investment deficit' : RISK_LABEL[b.risk]}</strong>{' '}
+        · balance {b.weekly_balance != null ? money(b.weekly_balance) : '?'}/week ·
         treasury {money(b.treasury)}
         {runway && <> · {runway}</>}
-        {b.weeks_to_default != null && <> · credit limit in ~{weeks(b.weeks_to_default)}</>}
+        {b.weeks_to_unhealthy != null && b.risk !== 'critical' ? (
+          <> · debt at half the credit limit in ~{weeks(b.weeks_to_unhealthy)}</>
+        ) : (
+          b.weeks_to_default != null && <> · credit limit in ~{weeks(b.weeks_to_default)}</>
+        )}
       </p>
       {b.expenses.length > 0 && (
         <ul className="budget-bars" aria-label="Weekly expenses">

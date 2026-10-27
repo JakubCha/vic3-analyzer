@@ -194,7 +194,10 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
 
         let mut limit = when.clone();
         limit.push(format!("NOT = {{ has_journal_entry = {name} }}"));
-        limit.push(format!("NOT = {{ has_variable = {done_var} }}"));
+        // Only rules with a done check ever set the variable (the game warns otherwise).
+        if done.is_some() {
+            limit.push(format!("NOT = {{ has_variable = {done_var} }}"));
+        }
         let _ = writeln!(monthly, "\t\tif = {{");
         block(&mut monthly, "\t\t\t", "limit", &limit);
         let _ = writeln!(monthly, "\t\t\tadd_journal_entry = {{ type = {name} }}");
