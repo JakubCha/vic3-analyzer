@@ -676,6 +676,8 @@ export interface LiveStatus {
   military_share: number
   weeks_to_debt: number
   gdp: number
+  /** Balance including construction; `weekly_balance` leaves construction out. */
+  weekly_balance_total?: number | null
   /** Owned states that week; absent from older mod versions. */
   states?: { name: string; unemployed: number; infrastructure_balance: number }[]
   /** Goods at least 20% off base price on the home market (0.3 = 30% dearer). */

@@ -2662,6 +2662,14 @@ mod tests {
     }
 
     #[test]
+    fn state_literacy_is_literate_workers_over_the_workforce() {
+        // Peasants 1,000 of 12,000 workers literate, farmers 400 of 4,000: dependents do not count.
+        let (_, _, prices) = fixture();
+        let mix = crate::qualification_advice::state_mix(&prices, 1);
+        assert!((mix.literacy - 1_400.0 / 16_000.0).abs() < 1e-9, "{}", mix.literacy);
+    }
+
+    #[test]
     fn underemployed_from_pops_does_not_lead_with_extra_levels() {
         let (world, defs, prices) = fixture();
         let result = alerts(&world, &defs, &prices);

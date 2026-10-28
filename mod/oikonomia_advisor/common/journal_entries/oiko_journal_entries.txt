@@ -30,9 +30,14 @@ je_oiko_pru_opening = {
 	icon = "gfx/interface/icons/event_icons/event_military.dds"
 	group = je_group_oikonomia
 
+	# Every box of the checklist, not just the army: in 1836 disbanding a few cuirassiers
+	# already brings the army under 40% and the fixed balance (construction left out) is positive.
 	complete = {
 		military_expenses_share < 0.4
 		net_fixed_income >= 0
+		oiko_paper_ok >= 1
+		oiko_small_arms_ok >= 1
+		oiko_construction_levels >= oiko_construction_target
 	}
 
 	on_complete = {

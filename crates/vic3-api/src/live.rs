@@ -53,6 +53,10 @@ pub struct LiveStatus {
     pub military_share: f64,
     pub weeks_to_debt: f64,
     pub gdp: f64,
+    /// Weekly balance including construction; `weekly_balance` is the game's
+    /// "fixed" balance, which leaves construction out. Absent from older mod versions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weekly_balance_total: Option<f64>,
     /// Owned states, from the `OIKO2` lines of the same week (newest line only; not kept in history).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub states: Vec<LiveState>,
@@ -95,10 +99,17 @@ fn int(field: &str) -> Option<f64> {
 pub fn parse_line(line: &str) -> Option<LiveStatus> {
     let start = line.find(MARKER)?;
     let fields: Vec<&str> = line[start + MARKER.len()..].trim_end().split(';').collect();
-    let [country, date, balance, income, treasury, debt, military, weeks, gdp] = fields[..] else {
+    // Older mod versions log nine fields, newer ones add the balance with construction.
+    let (head, total) = match fields.len() {
+        9 => (&fields[..], None),
+        10 => (&fields[..9], int(fields[9])),
+        _ => return None,
+    };
+    let [country, date, balance, income, treasury, debt, military, weeks, gdp] = head[..] else {
         return None;
     };
     Some(LiveStatus {
+        weekly_balance_total: total,
         country: country.trim().to_string(),
         date: date.trim().to_string(),
         logged_at: line.strip_prefix('[').and_then(|l| l.split(']').next()).unwrap_or_default().to_string(),
@@ -243,6 +254,10 @@ mod tests {
         assert_eq!(s.treasury, 486_803.0);
         assert_eq!(s.military_share, 0.618);
         assert_eq!(s.gdp, 9_720_602.0);
+        assert_eq!(s.weekly_balance_total, None);
+        // Newer mod versions add the balance with construction (real 1836 line, total made up).
+        let newer = parse_line("[22:03:34][jomini_effect_impl.cpp:454]: x: OIKO1;PRU;February 17, 1836;6413;68119;316079;0;382;0;9763241;-29800").expect("line");
+        assert_eq!((newer.weekly_balance, newer.weekly_balance_total), (6413.0, Some(-29_800.0)));
         assert!(parse_line("[21:03:00][x.cpp:1]: Peelite Party Created").is_none());
         assert_eq!(int("1,234").unwrap(), 1234.0);
         assert_eq!(int("\u{2212}5").unwrap(), -5.0);

@@ -149,19 +149,21 @@ impl StateMix {
 pub(crate) fn state_mix(prices: &PricesResult, state_id: u32) -> StateMix {
     let mut mix = StateMix::default();
     let mut literate = 0.0;
-    let mut size = 0.0;
+    let mut workforce = 0.0;
     for pop in prices.state_pops.iter() {
         if pop.state_id != state_id {
             continue;
         }
         let n = pop.workforce.or(pop.demand_size).unwrap_or(0.0);
-        size += pop.demand_size.unwrap_or(n);
+        // `literate` counts literate workers: over the workforce it matches the
+        // save's national literacy (dependents would cut it about threefold).
+        workforce += n;
         literate += pop.literate.unwrap_or(0.0);
         if let Some(prof) = pop.profession_name.as_deref() {
             *mix.by_profession.entry(prof.to_string()).or_insert(0.0) += n;
         }
     }
-    mix.literacy = if size > 0.0 { literate / size } else { 0.0 };
+    mix.literacy = if workforce > 0.0 { (literate / workforce).min(1.0) } else { 0.0 };
     mix
 }
 

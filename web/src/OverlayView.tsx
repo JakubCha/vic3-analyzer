@@ -37,7 +37,15 @@ function LiveBar({ live: s }: { live: LiveStatus }) {
   return (
     <div className="advisor-live" aria-label="Live">
       <p>
-        <strong>In game {s.date}</strong> · balance {money(s.weekly_balance)}/week · treasury {money(s.treasury)}
+        <strong>In game {s.date}</strong> · balance{' '}
+        {s.weekly_balance_total != null ? (
+          <>
+            {money(s.weekly_balance_total)}/week ({money(s.weekly_balance)} without construction)
+          </>
+        ) : (
+          <>{money(s.weekly_balance)}/week</>
+        )}{' '}
+        · treasury {money(s.treasury)}
         {s.weekly_balance < 0 && s.debt_share === 0 && <> · lasts ~{s.weeks_to_debt} weeks</>}
         {s.debt_share > 0 && <> · debt {Math.round(s.debt_share * 100)}% of credit</>} · military{' '}
         {Math.round(s.military_share * 100)}% of spending

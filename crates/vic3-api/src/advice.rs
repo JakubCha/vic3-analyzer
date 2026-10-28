@@ -1033,7 +1033,7 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
     for step in advice.iter_mut().flat_map(|a| a.steps.iter_mut()).chain(market.iter_mut().flat_map(|c| c.fixes.iter_mut())) {
         *step = crate::playbook::with_polish_labels(step);
     }
-    let states = crate::states::state_overview(prices, &states, &advice);
+    let states = crate::states::state_overview(world, prices, &states, &advice);
     AdviceResult { advice, limitations, budget, market, outcomes: Vec::new(), states }
 }
 

@@ -201,7 +201,11 @@ fn mod_uses_only_ids_and_keys_that_exist() {
         .flat_map(|l| l.split_whitespace().map(str::to_string).collect::<Vec<_>>())
         .filter(|w| w.starts_with("oiko_") && w.chars().all(|c| c.is_alphanumeric() || c == '_'))
         .collect();
-    let variables: BTreeSet<String> = values_of(&all_script, "set_variable").into_iter().chain(values_of(&all_script, "has_variable")).chain(values_of(&all_script, "name")).collect();
+    let saved: BTreeSet<String> = values_of(&all_script, "save_temporary_scope_as").into_iter().chain(values_of(&all_script, "save_scope_as")).collect();
+    for id in after(&text, "sCountry('") {
+        need("saved scope", &id, saved.contains(&id));
+    }
+    let variables: BTreeSet<String> = values_of(&all_script, "set_variable").into_iter().chain(values_of(&all_script, "has_variable")).chain(values_of(&all_script, "name")).chain(saved.iter().cloned()).collect();
     let on_actions = defined("on_actions");
     let loc_values: BTreeSet<String> = values_of(&all_script, "localization_key").into_iter().collect();
     for id in used {
@@ -230,6 +234,8 @@ fn mod_uses_only_ids_and_keys_that_exist() {
     for a in &alerts {
         keys.insert(format!("alert_{a}_name"));
         keys.insert(format!("alert_{a}_desc"));
+        // The alert settings list (error.log: "Alert is missing localization key-value").
+        keys.insert(format!("{a}_setting_name"));
     }
     keys.extend(modifiers.iter().cloned());
     for k in ["name", "desc", "title", "flavor", "status_desc", "localization_key"] {

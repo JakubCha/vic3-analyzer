@@ -336,7 +336,7 @@ impl Vic3McpServer {
 
     /// Live in-game budget line written by the Oikonomia Advisor mod.
     #[tool(
-        description = "Live values from the running game, newer than any save: {country, date (in-game, localized), logged_at (wall clock), weekly_balance, weekly_income, treasury, debt_share (debt / credit limit), military_share (of spending), weeks_to_debt, gdp, states: [{name, unemployed, infrastructure_balance (negative = short)}], goods: [{name, price_vs_base (0.3 = 30% dearer), only goods at least 20% off base}]}. Written weekly by the Oikonomia Advisor mod to the game log; null when the mod has not logged yet. No use_save needed. Prefer it over `budget` for the current numbers; use `budget`/`advice` for the breakdown and advice."
+        description = "Live values from the running game, newer than any save: {country, date (in-game, localized), logged_at (wall clock), weekly_balance, weekly_income, treasury, debt_share (debt / credit limit), military_share (of spending), weeks_to_debt, gdp, weekly_balance_total (with construction; weekly_balance is the game's fixed balance without it), states: [{name, unemployed, infrastructure_balance (negative = short)}], goods: [{name, price_vs_base (0.3 = 30% dearer), only goods at least 20% off base}]}. Written weekly by the Oikonomia Advisor mod to the game log; null when the mod has not logged yet. No use_save needed. Prefer it over `budget` for the current numbers; use `budget`/`advice` for the breakdown and advice."
     )]
     async fn live_status(
         &self,

@@ -284,3 +284,7 @@ oiko_cheat_cash = {
 oiko_cheat_debt = {
 	value = principal
 }
+
+# Weekly balance including construction (net_fixed_income leaves it out: the 1836
+# Prussian log shows +6K fixed while the save's balance with construction is −32K).
+oiko_total_balance = { value = net_total_income }

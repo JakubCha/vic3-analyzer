@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
-use vic3_prices::PricesResult;
+use vic3_prices::{PricesResult, World};
 
 use crate::advice::Advice;
 
@@ -16,7 +16,7 @@ pub struct StateRow {
     pub label: String,
     pub population: f64,
     pub workforce: f64,
-    /// Working-age pops without a workplace, peasants and slaves aside (an estimate).
+    /// Working-age pops without a workplace (the game's "unemployed working adults").
     pub unemployed: f64,
     /// Peasants' share of the workforce: labour a new building can hire.
     pub peasant_share: f64,
@@ -28,7 +28,7 @@ pub struct StateRow {
 }
 
 /// Rows for `states`, most populous first; `advice` must be in ranked order.
-pub fn state_overview(prices: &PricesResult, states: &BTreeSet<u32>, advice: &[Advice]) -> Vec<StateRow> {
+pub fn state_overview(world: &World, prices: &PricesResult, states: &BTreeSet<u32>, advice: &[Advice]) -> Vec<StateRow> {
     #[derive(Default)]
     struct Sum {
         population: f64,
@@ -44,11 +44,16 @@ pub fn state_overview(prices: &PricesResult, states: &BTreeSet<u32>, advice: &[A
         s.population += pop.demand_size.unwrap_or(work + pop.dependents.unwrap_or(0.0));
         s.workforce += work;
         s.literate += pop.literate.unwrap_or(0.0);
-        match pop.profession_name.as_deref() {
-            Some("peasants") => s.peasants += work,
-            Some("slaves") => {}
-            _ if pop.workplace_id.is_none() => s.unemployed += work,
-            _ => {}
+        if pop.profession_name.as_deref() == Some("peasants") {
+            s.peasants += work;
+        }
+    }
+    // Unemployment from the save's own pops: the price rows merge pops and lose their
+    // workplace. Workers without one match the game's "unemployed working adults"
+    // (Brandenburg 1836: 37.6K in the save, 40.5K in the game a week later).
+    for pop in world.state_pops.iter().filter(|p| p.workplace_id.is_none()) {
+        if let Some(s) = pop.state.filter(|s| states.contains(s)).and_then(|s| sums.get_mut(&s)) {
+            s.unemployed += pop.workforce.unwrap_or(0.0);
         }
     }
     let mut rows: Vec<StateRow> = sums
@@ -100,7 +105,7 @@ mod tests {
             why_now: Vec::new(),
             check: None,
         }];
-        let rows = state_overview(&snap.prices, &BTreeSet::from([state]), &advice);
+        let rows = state_overview(&snap.world, &snap.prices, &BTreeSet::from([state]), &advice);
         assert_eq!(rows.len(), 1);
         let row = &rows[0];
         assert!(row.population > 0.0 && row.workforce > 0.0);
