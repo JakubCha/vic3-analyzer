@@ -10,6 +10,129 @@ oiko_pb_balance_share = {
 	}
 }
 
+# Open playbook entries the game rule still allows (3 by default, none for budget-only help, no limit for full help).
+oiko_pb_slot_limit = {
+	value = 3
+	if = { limit = { has_game_rule = oiko_help_all } value = 99 }
+}
+
+oiko_pb_active = {
+	value = 0
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_near_default } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_tax_bridge } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_radicals_high } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_opening_army } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_war_chest } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_grain_warning } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_abolition_ready } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_debt_during_debate } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_planters_out } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_construction } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_war_chest } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_ita_integrate } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_census_before_1848 } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_natural_borders } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_per_capita } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_tax_capacity } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_metternich } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_before_1848 } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_dual_monarchy_blocks_germany } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_no_war_on_credit } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_lower_taxes_when_rich } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_army_share } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_small_arms } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_ammunition } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_grain } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_construction_inputs } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_iron_frame } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_steel } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_sector_pacing } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_laissez_faire } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_industrialists_in } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_free_the_peasants } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_voting } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_assembly } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_welfare_when_solvent } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_early_schools } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_early_tools } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_early_coal } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_early_railways_research } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_mid_engines } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_mid_universities } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_mid_professional_army } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_mid_public_schools } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_electricity } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_oil } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_rubber } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_fertilizer } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_artillery } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_wage_subsidies } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_universal_suffrage } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_sol_low } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_opening_plan } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_industry_chain } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_public_schools } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_nationalism } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_schleswig_holstein } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_pru_leadership_war } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_ngf_pan_nationalism } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_no_new_navy } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_construction } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_corn_laws } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_fabric_glut } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_chartism } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_labour_laws } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_brazil_slave_trade } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_raj } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_ironclads } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gbr_dominions } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_construction_sectors } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_luxury_taxes } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_build_north } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_dedicated_police } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_not_yet_abolition } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_war_industry } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_manifest_destiny } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_texas } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_quinine } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_commercialized_agriculture } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_usa_multicultural } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_coal } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_railways_research } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_sulfur } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_subventions } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_no_early_wars } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_nationalism } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_risorgimento } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_two_sicilies } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_sar_turin } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_iron } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_engines } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_haiti_margin } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_orleanists } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_algeria } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_schneider } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_vineyards } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_egypt_treaty } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_fra_abolition } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_construction } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_engines_first } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_coal } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_arms_out_of_lombardy } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_no_army_growth } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_appointed_bureaucrats } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_hungary_later } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_pan_nationalism } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_venetia_sulfur } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_aus_citizenship } add = 1 }
+}
+
+oiko_pb_free_slots = {
+	value = oiko_pb_slot_limit
+	subtract = oiko_pb_active
+}
+
 oiko_lvl_building_arms_industry = {
 	value = 0
 	every_scope_building = {

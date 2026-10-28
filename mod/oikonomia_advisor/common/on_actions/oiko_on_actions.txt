@@ -48,5 +48,103 @@ oiko_monthly_country = {
 			}
 			add_journal_entry = { type = je_oiko_pru_germany }
 		}
+		# Idle construction: back whenever the state's queue has under two weeks left.
+		if = {
+			limit = {
+				oiko_construction_levels >= 1
+				construction_queue_government_duration < 2
+				in_default = no
+				NOT = { has_journal_entry = je_oiko_construction_idle }
+			}
+			add_journal_entry = { type = je_oiko_construction_idle }
+		}
+		# Chapters, one at a time; budget-only help shows none.
+		if = {
+			limit = { NOT = { has_game_rule = oiko_help_budget } }
+			if = {
+				limit = {
+					game_date < 1856.1.1
+					NOT = { has_variable = oiko_ch1_done }
+					NOT = { has_journal_entry = je_oiko_chapter_1 }
+				}
+				add_journal_entry = { type = je_oiko_chapter_1 }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_variable = oiko_ch1_done
+						game_date >= 1850.1.1
+					}
+					game_date < 1891.1.1
+					NOT = { has_journal_entry = je_oiko_chapter_1 }
+					NOT = { has_variable = oiko_ch2_done }
+					NOT = { has_journal_entry = je_oiko_chapter_2 }
+				}
+				add_journal_entry = { type = je_oiko_chapter_2 }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_variable = oiko_ch2_done
+						game_date >= 1885.1.1
+					}
+					NOT = { has_journal_entry = je_oiko_chapter_2 }
+					NOT = { has_variable = oiko_ch3_done }
+					NOT = { has_journal_entry = je_oiko_chapter_3 }
+				}
+				add_journal_entry = { type = je_oiko_chapter_3 }
+			}
+		}
+	}
+}
+
+# --- Warnings at the moment of a decision ----------------------------------
+
+on_diplomatic_play_started = {
+	on_actions = { oiko_on_diplomatic_play_started }
+}
+
+# root = the play; the event's own trigger checks the budget.
+oiko_on_diplomatic_play_started = {
+	effect = {
+		scope:initiator ?= {
+			if = {
+				limit = { is_player = yes }
+				trigger_event = { id = oiko.2 }
+			}
+		}
+		scope:target ?= {
+			if = {
+				limit = { is_player = yes }
+				trigger_event = { id = oiko.2 }
+			}
+		}
+	}
+}
+
+on_law_enactment_started = {
+	on_actions = { oiko_on_law_enactment_started }
+}
+
+# root = the country enacting.
+oiko_on_law_enactment_started = {
+	trigger = {
+		is_player = yes
+	}
+	events = {
+		oiko.3
+	}
+}
+
+on_country_default = {
+	on_actions = { oiko_on_country_default }
+}
+
+oiko_on_country_default = {
+	trigger = {
+		is_player = yes
+	}
+	events = {
+		oiko.4
 	}
 }

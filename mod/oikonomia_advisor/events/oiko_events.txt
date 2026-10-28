@@ -35,3 +35,105 @@ oiko.1 = {
 		default_option = yes
 	}
 }
+
+# Diplomatic play started in a weak budget (on_actions/oiko_on_actions.txt).
+oiko.2 = {
+	type = country_event
+
+	title = oiko.2.t
+	desc = oiko.2.d
+	flavor = oiko.2.f
+
+	event_image = {
+		video = "europenorthamerica_capitalists_meeting"
+	}
+
+	on_created_soundeffect = "event:/SFX/UI/Alerts/event_appear"
+
+	icon = "gfx/interface/icons/event_icons/event_military.dds"
+
+	duration = 3
+
+	cooldown = { days = 90 }
+
+	trigger = {
+		is_player = yes
+		NOT = { has_game_rule = oiko_warnings_off }
+		OR = {
+			net_fixed_income < 0
+			scaled_debt >= 0.3
+		}
+	}
+
+	option = {
+		name = oiko.2.a
+		default_option = yes
+	}
+}
+
+# Law enactment started with debt high (on_actions/oiko_on_actions.txt).
+oiko.3 = {
+	type = country_event
+
+	title = oiko.3.t
+	desc = oiko.3.d
+	flavor = oiko.3.f
+
+	event_image = {
+		video = "europenorthamerica_capitalists_meeting"
+	}
+
+	on_created_soundeffect = "event:/SFX/UI/Alerts/event_appear"
+
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+
+	duration = 3
+
+	cooldown = { days = 90 }
+
+	trigger = {
+		is_player = yes
+		NOT = { has_game_rule = oiko_warnings_off }
+		OR = {
+			scaled_debt >= 0.5
+			AND = {
+				net_fixed_income < 0
+				scaled_debt >= 0.25
+			}
+		}
+	}
+
+	option = {
+		name = oiko.3.a
+		default_option = yes
+	}
+}
+
+# The country defaulted: the way back.
+oiko.4 = {
+	type = country_event
+
+	title = oiko.4.t
+	desc = oiko.4.d
+	flavor = oiko.4.f
+
+	event_image = {
+		video = "europenorthamerica_capitalists_meeting"
+	}
+
+	on_created_soundeffect = "event:/SFX/UI/Alerts/event_appear"
+
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+
+	duration = 3
+
+	trigger = {
+		is_player = yes
+		NOT = { has_game_rule = oiko_warnings_off }
+	}
+
+	option = {
+		name = oiko.4.a
+		default_option = yes
+	}
+}

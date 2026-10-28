@@ -137,3 +137,136 @@ oiko_mg_price_delta_permille = {
 	subtract = market_goods_cheaper
 	multiply = 1000
 }
+
+# --- Chapters (journal_entries/oiko_journal_entries.txt): checklist flags, 1 = done ---
+
+oiko_ch_construction_ok = {
+	value = 0
+	if = {
+		limit = { oiko_construction_levels >= 5 }
+		value = 1
+	}
+}
+
+oiko_ch_tools_ok = {
+	value = 0
+	if = {
+		limit = { market_capital.market ?= { mg:tools ?= { market_goods_pricier < 0.2 } } }
+		value = 1
+	}
+}
+
+oiko_ch_schools_ok = {
+	value = 0
+	if = {
+		limit = { NOT = { has_law_or_variant = law_type:law_no_schools } }
+		value = 1
+	}
+}
+
+oiko_ch_railways_tech_ok = {
+	value = 0
+	if = {
+		limit = { has_technology_researched = railways }
+		value = 1
+	}
+}
+
+oiko_ch_railway_levels = {
+	value = 0
+	every_scope_building = {
+		limit = { is_building_type = building_railway }
+		add = this.level
+	}
+}
+
+oiko_ch_railways_ok = {
+	value = 0
+	if = {
+		limit = { oiko_ch_railway_levels >= 10 }
+		value = 1
+	}
+}
+
+oiko_ch_steel_ok = {
+	value = 0
+	if = {
+		limit = { market_capital.market ?= { mg:steel ?= { market_goods_pricier < 0.2 } } }
+		value = 1
+	}
+}
+
+oiko_ch_university_ok = {
+	value = 0
+	if = {
+		limit = { any_scope_building = { is_building_type = building_university } }
+		value = 1
+	}
+}
+
+oiko_ch_army_ok = {
+	value = 0
+	if = {
+		limit = { NOT = { has_law_or_variant = law_type:law_peasant_levies } }
+		value = 1
+	}
+}
+
+oiko_ch_power_ok = {
+	value = 0
+	if = {
+		limit = { any_scope_building = { is_building_type = building_power_plant } }
+		value = 1
+	}
+}
+
+oiko_ch_oil_ok = {
+	value = 0
+	if = {
+		limit = { market_capital.market ?= { mg:oil ?= { market_goods_pricier < 0.2 } } }
+		value = 1
+	}
+}
+
+oiko_ch_welfare_ok = {
+	value = 0
+	if = {
+		limit = { NOT = { has_law_or_variant = law_type:law_no_social_security } }
+		value = 1
+	}
+}
+
+oiko_ch_radicals_ok = {
+	value = 0
+	if = {
+		limit = { NOT = { radical_fraction = { value >= 0.1 } } }
+		value = 1
+	}
+}
+
+oiko_ch1_done_count = {
+	value = 0
+	add = oiko_ch_construction_ok
+	add = oiko_ch_tools_ok
+	add = oiko_ch_schools_ok
+	add = oiko_ch_railways_tech_ok
+	add = oiko_war_chest_ok
+}
+
+oiko_ch2_done_count = {
+	value = 0
+	add = oiko_ch_railways_ok
+	add = oiko_ch_steel_ok
+	add = oiko_ch_university_ok
+	add = oiko_ch_army_ok
+	add = oiko_has_public_schools
+}
+
+oiko_ch3_done_count = {
+	value = 0
+	add = oiko_ch_power_ok
+	add = oiko_ch_oil_ok
+	add = oiko_ch_welfare_ok
+	add = oiko_war_chest_ok
+	add = oiko_ch_radicals_ok
+}

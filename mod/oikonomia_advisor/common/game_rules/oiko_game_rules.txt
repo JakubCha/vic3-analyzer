@@ -1,0 +1,26 @@
+﻿# Oikonomia Advisor settings, chosen when a game starts.
+
+# How much the advisor shows: budget guard only, a few playbook tips at a time, or all of them.
+oiko_help_level = {
+	default = oiko_help_standard
+
+	oiko_help_budget = {
+	}
+
+	oiko_help_standard = {
+	}
+
+	oiko_help_all = {
+	}
+}
+
+# Warning popups when starting a diplomatic play or a law in a weak budget, and after default.
+oiko_warnings = {
+	default = oiko_warnings_on
+
+	oiko_warnings_on = {
+	}
+
+	oiko_warnings_off = {
+	}
+}

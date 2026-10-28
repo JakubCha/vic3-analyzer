@@ -88,3 +88,75 @@ je_oiko_dashboard = {
 
 	weight = 100
 }
+
+# Idle construction: the state's queue runs dry while its construction sectors are paid for.
+je_oiko_construction_idle = {
+	icon = "gfx/interface/icons/event_icons/event_industry.dds"
+	group = je_group_oikonomia
+
+	invalid = {
+		OR = {
+			construction_queue_government_duration >= 4
+			oiko_construction_levels < 1
+			in_default = yes
+		}
+	}
+
+	should_be_pinned_by_default_uninvolved_or_context = yes
+	weight = 950
+}
+
+# Chapters: one checklist per era for every country. Complete when all five are done;
+# the next chapter opens then, or by date. Flags in script_values/oiko_values.txt.
+je_oiko_chapter_1 = {
+	icon = "gfx/interface/icons/event_icons/event_portrait.dds"
+	group = je_group_oikonomia
+
+	complete = {
+		oiko_ch1_done_count >= 5
+	}
+
+	on_complete = {
+		set_variable = oiko_ch1_done
+	}
+
+	invalid = {
+		game_date >= 1856.1.1
+	}
+
+	weight = 300
+}
+
+je_oiko_chapter_2 = {
+	icon = "gfx/interface/icons/event_icons/event_industry.dds"
+	group = je_group_oikonomia
+
+	complete = {
+		oiko_ch2_done_count >= 5
+	}
+
+	on_complete = {
+		set_variable = oiko_ch2_done
+	}
+
+	invalid = {
+		game_date >= 1891.1.1
+	}
+
+	weight = 300
+}
+
+je_oiko_chapter_3 = {
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+	group = je_group_oikonomia
+
+	complete = {
+		oiko_ch3_done_count >= 5
+	}
+
+	on_complete = {
+		set_variable = oiko_ch3_done
+	}
+
+	weight = 300
+}

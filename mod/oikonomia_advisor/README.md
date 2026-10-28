@@ -10,6 +10,14 @@ Player-only journal entries with live values computed by the game every tick. Th
 - **Oikonomia: Budget Dashboard** – always-on entry with the live numbers; every week it writes one `OIKO1;country;date;balance;income;treasury;debt‰;military‰;weeks;gdp` line to `logs\debug.log` (works without debug mode), then one `OIKO2;country;date;state;unemployed;infrastructure balance` line per owned state and one `OIKO3;country;date;good;price vs base ‰` line per good at least 20% off base price. The analyzer's overlay and the MCP tool `live_status` read it, so they see in-game values without waiting for a save.
 - **Budget alarm event** – a popup when the state is losing money and debt passes 85% of the credit limit (or in default), at most every six months.
 
+- **Own journal group** – everything sits in the collapsible group "Oikonomia Advisor"; the Budget Guard and the dashboard show a debt / credit-limit bar and a budget verdict chosen by the game (customizable localization).
+- **Three tips at a time** – at most three playbook entries are open at once (priority-1 tips always come in); each has a "Skip this tip" button that drops it for the campaign.
+- **Chapters** – one five-item checklist per era for every country: Foundations (to 1850), Industry (to 1885), Modern State.
+- **Construction Is Running Dry** – entry and top-bar alert when the state's construction queue has under two weeks of work.
+- **Warnings at the moment of decision** – popups when a diplomatic play starts with a weak budget, when a law is started with high debt, and after a default.
+- **Top-bar alerts** – idle construction, debt past half the credit limit, deficit paying the army.
+- **Game rules** (chosen at game start) – help level (budget only / standard / everything) and warning popups on or off.
+
 Hand-written texts are in Polish and English; generated playbook texts are in English.
 
 ## Install
