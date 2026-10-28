@@ -53,6 +53,8 @@ pub mod advice;
 pub mod budget;
 pub mod history;
 pub mod live;
+pub mod market;
+pub mod outcomes;
 pub mod modgen;
 pub mod playbook;
 mod error;
@@ -822,10 +824,31 @@ fn player_alerts(world: &World, defs: &vic3_defs::GameDefs, prices: &PricesResul
 ///
 /// [`ApiError::NoLoadedAnalysis`].
 pub fn loaded_advice_json() -> Result<String, ApiError> {
+    loaded_advice_tracked_json(None)
+}
+
+/// Like [`loaded_advice_json`], and with `store` (JSON lines) also records the
+/// checked items and returns followed ones as `outcomes` ([`outcomes::track`]).
+///
+/// # Errors
+///
+/// [`ApiError::NoLoadedAnalysis`]. A store that cannot be written only drops `outcomes`.
+pub fn loaded_advice_tracked_json(store: Option<&Path>) -> Result<String, ApiError> {
     with_loaded_analysis(|loaded| {
-        let result = advice::advice(&loaded.world, &loaded.defs, &loaded.prices);
+        let mut result = advice::advice(&loaded.world, &loaded.defs, &loaded.prices);
+        if let Some(store) = store {
+            result.outcomes = outcomes::track(store, &result, &loaded.world, &loaded.defs).unwrap_or_default();
+        }
         Ok(serde_json::to_string(&result)?)
     })
+}
+
+/// A playbook rule explained for a player (`playbook::explain`), against the loaded save when there is one.
+pub fn loaded_explain_rule(id: &str) -> Option<serde_json::Value> {
+    match current_loaded_analysis() {
+        Some(loaded) => playbook::explain(id, Some((&loaded.world, &loaded.defs, &loaded.prices))),
+        None => playbook::explain(id, None),
+    }
 }
 
 /// Charts for the played country in `world`: budget history from the mod's log lines

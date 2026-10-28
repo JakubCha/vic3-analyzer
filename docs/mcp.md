@@ -194,6 +194,20 @@ The played country's budget straight from the save, no market solve. Takes `{}`.
 
 - **Output:** `risk` (`safe` | `deficit` | `danger` | `critical`), `treasury`, `weekly_balance` / `weekly_income` / `weekly_expenses`, `debt`, `credit_limit`, `weeks_to_debt`, `weeks_to_default`, and `expenses` / `incomes` per budget category with their largest buildings. `null` when the save has no budget.
 - `advice` carries the same report as `budget`, plus budget-guard and playbook items; every item may have a `why` explaining the game mechanism.
+- Items may also carry `steps` (what to click in the game) and `why_now` (the save's values against the rule's thresholds). `market` lists dear and cheap goods (see `market_doctor`); `outcomes` lists followed suggestions with the budget before and after, measured against `<app data>/advice_log.jsonl`.
+
+### 12. `explain_rule`
+One playbook rule for a player who does not understand it or how to do it. Takes `{ "id": "playbook:gen.tax-bridge" }` (prefix optional); works without `use_save`.
+
+- **Output:** `title`, `detail`, `why`, `steps`, `sources`, `patch`, `terms` (Polish glossary entries the rule uses: `pl_name`, `pl`), and with a bound save `applies_now` and `why_now`.
+
+### 13. `market_doctor`
+After `use_save`: goods at least 20% off base price, worst first (up to 6 dear and 4 cheap).
+
+- **Output:** `[{ label, price_vs_base, dear, producers, dear_inputs, consumers, yours: [[state, building, levels, profit per level]], advice }]`. `dear_inputs` come from the methods the player's buildings run (or the starting methods): fix those first.
+
+### 14. `glossary`
+Polish glossary of the game terms the advisor uses: `[{ key, en, pl_name, pl }]`. Takes `{}`.
 
 ---
 

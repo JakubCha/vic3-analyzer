@@ -677,6 +677,10 @@ h2 > .good-icon { margin-right: .45rem; }
 .budget-bar { position: absolute; inset: 0 auto 0 0; background: var(--panel); z-index: -1; }
 .advisor-why { color: var(--muted); margin: 0 0 .5rem; }
 .advisor-why summary { cursor: pointer; }
+.advisor-why-now { margin: 0 0 .4rem; padding-left: 1.1rem; font-size: .9em; }
+.advisor-steps { margin: 0 0 .5rem; }
+.advisor-steps summary { cursor: pointer; }
+.advisor-steps ol { margin: .25rem 0; padding-left: 1.3rem; }
 .advisor.overlay { padding: .5rem; font-size: .9em; }
 .advisor.overlay .advisor-list { margin-top: .5rem; gap: .5rem; }
 .advisor-live { margin: 0 0 .5rem; padding: .35rem .6rem; border-left: 4px solid var(--accent); background: var(--panel); }

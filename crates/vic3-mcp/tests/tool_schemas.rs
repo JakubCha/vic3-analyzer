@@ -74,6 +74,9 @@ async fn tool_schemas_match_mcp_contract() {
             "budget",
             "live_status",
             "history",
+            "explain_rule",
+            "market_doctor",
+            "glossary",
         ])
     );
 

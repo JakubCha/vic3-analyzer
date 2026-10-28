@@ -174,4 +174,50 @@ describe('AdvisorPane', () => {
     expect(items[0]).toHaveTextContent('Budget deficit')
     expect(items).toHaveLength(5)
   })
+
+  it('shows why now, how to do it, the market doctor and what followed advice did', async () => {
+    const user = userEvent.setup()
+    const result: AdviceResult = {
+      advice: [
+        {
+          ...advice.advice[0],
+          why_now: ['Iron is +40% against base price (rule: from +15%)'],
+          steps: ['Open the Construction panel and choose Iron Mine.'],
+        },
+      ],
+      limitations: [],
+      market: [
+        {
+          good: 'tools',
+          label: 'Tools',
+          price_vs_base: 0.35,
+          dear: true,
+          producers: ['Tooling Workshops'],
+          dear_inputs: ['Iron'],
+          consumers: [],
+          yours: [['Silesia', 'Tooling Workshops', 3, 1200]],
+          advice: 'Tools is +35%, but its input Iron is dear too: fix that first.',
+        },
+      ],
+      outcomes: [
+        {
+          id: 'budget:military',
+          title: 'Military upkeep is 40% of spending',
+          before: { date: '1836.2.11', treasury: 300000 },
+          after: { date: '1837.1.1', treasury: 120000 },
+          summary: '1836.2.11 → 1837.1.1: military 40% → 28% of spending',
+        },
+      ],
+    }
+    const api = { loaded_advice: vi.fn(async () => JSON.stringify(result)), loaded_checks: vi.fn(async () => '[]') } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" date="1840.1.1" />)
+    expect(await screen.findByLabelText('Why now')).toHaveTextContent('Iron is +40%')
+    expect(screen.getByText('How to do it')).toBeInTheDocument()
+    expect(screen.getByLabelText('What followed advice did')).toHaveTextContent('military 40% → 28% of spending')
+    await user.click(screen.getByRole('tab', { name: /Market \(1\)/ }))
+    const market = screen.getByLabelText('Market')
+    expect(market).toHaveTextContent('Tools +35%')
+    expect(market).toHaveTextContent('Dear inputs (fix first): Iron')
+    expect(market).toHaveTextContent('Yours: Tooling Workshops in Silesia, 3 levels, 1.2K profit per level')
+  })
 })

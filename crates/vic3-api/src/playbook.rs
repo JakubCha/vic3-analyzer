@@ -57,6 +57,9 @@ pub struct Rule {
     /// Confirms the rule was followed on a later save.
     #[serde(default)]
     pub done: Option<Check>,
+    /// Steps in the game's interface; empty = derived by [`steps`].
+    #[serde(default)]
+    pub how: Vec<String>,
 }
 
 fn worthwhile() -> u8 {
@@ -192,38 +195,53 @@ impl Facts<'_> {
         self.country.interest_groups.iter().find(|ig| ig.definition == id)
     }
 
-    fn holds(&self, w: &When) -> bool {
+    fn levels(&self, building: &str) -> f64 {
+        building_levels(self.world, self.defs, self.states, building, None)
+    }
+
+    fn ratio(&self, key: &str) -> Option<f64> {
+        let (a, b) = key.split_once('/').unwrap_or((key, ""));
+        let below = self.expense(b).0;
+        (below > 0.0).then(|| self.expense(a).0 / below)
+    }
+
+    fn metrics(&self) -> Metrics {
         let c = self.country;
-        let year = self.world.game_date.map(|d| d.year());
-        let has_law = |l: &String| c.laws.contains(l);
-        let has_tech = |t: &String| c.techs.contains(t);
-        let levels = |b: &str| building_levels(self.world, self.defs, self.states, b, None);
-        let balance = c.weekly_balance;
         let debt = c.debt_principal.unwrap_or(0.0);
-        let income_share = balance.zip(c.weekly_income.filter(|i| *i > 0.0)).map(|(b, i)| b / i);
-        let debt_share = c.credit_limit.filter(|l| *l > 0.0).map(|l| debt / l);
-        let runway = balance.filter(|b| *b < 0.0 && debt == 0.0).map(|b| c.treasury / -b);
-        let ratio = |key: &String| {
-            let (a, b) = key.split_once('/').unwrap_or((key.as_str(), ""));
-            let below = self.expense(b).0;
-            (below > 0.0).then(|| self.expense(a).0 / below)
-        };
+        let balance = c.weekly_balance;
         // Trends are only kept for the player; without them these conditions do not hold.
         let latest = |s: Option<&vic3_load::TrendSeries>| s.and_then(|s| s.chronological()).and_then(|(_, v)| v.last().copied());
         let trends = c.trends.as_deref();
         let pops = trends.and_then(|t| t.pop_statistics.as_ref());
-        let literacy = latest(trends.and_then(|t| t.literacy.as_ref()));
-        let sol = latest(trends.and_then(|t| t.avgsoltrend.as_ref()));
         let population = latest(pops.and_then(|p| p.trend_population.as_ref())).filter(|p| *p > 0.0);
-        let radicals = latest(pops.and_then(|p| p.trend_radicals.as_ref())).zip(population).map(|(r, p)| r / p);
-        let infra_short = || {
-            let owned: BTreeSet<u32> = c.states.iter().copied().collect();
-            self.world
+        let owned: BTreeSet<u32> = c.states.iter().copied().collect();
+        Metrics {
+            year: self.world.game_date.map(|d| d.year()),
+            balance,
+            debt,
+            income_share: balance.zip(c.weekly_income.filter(|i| *i > 0.0)).map(|(b, i)| b / i),
+            debt_share: c.credit_limit.filter(|l| *l > 0.0).map(|l| debt / l),
+            runway: balance.filter(|b| *b < 0.0 && debt == 0.0).map(|b| c.treasury / -b),
+            literacy: latest(trends.and_then(|t| t.literacy.as_ref())),
+            sol: latest(trends.and_then(|t| t.avgsoltrend.as_ref())),
+            radicals: latest(pops.and_then(|p| p.trend_radicals.as_ref())).zip(population).map(|(r, p)| r / p),
+            infra_short: self
+                .world
                 .states
                 .iter()
                 .filter(|s| owned.contains(&s.id) && s.infrastructure_usage.zip(s.infrastructure).is_some_and(|(u, i)| u > i))
-                .count()
-        };
+                .count(),
+        }
+    }
+
+    fn holds(&self, w: &When) -> bool {
+        let c = self.country;
+        let Metrics { year, balance, debt, income_share, debt_share, runway, literacy, sol, radicals, infra_short } = self.metrics();
+        let has_law = |l: &String| c.laws.contains(l);
+        let has_tech = |t: &String| c.techs.contains(t);
+        let levels = |b: &str| self.levels(b);
+        let ratio = |key: &String| self.ratio(key);
+        let infra_short = || infra_short;
         w.from_year.is_none_or(|y| year.is_some_and(|now| now >= y))
             && w.until_year.is_none_or(|y| year.is_some_and(|now| now <= y))
             && w.laws.iter().all(has_law)
@@ -257,6 +275,222 @@ impl Facts<'_> {
             && w.radicals_share_at_least.is_none_or(|x| radicals.is_some_and(|r| r >= x))
             && w.infrastructure_short_states_at_least.is_none_or(|n| infra_short() >= n)
     }
+
+    /// The save's values for the rule's measurable conditions, against their thresholds.
+    pub fn why_now(&self, w: &When) -> Vec<String> {
+        let m = self.metrics();
+        let label = |id: &str| self.defs.display_label(id);
+        let pct = |x: f64| format!("{:.0}%", x * 100.0);
+        let mut out = Vec::new();
+        let mut line = |now: Option<String>, rule: String| {
+            if let Some(now) = now {
+                out.push(format!("{now} (rule: {rule})"));
+            }
+        };
+        let debt = |x: f64| m.debt_share.map(|s| format!("Debt is {} of the credit limit", pct(s))).or(Some(format!("No debt (rule: {})", pct(x))));
+        if let Some(x) = w.debt_share_of_limit_at_least {
+            line(debt(x), format!("from {}", pct(x)));
+        }
+        if let Some(x) = w.debt_share_of_limit_below {
+            line(debt(x), format!("below {}", pct(x)));
+        }
+        let balance = m.balance.map(|b| format!("Weekly balance is {}", crate::budget::money(b)));
+        if let Some(x) = w.balance_below {
+            line(balance.clone(), format!("below {}", crate::budget::money(x)));
+        }
+        if let Some(x) = w.balance_at_least {
+            line(balance.clone(), format!("at least {}", crate::budget::money(x)));
+        }
+        let share = m.income_share.map(|s| format!("Balance is {} of income", pct(s)));
+        if let Some(x) = w.balance_share_of_income_below {
+            line(share.clone(), format!("below {}", pct(x)));
+        }
+        if let Some(x) = w.balance_share_of_income_at_least {
+            line(share.clone(), format!("at least {}", pct(x)));
+        }
+        if let Some(x) = w.runway_weeks_below {
+            line(m.runway.map(|r| format!("The treasury lasts {r:.0} weeks")), format!("under {x:.0}"));
+        }
+        for (k, x) in &w.expense_share_at_least {
+            line(Some(format!("{} is {} of spending", pretty_group(k), pct(self.expense(k).1))), format!("from {}", pct(*x)));
+        }
+        for (k, x) in &w.expense_ratio_at_least {
+            line(self.ratio(k).map(|r| format!("{} is {r:.1}× {}", pretty_group(k.split('/').next().unwrap_or(k)), pretty_group(k.split('/').nth(1).unwrap_or("")))), format!("from {x:.1}×"));
+        }
+        for (k, x) in w.income_share_at_least.iter().chain(&w.income_share_below) {
+            line(Some(format!("{} is {} of income", pretty_group(k), pct(self.income_share(k)))), format!("threshold {}", pct(*x)));
+        }
+        for (b, n) in &w.levels_below {
+            line(Some(format!("{}: {:.0} levels", label(b), self.levels(b))), format!("below {n:.0}"));
+        }
+        for (b, n) in &w.levels_at_least {
+            line(Some(format!("{}: {:.0} levels", label(b), self.levels(b))), format!("at least {n:.0}"));
+        }
+        let price = |g: &str| self.price_ratio(g).map(|r| format!("{} is {:+.0}% against base price", label(g), (r - 1.0) * 100.0));
+        for (g, x) in w.price_above_base.iter().chain(&w.any_price_above_base) {
+            line(price(g), format!("from +{}", pct(*x)));
+        }
+        for (g, x) in &w.price_ratio_at_most {
+            line(price(g), format!("at most {:+.0}%", (x - 1.0) * 100.0));
+        }
+        for (id, x) in w.ig_clout_at_least.iter().chain(&w.ig_clout_below) {
+            let clout = self.ig(id).map_or(0.0, |ig| ig.clout);
+            line(Some(format!("{} clout is {}", label(id), pct(clout))), format!("threshold {}", pct(*x)));
+        }
+        if let Some(x) = w.literacy_below {
+            line(m.literacy.map(|l| format!("Literacy is {}", pct(l))), format!("below {}", pct(x)));
+        }
+        if let Some(x) = w.sol_below {
+            line(m.sol.map(|s| format!("Average standard of living is {s:.1}")), format!("below {x:.0}"));
+        }
+        if let Some(x) = w.radicals_share_at_least {
+            line(m.radicals.map(|r| format!("Radicals are {} of the population", pct(r))), format!("from {}", pct(x)));
+        }
+        if let Some(n) = w.infrastructure_short_states_at_least {
+            line(Some(format!("{} of your states are short of infrastructure", m.infra_short)), format!("at least {n}"));
+        }
+        if m.debt > 0.0 && out.is_empty() {
+            // Nothing measurable in the rule: keep the budget context visible.
+            out.extend(m.debt_share.map(|s| format!("Debt is {} of the credit limit", pct(s))));
+        }
+        out
+    }
+}
+
+/// A game term explained in Polish (`playbook/glossary.toml`).
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Term {
+    pub key: String,
+    /// English phrases rule texts use.
+    pub en: Vec<String>,
+    pub pl_name: String,
+    pub pl: String,
+}
+
+/// The embedded glossary, parsed once.
+pub fn glossary() -> &'static [Term] {
+    #[derive(Deserialize)]
+    struct File {
+        term: Vec<Term>,
+    }
+    static TERMS: OnceLock<Vec<Term>> = OnceLock::new();
+    TERMS.get_or_init(|| toml::from_str::<File>(include_str!("../playbook/glossary.toml")).expect("playbook/glossary.toml").term)
+}
+
+/// Glossary terms whose English phrases appear (whole words) in `text`.
+pub fn terms_in(text: &str) -> Vec<&'static Term> {
+    let lower = text.to_lowercase();
+    let word = |p: &str| {
+        lower.match_indices(p).any(|(at, _)| {
+            !lower[..at].chars().next_back().is_some_and(char::is_alphanumeric) && !lower[at + p.len()..].chars().next().is_some_and(char::is_alphanumeric)
+        })
+    };
+    glossary().iter().filter(|t| t.en.iter().any(|p| word(p))).collect()
+}
+
+/// A rule explained for a player: its texts, steps and glossary terms, plus whether
+/// it applies to `loaded` (world, defs, prices) and the save's values behind it.
+/// `id` may carry the advice prefix (`playbook:gen.tax-bridge`). `None` = no such rule.
+pub fn explain(id: &str, loaded: Option<(&World, &GameDefs, &vic3_prices::PricesResult)>) -> Option<serde_json::Value> {
+    let id = id.strip_prefix("playbook:").unwrap_or(id);
+    let rule = rules().iter().find(|r| r.id == id)?;
+    let text = format!("{} {} {}", rule.title, rule.detail, rule.why);
+    let mut out = serde_json::json!({
+        "id": rule.id,
+        "title": rule.title,
+        "goal": rule.goal,
+        "phase": rule.phase,
+        "detail": rule.detail,
+        "why": rule.why,
+        "sources": rule.sources,
+        "patch": rule.patch,
+        "when": format!("{:?}", rule.when),
+        "steps": steps(rule, &vic3_defs::pretty_id),
+        "terms": terms_in(&text),
+    });
+    if let Some((world, defs, prices)) = loaded {
+        if let Some((country, states)) = crate::advice::player(world) {
+            let budget = crate::budget::report(defs, country);
+            let facts = Facts { world, defs, prices, country, states: &states, budget: budget.as_ref() };
+            let for_country = rule.countries.is_empty() || rule.countries.iter().any(|c| *c == country.tag);
+            out["applies_now"] = serde_json::json!(for_country && facts.holds(&rule.when));
+            out["why_now"] = serde_json::json!(facts.why_now(&rule.when));
+            out["steps"] = serde_json::json!(steps(rule, &|id| defs.display_label(id)));
+        }
+    }
+    Some(out)
+}
+
+/// Values the rule conditions and their explanations share.
+struct Metrics {
+    year: Option<i16>,
+    balance: Option<f64>,
+    debt: f64,
+    income_share: Option<f64>,
+    debt_share: Option<f64>,
+    runway: Option<f64>,
+    literacy: Option<f64>,
+    sol: Option<f64>,
+    radicals: Option<f64>,
+    infra_short: usize,
+}
+
+fn pretty_group(key: &str) -> String {
+    match key {
+        "military" => "Military upkeep".into(),
+        "government" => "Government upkeep".into(),
+        _ => vic3_defs::pretty_id(key),
+    }
+}
+
+/// How to carry out `rule` in the game's interface: the rule's own `how`, or steps
+/// derived from what it asks for (a law, a building, a technology, the budget).
+pub fn steps(rule: &Rule, label: &dyn Fn(&str) -> String) -> Vec<String> {
+    if !rule.how.is_empty() {
+        return rule.how.clone();
+    }
+    let w = &rule.when;
+    let mut out = Vec::new();
+    let law = match &rule.done {
+        Some(Check::LawActive { law }) => Some(law.clone()),
+        _ => None,
+    };
+    let building = match &rule.done {
+        Some(Check::BuildingLevels { building_type, .. }) => Some(building_type.clone()),
+        _ => w.levels_below.keys().next().cloned(),
+    };
+    if let Some(law) = law {
+        out.push(format!("Open the Politics panel, Laws tab, and find {}.", label(&law)));
+        out.push("Press Enact. Enactment takes months: keep the interest groups that support it in government, and watch the chance of success.".into());
+        out.push("Before it passes, check its effect on the budget: schools, health, police and welfare laws cost money every week.".into());
+    } else if let Some(Check::LawInactive { law }) = &rule.done {
+        out.push(format!("Open the Politics panel, Laws tab, and find the law group of {}.", label(law)));
+        out.push("Enact the replacement the detail names; the old law ends when it passes.".into());
+    }
+    if let Some(b) = building {
+        out.push(format!("Open the Construction panel and choose {}.", label(&b)));
+        out.push("Pick the state the analyzer's Now list or Market tab names (resources, workers, payback) and queue a level.".into());
+    } else if let Some(good) = w.price_above_base.keys().chain(w.any_price_above_base.keys()).next() {
+        out.push(format!("Open the Market panel and find {}: its tooltip shows which buildings make it.", label(good)));
+        out.push("The analyzer's Market tab names the building, the state to build in and any input that is dear too.".into());
+    }
+    if let Some(tech) = w.techs_missing.first() {
+        out.push(format!("Open the Technology panel and put {} first in its queue.", label(tech)));
+    }
+    let budget = w.balance_below.is_some()
+        || w.debt_share_of_limit_at_least.is_some()
+        || w.runway_weeks_below.is_some()
+        || !w.expense_share_at_least.is_empty()
+        || !w.expense_ratio_at_least.is_empty();
+    if out.is_empty() && budget {
+        out.push("Open the Budget panel: the tax level and the military and government wage levels are set there and take effect weekly.".into());
+        out.push("Army costs: in the Military panel disband battalions you do not need in peacetime, or switch them to cheaper equipment.".into());
+    }
+    if out.is_empty() {
+        out.push("Follow the detail above; ask Muse (tool explain_rule) if a step is unclear.".into());
+    }
+    out
 }
 
 /// Matching rules for the played country, as advice.
@@ -281,6 +515,8 @@ pub fn playbook_advice(facts: &Facts<'_>, out: &mut Vec<Advice>) {
             priority: rule.priority,
             title: rule.title.clone(),
             detail: format!("Playbook · {} · {}: {}", rule.goal, rule.phase, rule.detail),
+            steps: steps(rule, &|id| facts.defs.display_label(id)),
+            why_now: facts.why_now(&rule.when),
             why: Some(format!("{}{sources}", rule.why)),
             goal: None,
             check: rule.done.clone(),
@@ -347,6 +583,31 @@ mod tests {
         let army = out.iter().find(|a| a.id == "playbook:pru.opening-army").expect("army");
         assert_eq!(army.priority, 1);
         assert!(army.why.as_deref().is_some_and(|w| w.contains("Sources (1.13.9)")));
+        assert!(out.iter().all(|a| !a.steps.is_empty()), "every playbook item says how to do it");
+        let share = out.iter().find(|a| a.id == "playbook:gen.army-share").expect("army share");
+        assert!(share.why_now.iter().any(|l| l.starts_with("Military upkeep is") && l.contains("(rule: from")), "{:?}", share.why_now);
+    }
+
+    #[test]
+    fn explain_names_steps_and_polish_terms() {
+        let e = explain("playbook:gen.tax-bridge", None).expect("rule");
+        assert_eq!(e["id"], "gen.tax-bridge");
+        assert!(e["steps"].as_array().is_some_and(|s| !s.is_empty()));
+        let terms: Vec<&str> = e["terms"].as_array().unwrap().iter().filter_map(|t| t["key"].as_str()).collect();
+        assert!(terms.contains(&"credit_limit"), "{terms:?}");
+        assert!(explain("nope", None).is_none());
+        assert!(glossary().iter().all(|t| !t.en.is_empty() && !t.pl.is_empty()));
+    }
+
+    #[test]
+    fn steps_follow_what_the_rule_asks_for() {
+        let by_id = |id: &str| rules().iter().find(|r| r.id == id).expect(id);
+        let law = steps(by_id("gen.welfare-when-solvent"), &vic3_defs::pretty_id);
+        assert!(law[0].contains("Politics panel") && law[0].contains("Poor Laws"), "{law:?}");
+        let building = steps(by_id("gen.mid-universities"), &vic3_defs::pretty_id);
+        assert!(building[0].contains("Construction panel") && building[0].contains("University"), "{building:?}");
+        let tech = steps(by_id("gen.early-railways-research"), &vic3_defs::pretty_id);
+        assert!(tech.iter().any(|s| s.contains("Technology panel")), "{tech:?}");
     }
 
     fn trend(values: &[f64]) -> vic3_load::TrendSeries {

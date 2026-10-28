@@ -238,10 +238,21 @@ impl McpRuntime {
         // Clone the binding out so the advice scan does not hold the engine lock.
         let binding = self.engine.lock().await.active_binding().ok_or(SqlError::Unbound)?;
         let mut result = advice(&binding.world, &binding.defs, &binding.prices);
+        // Same store as the desktop app, so a suggestion followed in either shows its effect in both.
+        result.outcomes = vic3_api::outcomes::track(&self.app_data.join("advice_log.jsonl"), &result, &binding.world, &binding.defs).unwrap_or_default();
         if let Some(domain) = domain {
             result.advice.retain(|item| item.domain == domain);
         }
         Ok(result)
+    }
+
+    /// A playbook rule explained, against the bound save when there is one.
+    pub async fn explain_rule(&self, id: &str) -> Option<Value> {
+        let binding = self.engine.lock().await.active_binding();
+        match binding {
+            Some(b) => vic3_api::playbook::explain(id, Some((&b.world, &b.defs, &b.prices))),
+            None => vic3_api::playbook::explain(id, None),
+        }
     }
 
     /// Newest in-game line from the Oikonomia Advisor mod, read from the game log

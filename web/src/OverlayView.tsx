@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { adviceInTab, BudgetBanner, loadGoals, money } from './AdvisorPane'
+import { AdviceExtras, adviceInTab, BudgetBanner, loadGoals, money } from './AdvisorPane'
 import type { AdviceResult, LiveStatus } from './types'
 import type { WasmApi } from './wasm'
 
@@ -105,6 +105,7 @@ export function OverlayView({ api, listen, live }: Props) {
           <li key={item.id} className={`advisor-item priority-${item.priority}`}>
             <strong>{item.title}</strong>
             <p>{item.detail}</p>
+            <AdviceExtras item={item} />
             {item.why && (
               <details className="advisor-why">
                 <summary>How it works</summary>

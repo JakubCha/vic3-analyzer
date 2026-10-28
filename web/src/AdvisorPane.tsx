@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { Advice, AdviceDomain, AdviceGoal, AdviceResult, BudgetReport } from './types'
+import type { Advice, AdviceDomain, AdviceGoal, AdviceResult, BudgetReport, MarketCase } from './types'
 import { isTauri } from './env'
 import { invokeTauri } from './tauriApi'
 import type { WasmApi } from './wasm'
 
-/** `now`: the few most important items across every domain. */
-export type View = AdviceDomain | 'now'
+/** `now`: the few most important items across every domain; `market`: the market doctor. */
+export type View = AdviceDomain | 'now' | 'market'
 
 /** How many items the Now tab shows: a short session's worth. */
 const NOW_LIMIT = 5
@@ -15,6 +15,7 @@ const DOMAINS: readonly { id: View; label: string }[] = [
   { id: 'economy', label: 'Economy' },
   { id: 'laws', label: 'Laws' },
   { id: 'war', label: 'War' },
+  { id: 'market', label: 'Market' },
 ]
 
 /** A suggestion the player chose to act on, kept across saves. */
@@ -155,7 +156,7 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
   const isTracked = (id: string) => mine.some((item) => item.advice.id === id)
   const inTab = (tab: View) => adviceInTab(result?.advice ?? [], tab, goals)
   const list = inTab(domain)
-  const goalDomain: GoalDomain | undefined = domain === 'war' || domain === 'now' ? undefined : domain
+  const goalDomain: GoalDomain | undefined = domain === 'economy' || domain === 'laws' ? domain : undefined
   const pickGoal = (target: GoalDomain, next: AdviceGoal) => {
     setGoals((current) => ({ ...current, [target]: next }))
     try {
@@ -176,7 +177,7 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
 
       <div className="advisor-domains" role="tablist" aria-label="Advisor domain">
         {DOMAINS.map((item) => {
-          const count = inTab(item.id).length
+          const count = item.id === 'market' ? (result?.market?.length ?? 0) : inTab(item.id).length
           return (
             <button
               key={item.id}
@@ -222,7 +223,8 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
 
       {error && <p role="alert">{error}</p>}
       {!result && !error && <p>Preparing advice…</p>}
-      {result && list.length === 0 && <p>Nothing to suggest here for this save.</p>}
+      {result && domain !== 'market' && list.length === 0 && <p>Nothing to suggest here for this save.</p>}
+      {result && domain === 'market' && <MarketDoctor cases={result.market ?? []} />}
 
       <ol className="advisor-list" aria-label="Suggestions">
         {list.map((item) => (
@@ -230,6 +232,7 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
             <span className="alert-severity">{item.priority === 1 ? 'Urgent' : 'Worthwhile'}</span>{' '}
             <strong>{item.title}</strong>
             <p>{item.detail}</p>
+            <AdviceExtras item={item} />
             {item.why && (
               <details className="advisor-why" open>
                 <summary>How it works</summary>
@@ -268,6 +271,19 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
         </section>
       )}
 
+      {result?.outcomes && result.outcomes.length > 0 && (
+        <section aria-label="What followed advice did">
+          <h3>What your followed advice did</h3>
+          <ul className="advisor-tracked">
+            {result.outcomes.map((o) => (
+              <li key={`${o.id}-${o.after.date}`}>
+                <strong>{o.title}</strong> <span>{o.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {result && result.limitations.length > 0 && (
         <details>
           <summary>Limitations</summary>
@@ -279,6 +295,60 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
         </details>
       )}
     </div>
+  )
+}
+
+/** "Why now" values and "How to do it" steps of one item. */
+export function AdviceExtras({ item }: { item: Advice }) {
+  return (
+    <>
+      {item.why_now && item.why_now.length > 0 && (
+        <ul className="advisor-why-now" aria-label="Why now">
+          {item.why_now.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+      {item.steps && item.steps.length > 0 && (
+        <details className="advisor-steps">
+          <summary>How to do it</summary>
+          <ol>
+            {item.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </details>
+      )}
+    </>
+  )
+}
+
+/** Dear and cheap goods with what makes them and the real cause. */
+function MarketDoctor({ cases }: { cases: MarketCase[] }) {
+  if (cases.length === 0) return <p>No good is more than 20% off its base price on your market.</p>
+  return (
+    <ol className="advisor-list" aria-label="Market">
+      {cases.map((c) => (
+        <li key={c.good} className={`advisor-item priority-${c.dear ? 1 : 2}`}>
+          <span className="alert-severity">{c.dear ? 'Dear' : 'Cheap'}</span>{' '}
+          <strong>
+            {c.label} {c.price_vs_base > 0 ? '+' : '−'}
+            {Math.round(Math.abs(c.price_vs_base) * 100)}%
+          </strong>
+          <p>{c.advice}</p>
+          <ul className="advisor-why-now">
+            {c.producers.length > 0 && <li>Made by: {c.producers.join(', ')}</li>}
+            {c.dear_inputs.length > 0 && <li>Dear inputs (fix first): {c.dear_inputs.join(', ')}</li>}
+            {c.consumers.length > 0 && <li>Used by: {c.consumers.join(', ')}</li>}
+            {c.yours.map(([state, building, levels, profit]) => (
+              <li key={`${state}-${building}`}>
+                Yours: {building} in {state}, {levels} levels, {money(profit)} profit per level
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ol>
   )
 }
 

@@ -11,6 +11,7 @@ Player-only journal entries with live values computed by the game every tick. Th
 - **Budget alarm event** – a popup when the state is losing money and debt passes 85% of the credit limit (or in default), at most every six months.
 
 - **Own journal group** – everything sits in the collapsible group "Oikonomia Advisor"; the Budget Guard and the dashboard show a debt / credit-limit bar and a budget verdict chosen by the game (customizable localization).
+- **How to do it, why now** – every playbook entry lists the steps in the game's interface, links game terms to the game's own concept tooltips (credit limit, default, infrastructure, …) and shows the live values its rule checks (debt share, balance, building levels) against the rule's thresholds.
 - **Three tips at a time** – at most three playbook entries are open at once (priority-1 tips always come in); each has a "Skip this tip" button that drops it for the campaign.
 - **Chapters** – one five-item checklist per era for every country: Foundations (to 1850), Industry (to 1885), Modern State.
 - **Construction Is Running Dry** – entry and top-bar alert when the state's construction queue has under two weeks of work.

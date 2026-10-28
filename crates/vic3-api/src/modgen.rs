@@ -143,6 +143,75 @@ fn loc_text(s: &str) -> String {
     s.replace('"', "'").replace('[', "(").replace(']', ")").replace(['#', '$', '@'], "").replace('\n', "\\n")
 }
 
+/// Game concepts (common/game_concepts, 1.13.9) linked from rule texts: hovering one
+/// shows the game's own explanation.
+const CONCEPTS: &[(&str, &str)] = &[
+    ("credit limit", "concept_credit"),
+    ("default", "concept_default"),
+    ("construction queue", "concept_construction_queue"),
+    ("market access", "concept_market_access"),
+    ("infrastructure", "concept_infrastructure"),
+    ("base price", "concept_base_price"),
+    ("production method", "concept_production_method"),
+    ("interest group", "concept_interest_group"),
+    ("approval", "concept_approval"),
+    ("radicals", "concept_radical"),
+    ("legitimacy", "concept_legitimacy"),
+    ("investment pool", "concept_investment_pool"),
+    ("qualifications", "concept_pop_qualifications"),
+    ("economy of scale", "concept_economy_of_scale"),
+    ("throughput", "concept_throughput"),
+    ("standard of living", "concept_sol"),
+    ("literacy", "concept_literacy"),
+    ("bureaucracy", "concept_bureaucracy"),
+    ("treasury", "concept_treasury"),
+    ("mobilisation", "concept_mobilize_army"),
+];
+
+/// `text` (already through [`loc_text`]) with the first whole-word use of each concept
+/// phrase turned into a concept link that keeps our wording.
+fn concept_links(text: &str) -> String {
+    let mut out = text.to_string();
+    for (phrase, concept) in CONCEPTS {
+        let lower = out.to_lowercase();
+        let found = lower.match_indices(phrase).find(|(at, _)| {
+            let before = lower[..*at].chars().next_back();
+            let after = lower[at + phrase.len()..].chars().next();
+            !before.is_some_and(|c| c.is_alphanumeric() || c == '\'' || c == '_') && !after.is_some_and(char::is_alphanumeric)
+        });
+        // Lowercasing keeps byte offsets for this ASCII-only phrase list.
+        if let Some((at, _)) = found {
+            let original = &out[at..at + phrase.len()];
+            let link = format!("[Concept('{concept}','{original}')]");
+            out.replace_range(at..at + phrase.len(), &link);
+        }
+    }
+    out
+}
+
+/// Live values for the rule's conditions the game can show, as a status text.
+fn status_lines(w: &When) -> Vec<String> {
+    let value = |v: &str, fmt: &str| format!("#bold [GetPlayer.MakeScope.ScriptValue('{v}')|{fmt}]#!");
+    let mut out = Vec::new();
+    if w.debt_share_of_limit_at_least.is_some() || w.debt_share_of_limit_below.is_some() || w.in_debt.is_some() {
+        let rule = w.debt_share_of_limit_at_least.map(|x| format!("from {}%", num(x * 100.0))).or(w.debt_share_of_limit_below.map(|x| format!("below {}%", num(x * 100.0))));
+        out.push(format!("Debt / credit limit: {}{}", value("oiko_debt_share", "0%"), rule.map(|r| format!(" (rule: {r})")).unwrap_or_default()));
+    }
+    if w.balance_below.is_some() || w.balance_at_least.is_some() || w.balance_share_of_income_below.is_some() || w.balance_share_of_income_at_least.is_some() {
+        out.push(format!("Weekly balance: {} @money!", value("oiko_balance", "D")));
+    }
+    if w.runway_weeks_below.is_some() {
+        out.push(format!("Treasury lasts: {} weeks", value("oiko_weeks_to_debt", "0")));
+    }
+    if let Some(x) = w.expense_share_at_least.get("military") {
+        out.push(format!("Military share of spending: {} (rule: from {}%)", value("oiko_military_share", "0%"), num(x * 100.0)));
+    }
+    for (b, n) in w.levels_below.iter().map(|(b, n)| (b, format!("below {}", num(*n)))).chain(w.levels_at_least.iter().map(|(b, n)| (b, format!("at least {}", num(*n))))) {
+        out.push(format!("{}: {} levels (rule: {n})", vic3_defs::pretty_id(b), value(&level_value(b), "0")));
+    }
+    out
+}
+
 fn block(out: &mut String, indent: &str, name: &str, lines: &[String]) {
     let _ = writeln!(out, "{indent}{name} = {{");
     for line in lines {
@@ -243,11 +312,24 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
             format!("\n\nSources ({}): {}", rule.patch, rule.sources.join(", "))
         };
         let _ = writeln!(loc, " {name}:0 \"{}\"", loc_text(&format!("Playbook: {}", rule.title)));
+        let how: Vec<String> = crate::playbook::steps(rule, &vic3_defs::pretty_id).iter().enumerate().map(|(i, s)| format!("{}. {s}", i + 1)).collect();
         let _ = writeln!(
             loc,
             " {name}_reason:0 \"{}\"",
-            loc_text(&format!("{} · {}\n\n{}\n\nHow it works: {}{sources}", rule.goal, rule.phase, rule.detail, rule.why))
+            concept_links(&loc_text(&format!(
+                "{} · {}\n\n{}\n\nHow to do it:\n{}\n\nHow it works: {}{sources}",
+                rule.goal,
+                rule.phase,
+                rule.detail,
+                how.join("\n"),
+                rule.why
+            )))
         );
+        let status = status_lines(&rule.when);
+        if !status.is_empty() {
+            // Built from our own format strings, so not passed through loc_text.
+            let _ = writeln!(loc, " {name}_status:0 \"Now:\\n{}\"", status.join("\\n"));
+        }
     }
 
     let mut actions = String::from(BOM);
@@ -382,5 +464,19 @@ price_ratio_at_most = { iron = 1.1 }
             assert_eq!(text.matches('{').count(), text.matches('}').count(), "{path}");
             assert!(text.starts_with(BOM) && !text[3..].starts_with(BOM), "{path}");
         }
+    }
+}
+
+#[cfg(test)]
+mod concept_tests {
+    use super::*;
+
+    #[test]
+    fn concept_links_keep_the_wording_and_skip_parts_of_words() {
+        let text = concept_links("Debt over the credit limit means default; defaulting and Treasury.");
+        assert_eq!(
+            text,
+            "Debt over the [Concept('concept_credit','credit limit')] means [Concept('concept_default','default')]; defaulting and [Concept('concept_treasury','Treasury')]."
+        );
     }
 }

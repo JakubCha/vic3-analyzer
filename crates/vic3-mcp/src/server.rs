@@ -42,6 +42,7 @@ const FLOW_MARKDOWN: &str = r#"# Vic3 Analyzer MCP flow
 2. Bind session: tool `use_save` with `{ "name": "autosave" }` or `{ "selector": "latest_autosave" }`.
 3. Prefer tool `campaign_brief` for a compact session overview, then query / `preview_delta` as needed (`alerts()` is player-scoped; use `alerts('all')` for the full save).
 4. Money, debt or bankruptcy: tool `live_status` for the current in-game numbers (if the mod runs), `budget` for the breakdown. For "what should I do next": tool `advice` (optionally `{ "domain": "economy" | "laws" | "war" }`). After the player acts and a newer save is bound, pass the items' `check` objects to `check_advice` to see which are done.
+5. The player does not understand an item or how to do it: tool `explain_rule` with its id (steps, glossary terms, the save's values). Expensive goods or an unbalanced market: tool `market_doctor`. Terms: tool `glossary`. `advice.outcomes` shows what followed suggestions changed.
 
 Rules:
 - Answer about this campaign from these tools, not from memory: Victoria 3 mechanics changed across patches. Explain with the items' `why` text.
@@ -144,6 +145,13 @@ pub struct HistoryArgs {
     /// Points per line (default 24).
     #[serde(default)]
     pub points: Option<usize>,
+}
+
+/// Args for tool `explain_rule`.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct ExplainRuleArgs {
+    /// Playbook rule id, with or without the `playbook:` prefix of advice ids (e.g. `gen.tax-bridge`).
+    pub id: String,
 }
 
 /// Args for tool `campaign_brief`: empty object so clients can send `{}`.
@@ -349,6 +357,45 @@ impl Vic3McpServer {
             Ok(report) => Ok(tool_ok_json(&json!(report))),
             Err(e) => Ok(sql_to_tool_result(e)),
         }
+    }
+
+    /// One playbook rule explained for the player.
+    #[tool(
+        description = "Explain one advice item to a player who does not understand it or does not know how to do it: pass the item's id (e.g. playbook:gen.tax-bridge). Returns {title, detail, why (game mechanism), steps (what to click in the game), sources, terms:[{pl_name, pl}] (Polish glossary of the game terms it uses), applies_now?, why_now? (the bound save's values against the rule's thresholds)}. Works without use_save (no applies_now / why_now then). Explain in the player's language, from these fields."
+    )]
+    async fn explain_rule(
+        &self,
+        Parameters(args): Parameters<ExplainRuleArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        match self.runtime.explain_rule(&args.id).await {
+            Some(body) => Ok(tool_ok_json(&body)),
+            None => Ok(tool_err(format!("no playbook rule {}; pass a playbook:… id from advice", args.id))),
+        }
+    }
+
+    /// Market doctor for the played country.
+    #[tool(
+        description = "After use_save: goods far from base price on the player's market, worst first: [{label, price_vs_base (0.3 = 30% dearer), dear, producers (building types that make it), dear_inputs (inputs that are dear too: fix those first), consumers (for cheap goods), yours ([state, building, levels, profit per level] where the player already makes it), advice}]. Use it when the player asks how to balance the market or why something is expensive."
+    )]
+    async fn market_doctor(
+        &self,
+        Parameters(_args): Parameters<CampaignBriefArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        match self.runtime.advice(None).await {
+            Ok(result) => Ok(tool_ok_json(&json!(result.market))),
+            Err(e) => Ok(sql_to_tool_result(e)),
+        }
+    }
+
+    /// Polish glossary of game terms.
+    #[tool(
+        description = "Polish glossary of Victoria 3 terms the advisor uses (credit limit, default, construction, base price, infrastructure, production methods, interest groups, radicals, legitimacy, standard of living, literacy, bureaucracy, mobilisation, investment pool, taxes, treasury, economy of scale): [{key, en (English phrases), pl_name, pl}]. No use_save needed."
+    )]
+    async fn glossary(
+        &self,
+        Parameters(_args): Parameters<CampaignBriefArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_ok_json(&json!(vic3_api::playbook::glossary())))
     }
 
     /// Evaluate advisor checks on the bound save.

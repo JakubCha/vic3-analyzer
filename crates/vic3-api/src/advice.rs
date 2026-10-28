@@ -38,6 +38,12 @@ pub struct Advice {
     /// The game mechanism behind the advice, for players learning the game.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub why: Option<String>,
+    /// How to carry it out in the game's interface, one step per line.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub steps: Vec<String>,
+    /// The save's current values behind the advice, against the rule's thresholds.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub why_now: Vec<String>,
     /// `None` → the player marks it done by hand.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub check: Option<Check>,
@@ -51,6 +57,12 @@ pub struct AdviceResult {
     /// Budget guard for the played country.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub budget: Option<crate::budget::BudgetReport>,
+    /// Market doctor: dear and cheap goods with their producers and causes.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub market: Vec<crate::market::MarketCase>,
+    /// Followed suggestions with the budget before and after (filled by callers that keep a store).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub outcomes: Vec<crate::outcomes::Outcome>,
 }
 
 /// Condition on a later save that means the suggestion was carried out.
@@ -267,6 +279,8 @@ fn law_advice(defs: &GameDefs, country: &WorldCountry, education_short: bool, ou
                 Support::list(&support.against)
             ),
             goal: Some(Goal::Law(goal)),
+            steps: Vec::new(),
+            why_now: Vec::new(),
             why: None,
             check: Some(Check::LawActive { law: next.to_string() }),
         });
@@ -636,6 +650,8 @@ impl<'a> Market<'a> {
                 priority: if rank < 2 { 1 } else { 2 },
                 title: format!("Expand {} in {}", site.type_label, self.state_label(site.state_id)),
                 detail,
+                steps: Vec::new(),
+                why_now: Vec::new(),
                 why: Some("Ranked by profit per construction point. Construction capacity is the scarce resource early on, so the level that repays its construction soonest compounds growth fastest; its wages and profits are also taxed. Profit is today's, at current prices: a level that floods its own market earns less.".into()),
                 check: Some(Check::BuildingLevels {
                     building_type: site.type_name.clone(),
@@ -700,6 +716,8 @@ impl<'a> Market<'a> {
                             site.type_label,
                             site.profit_per_level()
                         ),
+                        steps: Vec::new(),
+                        why_now: Vec::new(),
                         why: None,
                         check: Some(Check::BuildingLevels {
                             building_type: site.type_name.clone(),
@@ -733,6 +751,8 @@ impl<'a> Market<'a> {
                         detail: format!(
                             "{why} None of your states has a {type_label} yet; pick a state with the resource and idle workers."
                         ),
+                        steps: Vec::new(),
+                        why_now: Vec::new(),
                         why: None,
                         check: Some(Check::BuildingLevels {
                             building_type: type_name.to_string(),
@@ -770,6 +790,8 @@ impl<'a> Market<'a> {
                 site.staffed() * 100.0,
                 if self.idle_states.contains(&site.state_id) { " and workers are idle" } else { "" }
             ),
+            steps: Vec::new(),
+            why_now: Vec::new(),
             why: None,
             check: Some(Check::BuildingLevels {
                 building_type: site.type_name.clone(),
@@ -804,6 +826,8 @@ impl<'a> Market<'a> {
                     "It loses about {:.0} per level.{inputs} Switch to a cheaper production method, secure its inputs, or stop expanding it.",
                     -site.profit_per_level()
                 ),
+                steps: Vec::new(),
+                why_now: Vec::new(),
                 why: None,
                 check: None,
             });
@@ -830,6 +854,8 @@ impl<'a> Market<'a> {
                     l.sell,
                     l.buy
                 ),
+                steps: Vec::new(),
+                why_now: Vec::new(),
                 why: None,
                 check: None,
             });
@@ -879,6 +905,8 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
             advice: Vec::new(),
             limitations,
             budget: None,
+            market: Vec::new(),
+            outcomes: Vec::new(),
         };
     };
 
@@ -934,6 +962,8 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
             detail: format!(
                 "{total} of your buildings can't fill skilled jobs (engineers, clerks, machinists) for lack of literate pops, most of them ({count}) in {label}. A university there and a schooling law raise qualifications."
             ),
+            steps: Vec::new(),
+            why_now: Vec::new(),
             why: None,
             check: Some(Check::BuildingLevels {
                 building_type: "building_university".into(),
@@ -968,7 +998,8 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
         _ => 2,
     };
     advice.sort_by(|a, b| (a.priority, rank(a), &a.id).cmp(&(b.priority, rank(b), &b.id)));
-    AdviceResult { advice, limitations, budget }
+    let market = crate::market::market_doctor(defs, prices, &states);
+    AdviceResult { advice, limitations, budget, market, outcomes: Vec::new() }
 }
 
 /// Whether each check holds on the loaded save. `false` when there is no player.

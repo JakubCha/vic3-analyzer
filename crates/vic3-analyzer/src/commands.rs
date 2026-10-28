@@ -294,7 +294,9 @@ pub fn loaded_alerts() -> Result<String, String> {
 /// No loaded analysis.
 #[tauri::command(async)]
 pub fn loaded_advice() -> Result<String, String> {
-    vic3_api::loaded_advice_json().map_err(|e| e.to_string())
+    // Followed suggestions are measured against `<app data>/advice_log.jsonl`.
+    let store = vic3_catalog::app_data_dir().ok().map(|dir| dir.join("advice_log.jsonl"));
+    vic3_api::loaded_advice_tracked_json(store.as_deref()).map_err(|e| e.to_string())
 }
 
 /// Evaluate tracked advice checks on the loaded save.

@@ -385,7 +385,44 @@ export interface Advice {
   detail: string
   /** The game mechanism behind the advice. */
   why?: string
+  /** What to click in the game, one step per line. */
+  steps?: string[]
+  /** The save's values behind the advice against the rule's thresholds. */
+  why_now?: string[]
   check?: AdviceCheck
+}
+
+/** Market doctor case (`vic3_api::market::MarketCase`). */
+export interface MarketCase {
+  good: string
+  label: string
+  /** Price over base minus 1 (0.3 = 30% dearer). */
+  price_vs_base: number
+  dear: boolean
+  producers: string[]
+  dear_inputs: string[]
+  consumers: string[]
+  /** [state, building, levels, profit per level] where the player already makes it. */
+  yours: [string, string, number, number][]
+  advice: string
+}
+
+/** Budget at one save (`vic3_api::outcomes::Snapshot`). */
+export interface OutcomeSnapshot {
+  date: string
+  weekly_balance?: number | null
+  treasury: number
+  debt_share?: number | null
+  military_share?: number | null
+}
+
+/** A followed suggestion with the budget before and after (`vic3_api::outcomes::Outcome`). */
+export interface AdviceOutcome {
+  id: string
+  title: string
+  before: OutcomeSnapshot
+  after: OutcomeSnapshot
+  summary: string
 }
 
 /** Budget category with its largest buildings (`vic3_api::budget::BudgetGroup`). */
@@ -419,6 +456,8 @@ export interface AdviceResult {
   advice: Advice[]
   limitations: string[]
   budget?: BudgetReport
+  market?: MarketCase[]
+  outcomes?: AdviceOutcome[]
 }
 
 export type AnalysisResult = PricesResult | GapsResult | PlanResult

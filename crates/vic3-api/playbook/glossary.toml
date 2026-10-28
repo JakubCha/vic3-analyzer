@@ -1,0 +1,105 @@
+# Polish glossary of game terms for players learning Victoria 3 (1.13.9), in our own words.
+# `en` lists the English phrases rule texts use; a rule that mentions one gets the entry
+# in `explain_rule`. Schema: crates/vic3-api/src/playbook.rs (`Term`).
+
+[[term]]
+key = "credit_limit"
+en = ["credit limit", "credit"]
+pl_name = "Limit kredytu"
+pl = "Ile państwo może pożyczyć. Gdy skarbiec jest pusty, deficyt pokrywa dług; dług rośnie o odsetki. Gdy przekroczy limit, państwo bankrutuje. Limit rośnie z rezerwami złota i wielkością gospodarki."
+
+[[term]]
+key = "default"
+en = ["default", "defaults"]
+pl_name = "Bankructwo (niewypłacalność)"
+pl = "Stan po przekroczeniu limitu kredytu: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień aż do -50%. Kończy się, gdy dług wróci pod limit."
+
+[[term]]
+key = "construction"
+en = ["construction sector", "construction queue", "construction point"]
+pl_name = "Sektor i kolejka budowy"
+pl = "Sektory budowlane dają punkty budowy na tydzień; każdy poziom budynku kosztuje określoną liczbę punktów. Za sektory płacisz z budżetu (materiały budowlane), czy budują, czy nie, więc kolejka nie powinna być pusta."
+
+[[term]]
+key = "base_price"
+en = ["base price", "above base", "below base"]
+pl_name = "Cena bazowa"
+pl = "Cena towaru przy równowadze podaży i popytu. Powyżej bazy brakuje towaru (zbuduj producenta), poniżej jest go za dużo (nie rozbudowuj producentów, zbuduj odbiorców). Ceny wahają się w przedziale około ±75% bazy."
+
+[[term]]
+key = "infrastructure"
+en = ["infrastructure", "market access"]
+pl_name = "Infrastruktura i dostęp do rynku"
+pl = "Każdy budynek zużywa infrastrukturę stanu; koleje i porty ją dają. Gdy zużycie przekroczy pojemność, spada dostęp stanu do rynku: jego budynki kupują i sprzedają mniej, więc zarabiają mniej."
+
+[[term]]
+key = "production_method"
+en = ["production method", "production methods"]
+pl_name = "Metoda produkcji"
+pl = "Sposób, w jaki budynek pracuje: jakie towary zużywa, co produkuje i kogo zatrudnia. Nowsze metody zwykle produkują więcej, ale zużywają droższe wejścia (narzędzia, silniki, elektryczność); opłacają się, gdy te wejścia są tanie."
+
+[[term]]
+key = "interest_groups"
+en = ["interest group", "interest groups", "clout", "approval", "in government"]
+pl_name = "Grupy interesu, wpływ i poparcie"
+pl = "Grupy interesu (np. Właściciele ziemscy, Przemysłowcy, Siły zbrojne) mają wpływ zależny od ich ludności i majątku. Grupy w rządzie przepychają ustawy, które popierają; niezadowolone tracą lojalność i rodzą radykałów."
+
+[[term]]
+key = "radicals"
+en = ["radicals", "radical", "turmoil"]
+pl_name = "Radykałowie"
+pl = "Ludność niezadowolona z sytuacji (spadek poziomu życia, ustawy, którym się sprzeciwia, dyskryminacja). Obniżają legitymację i zasilają ruchy polityczne, które mogą wywołać rewolucję."
+
+[[term]]
+key = "legitimacy"
+en = ["legitimacy"]
+pl_name = "Legitymacja"
+pl = "Jak bardzo ludność akceptuje rząd. Niska legitymacja spowalnia uchwalanie ustaw i zwiększa niepokoje; podnosi ją m.in. rząd złożony z grup o dużym wpływie i zgodnych ideologii."
+
+[[term]]
+key = "standard_of_living"
+en = ["standard of living"]
+pl_name = "Poziom życia"
+pl = "Ile podstawowych i luksusowych towarów ludność może kupić za swoje dochody. Rośnie z płacami i tanimi towarami (zboże, ubrania, meble); gdy spada, rośnie liczba radykałów."
+
+[[term]]
+key = "literacy"
+en = ["literacy", "qualifications", "skilled"]
+pl_name = "Piśmienność i kwalifikacje"
+pl = "Piśmienni ludzie zdobywają kwalifikacje do lepszych zawodów (urzędnik, inżynier, maszynista). Bez nich nowe fabryki nie obsadzą stanowisk. Piśmienność podnoszą ustawy o szkołach i instytucja edukacji, a uniwersytety przyspieszają badania."
+
+[[term]]
+key = "bureaucracy"
+en = ["bureaucracy", "government administration", "tax capacity"]
+pl_name = "Biurokracja"
+pl = "Wytwarzają ją administracje rządowe; zużywają ją instytucje, ustawy i pobór podatków. Niedobór biurokracji daje kary, a za mało administracji w stanie oznacza nieściągnięte podatki."
+
+[[term]]
+key = "mobilisation"
+en = ["mobilisation", "mobilise", "mobilised", "mobilization"]
+pl_name = "Mobilizacja"
+pl = "Postawienie armii w stan wojny. Mobilizowane bataliony zużywają więcej amunicji, broni i zboża, a żołnierze nie pracują, więc koszty skaczą od dnia mobilizacji. Mobilizuj jak najpóźniej i tylko potrzebne formacje."
+
+[[term]]
+key = "investment_pool"
+en = ["investment pool", "private investment"]
+pl_name = "Pula inwestycyjna"
+pl = "Pieniądze właścicieli budynków odkładane na prywatne budowy. Ustawy gospodarcze (np. Leseferyzm) decydują, ile i na co mogą ją wydawać; dobrze wykorzystana buduje za darmo dla budżetu."
+
+[[term]]
+key = "tax_level"
+en = ["tax level", "taxes", "per-capita", "proportional taxation"]
+pl_name = "Poziom podatków i ustawy podatkowe"
+pl = "Poziom podatków w panelu budżetu mnoży podatek dochodowy i pogłówny: wyższy daje więcej pieniędzy, ale obniża poziom życia i rodzi radykałów. Ustawa podatkowa decyduje, kto płaci: pogłówny obciąża biednych, proporcjonalny zarabiających."
+
+[[term]]
+key = "treasury"
+en = ["treasury", "gold reserves"]
+pl_name = "Skarbiec"
+pl = "Gotówka państwa. Nadwyżka trafia do skarbca, deficyt najpierw go opróżnia, potem pożycza. Pieniądze w skarbcu nic nie zarabiają; ponad limit rezerw zaczynają szkodzić gospodarce."
+
+[[term]]
+key = "economy_of_scale"
+en = ["economy of scale", "throughput"]
+pl_name = "Efekt skali"
+pl = "Duże budynki (wiele poziomów w jednym stanie) produkują więcej na poziom. Lepiej rozbudować jeden zakład niż stawiać kilka małych w różnych stanach."
