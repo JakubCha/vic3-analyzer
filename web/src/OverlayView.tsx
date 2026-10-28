@@ -19,14 +19,34 @@ interface Props {
 }
 
 /** In-game numbers from the mod, newer than any save. */
+const LIVE_TOP = 3
+
+/** Labels of the first few items, comma separated. */
+function top<T>(items: T[], label: (item: T) => string) {
+  return items.slice(0, LIVE_TOP).map(label).join(', ')
+}
+
 function LiveBar({ live: s }: { live: LiveStatus }) {
+  const states = s.states ?? []
+  const short = states.filter((st) => st.infrastructure_balance < 0).sort((a, b) => a.infrastructure_balance - b.infrastructure_balance)
+  const jobless = states.filter((st) => st.unemployed > 0).sort((a, b) => b.unemployed - a.unemployed)
+  const goods = [...(s.goods ?? [])].sort((a, b) => b.price_vs_base - a.price_vs_base)
+  const dear = goods.filter((g) => g.price_vs_base > 0)
+  const cheap = goods.filter((g) => g.price_vs_base < 0).reverse()
+  const pct = (x: number) => `${x > 0 ? '+' : '−'}${Math.round(Math.abs(x) * 100)}%`
   return (
-    <p className="advisor-live" aria-label="Live">
-      <strong>In game {s.date}</strong> · balance {money(s.weekly_balance)}/week · treasury {money(s.treasury)}
-      {s.weekly_balance < 0 && s.debt_share === 0 && <> · lasts ~{s.weeks_to_debt} weeks</>}
-      {s.debt_share > 0 && <> · debt {Math.round(s.debt_share * 100)}% of credit</>} · military{' '}
-      {Math.round(s.military_share * 100)}% of spending
-    </p>
+    <div className="advisor-live" aria-label="Live">
+      <p>
+        <strong>In game {s.date}</strong> · balance {money(s.weekly_balance)}/week · treasury {money(s.treasury)}
+        {s.weekly_balance < 0 && s.debt_share === 0 && <> · lasts ~{s.weeks_to_debt} weeks</>}
+        {s.debt_share > 0 && <> · debt {Math.round(s.debt_share * 100)}% of credit</>} · military{' '}
+        {Math.round(s.military_share * 100)}% of spending
+      </p>
+      {short.length > 0 && <p>Short of infrastructure: {top(short, (st) => `${st.name} (${st.infrastructure_balance})`)}</p>}
+      {jobless.length > 0 && <p>Unemployed: {top(jobless, (st) => `${st.name} (${money(st.unemployed)})`)}</p>}
+      {dear.length > 0 && <p>Dear: {top(dear, (g) => `${g.name} ${pct(g.price_vs_base)}`)}</p>}
+      {cheap.length > 0 && <p>Cheap: {top(cheap, (g) => `${g.name} ${pct(g.price_vs_base)}`)}</p>}
+    </div>
   )
 }
 

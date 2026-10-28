@@ -44,11 +44,23 @@ describe('OverlayView', () => {
       military_share: 0.618,
       weeks_to_debt: 67,
       gdp: 9720602,
+      states: [
+        { name: 'Brandenburg', unemployed: 12400, infrastructure_balance: -3 },
+        { name: 'Silesia', unemployed: 0, infrastructure_balance: -7 },
+        { name: 'Posen', unemployed: 800, infrastructure_balance: 4 },
+      ],
+      goods: [
+        { name: 'Fabric', price_vs_base: -0.25 },
+        { name: 'Wood', price_vs_base: 0.71 },
+      ],
     }))
     render(<OverlayView api={api} live={live} />)
-    expect(await screen.findByLabelText('Live')).toHaveTextContent(
-      /In game 1 marca 1836.*−7\.2K\/week.*lasts ~67 weeks.*military 62% of spending/,
-    )
+    const bar = await screen.findByLabelText('Live')
+    expect(bar).toHaveTextContent(/In game 1 marca 1836.*−7\.2K\/week.*lasts ~67 weeks.*military 62% of spending/)
+    expect(bar).toHaveTextContent('Short of infrastructure: Silesia (-7), Brandenburg (-3)')
+    expect(bar).toHaveTextContent('Unemployed: Brandenburg (12.4K), Posen (800)')
+    expect(bar).toHaveTextContent('Dear: Wood +71%')
+    expect(bar).toHaveTextContent('Cheap: Fabric −25%')
   })
 
   it('asks for a save when none is loaded', async () => {

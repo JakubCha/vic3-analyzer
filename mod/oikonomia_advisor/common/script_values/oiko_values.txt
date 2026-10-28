@@ -130,3 +130,10 @@ oiko_debt_percent = {
 	multiply = 100
 	max = 100
 }
+
+# Market goods scope: price over base in per mille (+300 = 30% dearer, -250 = 25% cheaper).
+oiko_mg_price_delta_permille = {
+	value = market_goods_pricier
+	subtract = market_goods_cheaper
+	multiply = 1000
+}

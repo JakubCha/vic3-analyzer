@@ -9,8 +9,31 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 const MARKER: &str = "OIKO1;";
-/// Enough of the log's tail for several weeks of lines even in a noisy log.
-const TAIL_BYTES: u64 = 512 * 1024;
+/// Per owned state, logged right after its week's `OIKO1` line.
+const STATE_MARKER: &str = "OIKO2;";
+/// Per dear or cheap good on the home market, after the state lines.
+const GOODS_MARKER: &str = "OIKO3;";
+/// Enough of the log's tail for several weeks of lines (with state and goods lines) even in a noisy log.
+const TAIL_BYTES: u64 = 2 * 1024 * 1024;
+
+/// One owned state that week.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LiveState {
+    /// Localized state name.
+    pub name: String,
+    pub unemployed: f64,
+    /// Infrastructure minus its use; negative = short.
+    pub infrastructure_balance: f64,
+}
+
+/// One good at least 20% off its base price on the home market that week.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LiveGood {
+    /// Localized goods name.
+    pub name: String,
+    /// Price over base minus 1 (0.3 = 30% dearer, −0.25 = 25% cheaper).
+    pub price_vs_base: f64,
+}
 
 /// One weekly line from the mod.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -30,6 +53,34 @@ pub struct LiveStatus {
     pub military_share: f64,
     pub weeks_to_debt: f64,
     pub gdp: f64,
+    /// Owned states, from the `OIKO2` lines of the same week (newest line only; not kept in history).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub states: Vec<LiveState>,
+    /// Dear or cheap goods, from the `OIKO3` lines of the same week.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub goods: Vec<LiveGood>,
+}
+
+/// `[name, a, b]` after `marker` when the line is for `status`'s country and date.
+fn detail_fields<'a>(line: &'a str, marker: &str, status: &LiveStatus) -> Option<Vec<&'a str>> {
+    let start = line.find(marker)?;
+    let fields: Vec<&str> = line[start + marker.len()..].trim_end().split(';').map(str::trim).collect();
+    (fields.len() >= 4 && fields[0] == status.country && fields[1] == status.date).then(|| fields[2..].to_vec())
+}
+
+/// Adds an `OIKO2`/`OIKO3` line to `status`; a repeated name (the mod also logs monthly) replaces the earlier one.
+fn attach(status: &mut LiveStatus, line: &str) {
+    if let Some([name, unemployed, infra]) = detail_fields(line, STATE_MARKER, status).as_deref() {
+        if let (Some(unemployed), Some(infrastructure_balance)) = (int(unemployed), int(infra)) {
+            status.states.retain(|s| s.name != *name);
+            status.states.push(LiveState { name: name.to_string(), unemployed, infrastructure_balance });
+        }
+    } else if let Some([name, delta]) = detail_fields(line, GOODS_MARKER, status).as_deref() {
+        if let Some(delta) = int(delta) {
+            status.goods.retain(|g| g.name != *name);
+            status.goods.push(LiveGood { name: name.to_string(), price_vs_base: delta / 1000.0 });
+        }
+    }
 }
 
 /// Integer printed by the game; drops thousands separators of any locale.
@@ -58,6 +109,8 @@ pub fn parse_line(line: &str) -> Option<LiveStatus> {
         military_share: int(military)? / 1000.0,
         weeks_to_debt: int(weeks)?,
         gdp: int(gdp)?,
+        states: Vec::new(),
+        goods: Vec::new(),
     })
 }
 
@@ -103,7 +156,8 @@ pub fn merge_history(store: &Path, new: &[LiveStatus]) -> std::io::Result<Vec<Li
     for line in new {
         if let Some(k) = key(line) {
             if seen.insert(k) {
-                all.push(line.clone());
+                // Charts need the national numbers only; per-state and goods lines would grow the store every week.
+                all.push(LiveStatus { states: Vec::new(), goods: Vec::new(), ..line.clone() });
             }
         }
     }
@@ -134,7 +188,19 @@ pub fn read_all_logs(save_dirs: &[PathBuf]) -> Vec<LiveStatus> {
 
 /// Every mod line in `text`, oldest first.
 pub fn history(text: &str) -> Vec<LiveStatus> {
-    text.lines().filter_map(parse_line).collect()
+    let mut out: Vec<LiveStatus> = Vec::new();
+    for line in text.lines() {
+        if let Some(status) = parse_line(line) {
+            // The monthly call repeats the week's line (with its own details): the newer one wins.
+            if out.last().is_some_and(|last| last.country == status.country && last.date == status.date) {
+                out.pop();
+            }
+            out.push(status);
+        } else if let Some(last) = out.last_mut() {
+            attach(last, line);
+        }
+    }
+    out
 }
 
 /// `<game documents>/logs/debug.log` next to the first save folder that has one.
@@ -180,6 +246,41 @@ mod tests {
         assert!(parse_line("[21:03:00][x.cpp:1]: Peelite Party Created").is_none());
         assert_eq!(int("1,234").unwrap(), 1234.0);
         assert_eq!(int("\u{2212}5").unwrap(), -5.0);
+    }
+
+    #[test]
+    fn state_and_goods_lines_attach_to_their_week() {
+        let prefix = "[21:02:59][jomini_effect_impl.cpp:454]: common/scripted_effects/oiko_effects.txt:9: ";
+        let text = [
+            LINE.to_string(),
+            format!("{prefix}OIKO2;PRU;1 marca 1836;Brandenburgia;12\u{a0}400;-3"),
+            format!("{prefix}OIKO2;PRU;1 marca 1836;Śląsk;0;5"),
+            format!("{prefix}OIKO3;PRU;1 marca 1836;Drewno;710"),
+            format!("{prefix}OIKO3;PRU;1 marca 1836;Tkaniny;\u{2212}250"),
+            // The monthly call repeats the week with its own details: the newer set wins.
+            LINE.to_string(),
+            format!("{prefix}OIKO2;PRU;1 marca 1836;Brandenburgia;12\u{a0}400;-3"),
+            format!("{prefix}OIKO2;PRU;1 marca 1836;Śląsk;100;5"),
+            format!("{prefix}OIKO2;PRU;1 marca 1836;Śląsk;100;5"),
+            format!("{prefix}OIKO3;PRU;1 marca 1836;Drewno;710"),
+            format!("{prefix}OIKO3;PRU;1 marca 1836;Tkaniny;\u{2212}250"),
+            // Another week's or country's detail line is not attached.
+            format!("{prefix}OIKO2;AUS;1 marca 1836;Czechy;1;1"),
+        ]
+        .join("\n");
+        let all = history(&text);
+        assert_eq!(all.len(), 1);
+        let week = &all[0];
+        assert_eq!(week.states.len(), 2);
+        let brandenburg = week.states.iter().find(|s| s.name == "Brandenburgia").expect("state");
+        assert_eq!((brandenburg.unemployed, brandenburg.infrastructure_balance), (12_400.0, -3.0));
+        assert_eq!(week.states.iter().find(|s| s.name == "Śląsk").map(|s| s.unemployed), Some(100.0));
+        assert_eq!(week.goods.iter().map(|g| (g.name.as_str(), g.price_vs_base)).collect::<Vec<_>>(), [("Drewno", 0.71), ("Tkaniny", -0.25)]);
+        // History keeps the national numbers only.
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("../../target/tmp/oiko-detail-{}", std::process::id()));
+        let stored = merge_history(&root.join("h.jsonl"), &all).unwrap();
+        assert!(stored[0].states.is_empty() && stored[0].goods.is_empty());
+        std::fs::remove_dir_all(&root).unwrap();
     }
 
     #[test]

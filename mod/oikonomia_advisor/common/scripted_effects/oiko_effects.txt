@@ -2,8 +2,26 @@
 # (vic3-api `live`). Integers only so the game's number formatting cannot break parsing.
 # THIS = the player country (GetPlayer does not resolve in debug_log).
 # OIKO1;tag;date;balance;income;treasury;debt per mille of credit;military per mille of spending;weeks to debt;gdp
+# then OIKO2 lines per owned state and OIKO3 lines per dear or cheap good (below).
 oiko_log_status = {
 	debug_log = "OIKO1;[THIS.GetCountry.GetTagName];[TimeKeeper.GetCurrentDate.GetString];[THIS.ScriptValue('oiko_balance')|0];[THIS.ScriptValue('oiko_income')|0];[THIS.ScriptValue('oiko_treasury')|0];[THIS.ScriptValue('oiko_debt_permille')|0];[THIS.ScriptValue('oiko_military_permille')|0];[THIS.ScriptValue('oiko_weeks_to_debt')|0];[THIS.ScriptValue('oiko_gdp')|0]"
+	# OIKO2;tag;date;state name;unemployed working adults;infrastructure balance (negative = short)
+	# Data functions from the game's own state panel (gui: State.GetNumUnemployedWorkingAdults, State.GetInfrastructureBalance).
+	every_scope_state = {
+		debug_log = "OIKO2;[ROOT.GetCountry.GetTagName];[TimeKeeper.GetCurrentDate.GetString];[THIS.GetState.GetNameNoFormatting];[THIS.GetState.GetNumUnemployedWorkingAdults|0];[THIS.GetState.GetInfrastructureBalance|0]"
+	}
+	# OIKO3;tag;date;goods name;price over base in per mille, for goods at least 20% off base on the home market.
+	market ?= {
+		every_market_goods = {
+			limit = {
+				OR = {
+					market_goods_pricier >= 0.2
+					market_goods_cheaper >= 0.2
+				}
+			}
+			debug_log = "OIKO3;[ROOT.GetCountry.GetTagName];[TimeKeeper.GetCurrentDate.GetString];[THIS.GetMarketGoods.GetGoods.GetNameNoFormatting];[THIS.ScriptValue('oiko_mg_price_delta_permille')|0]"
+		}
+	}
 }
 
 # Debt bar (common/scripted_progress_bars/oiko_progress_bars.txt). Call from a journal

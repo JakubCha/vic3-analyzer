@@ -613,6 +613,10 @@ export interface LiveStatus {
   military_share: number
   weeks_to_debt: number
   gdp: number
+  /** Owned states that week; absent from older mod versions. */
+  states?: { name: string; unemployed: number; infrastructure_balance: number }[]
+  /** Goods at least 20% off base price on the home market (0.3 = 30% dearer). */
+  goods?: { name: string; price_vs_base: number }[]
 }
 
 /** One chart over time, drawn as SVG by `vic3_api::history`. */

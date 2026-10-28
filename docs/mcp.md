@@ -182,7 +182,7 @@ After binding a newer save, reports which earlier suggestions were carried out.
 ### 9. `live_status`
 The newest in-game line written weekly by the Oikonomia Advisor mod to `logs/debug.log` beside the save folders, newer than any save. Takes `{}`; needs no bound save.
 
-- **Output:** `country`, `date` (in-game, localized), `logged_at` (wall clock), `weekly_balance`, `weekly_income`, `treasury`, `debt_share`, `military_share`, `weeks_to_debt`, `gdp`; `null` when the mod has not logged yet.
+- **Output:** `country`, `date` (in-game, localized), `logged_at` (wall clock), `weekly_balance`, `weekly_income`, `treasury`, `debt_share`, `military_share`, `weeks_to_debt`, `gdp`; `states` (`name`, `unemployed`, `infrastructure_balance`, negative = short) for every owned state and `goods` (`name`, `price_vs_base`, 0.3 = 30% dearer) for goods at least 20% off base price on the home market, both from the same week (newest line only, not kept in `history`); `null` when the mod has not logged yet.
 
 ### 10. `history`
 Trends over time for the played country as numbers. Optional `{ "points": 24 }` per line (3–200).
