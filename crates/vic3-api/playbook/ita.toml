@@ -138,6 +138,7 @@ detail = "Choose \"Italy must be restored\" in Whispers of Risorgimento; only co
 why = "The pro option sets the stance that peaceful absorption of the minors requires and gives liberal and patriotic groups +25% political strength. With only conservatives ruling, the Italian national movement turns radical, and while the journal is active a revolution can hand your country to a higher-ranked Italian state."
 sources = ["game files: events/italian_unification.txt"]
 patch = "1.13.9"
+how = ["When the event \"Whispers of Risorgimento\" appears, choose \"Italy must be restored\".", "Politics panel: Reform Government, then Add To Government a liberal group such as the Intelligentsia or the Industrialists."]
 [rule.when]
 techs = ["nationalism"]
 until_year = 1860
@@ -154,6 +155,7 @@ detail = "Keep relations with every Italian minor at Friendly (treaties help) an
 why = "Italy needs 12 of the 17 Italian states, and the independent Italian states own exactly 12, so a war-free Italy needs every minor including Two Sicilies (5 states). Peaceful absorption fires about 10% a month when you are the sole candidate and a Friendly neighbouring minor also backs unification."
 sources = ["game files: common/country_formation/00_major_formables.txt, events/italian_unification.txt", "https://steamcommunity.com/app/529340/discussions/0/604168947372498524/"]
 patch = "1.13.9"
+how = ["Diplomacy panel: select each Italian minor, Actions, Improve Relations, until relations read Friendly; sign the treaties they accept.", "Stay the highest-ranked Italian state: keep building industry (Construction panel) and do not lose wars."]
 [rule.when]
 techs = ["nationalism"]
 
@@ -185,6 +187,7 @@ detail = "Ceding Savoy and Nice to France buys a French obligation."
 why = "Savoy is not one of the 17 Italian formation states, so ceding it costs no progress, and France owing you makes French support against Austria likelier. The decision needs peace, cordial relations with France and France owning all of Rhône."
 sources = ["game files: common/decisions/france_savoy.txt", "https://vic3.paradoxwikis.com/Sardinia-Piedmont"]
 patch = "1.12"
+how = ["Before any Diplomatic Play against Austria: take the Treaty of Turin (cede Savoy and Nice to France) in the Decisions panel or the journal."]
 [rule.when]
 from_year = 1850
 techs = ["nationalism"]
@@ -197,7 +200,7 @@ priority = 1
 goal = "reforms"
 phase = "late"
 title = "Absorb Italy before expanding further"
-detail = "Pause new expansion and fix shortages, production methods, infrastructure and bureaucracy in the new states, Emilia first."
+detail = "Start no new Diplomatic Play. In each new state, Emilia first: build a Railway where infrastructure is short, a Government Administration if bureaucracy is short (Budget panel), and set its buildings to the production methods your other states use."
 why = "Formation multiplies your size 4–6 times overnight. The new states bring unemployed pops, missing bureaucracy and old production methods, so the administrative and wage bill jumps before their taxes arrive."
 sources = ["https://vic3.paradoxwikis.com/Sardinia-Piedmont", "https://vic3.paradoxwikis.com/Two_Sicilies"]
 patch = "1.12"

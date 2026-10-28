@@ -62,6 +62,7 @@ detail = "Put new industry in New York, Pennsylvania, New England, Ohio and the 
 why = "If the Civil War fires, the slave states leave with their buildings and become the war zone, so southern factories turn into enemy assets. Northern industry keeps producing during the war and pays for it. After the Slavery Debate completes, southern investment is safe again."
 sources = ["https://vic3.paradoxwikis.com/Strategy:_America", "game files: common/journal_entries/00_acw_entries.txt (je_acw_countdown)"]
 patch = "1.13"
+how = ["Construction panel: place every new factory in New York, Pennsylvania, New England, Ohio or the Great Lakes states.", "Queue no new factories in the slave states."]
 [rule.when]
 laws = ["law_legacy_slavery"]
 
@@ -92,6 +93,7 @@ detail = "Spend these years on construction and northern industry; enact Slavery
 why = "The Missouri Compromise modifier gives the Planters +25% political strength and big voting power, but it decays over 50 years. Jacksonian Democrat characters back the pro-slavery movement, and changing the slavery law while Jackson lives can push the Yeoman Farmers to the secessionists."
 sources = ["game files: common/static_modifiers/content_1_modifiers.txt, common/political_movements/00_ideological_movements.txt", "https://vic3.paradoxwikis.com/United_States"]
 patch = "1.13"
+how = ["Nothing to enact now: do not press Enact on Slavery Banned yet.", "Fill the construction queue with factories in the northern states (Construction panel)."]
 [rule.when]
 until_year = 1844
 laws = ["law_legacy_slavery"]
@@ -145,6 +147,7 @@ detail = "Take the decision now; declare on Mexico only after infamy has fallen,
 why = "The decision gives claims on Mexican regions and starts the Mexican Cession and Frontier Wars journals, whose completion adds American homelands. It costs about 24 infamy, so attacking at once invites great-power intervention and a costlier war."
 sources = ["game files: common/decisions/manifest_destiny.txt", "https://vic3.paradoxwikis.com/United_States"]
 patch = "1.13"
+how = ["Decisions panel: take Manifest Destiny.", "Wait until your infamy (Diplomacy panel) has fallen, then start a Diplomatic Play against Mexico.", "Mobilise only the formations the play needs and press Demobilize right after the peace."]
 [rule.when]
 techs = ["nationalism"]
 until_year = 1850
@@ -160,6 +163,7 @@ detail = "Raise relations with Texas to cordial and keep it out of other subject
 why = "Texan Statehood (je_texas_usa) completes when Texas is independent, not at war and at least cordial with the USA, which leads to peaceful annexation. If Mexico crushes Texas first, Texas becomes a war goal instead."
 sources = ["game files: common/journal_entries/00_texas.txt", "https://vic3.paradoxwikis.com/Strategy:_America"]
 patch = "1.13"
+how = ["Diplomacy panel: select Texas, Actions, Improve Relations, until relations read Cordial.", "Then use the annexation action the journal or the Diplomacy panel offers."]
 [rule.when]
 until_year = 1845
 
@@ -218,7 +222,7 @@ priority = 1
 goal = "slavery_debate"
 phase = "mid"
 title = "Get debt down while the slavery clock runs"
-detail = "Slavery is banned and debt is over half the credit limit: cut construction and military spending until it falls."
+detail = "Slavery is banned and debt is over half the credit limit: in the Construction panel press Cancel Construction on the most expensive government projects, and in the Budget panel set Military Wages one step lower, until the debt falls."
 why = "In the 10 years after abolition the pro-slavery revolt can still fire. High debt means a civil war would push you into default fast, and a stable surplus keeps standard of living up, which lowers radicalism in the southern states."
 sources = ["https://vic3.paradoxwikis.com/Strategy:_America"]
 patch = "1.13"
@@ -239,6 +243,7 @@ detail = "They are in government while slavery is banned."
 why = "An interest group in government that hates a current law loses approval and radicalises its supporters. Planters in government after abolition is a direct path to the pro-slavery revolution that fails the Slavery Debate."
 sources = ["game files: common/journal_entries/00_acw_entries.txt"]
 patch = "1.13.9"
+how = ["Politics panel: press Reform Government.", "Press Remove From Government on the Southern Planters and confirm."]
 [rule.when]
 laws = ["law_slavery_banned"]
 igs_in_government = ["ig_landowners"]

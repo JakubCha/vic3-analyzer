@@ -44,6 +44,7 @@ detail = "Keep a margin before adding permanent costs: part of your tax income i
 why = "The Haitian independence payments modifier adds tax income that shrinks in steps as Haiti pays and vanishes if Haiti cancels the debt. A barely positive budget can flip negative overnight while army wages and construction costs stay where they are."
 sources = ["game files: common/static_modifiers/agitators_2_modifiers.txt, common/scripted_buttons/00_hispaniola_buttons.txt"]
 patch = "1.13.9"
+how = ["Budget panel, Income: note the Haitian indemnity line.", "Before you enact a law that costs money, check that the weekly balance would stay positive without that line."]
 [rule.when]
 until_year = 1850
 balance_at_least = 0.0
@@ -93,10 +94,11 @@ domain = "laws"
 goal = "divided_monarchists"
 phase = "early"
 title = "Keep the Orléanists in front: bring the Industrialists back into government"
-detail = "And keep factories profitable."
+detail = "Then open each loss-making factory (the analyzer's Economy tab lists them) and press Downsize or switch it to a cheaper production method: unprofitable industry weakens the Industrialists."
 why = "The Orléanist bar grows with profitable manufacturing levels, Orléanist characters' popularity and the clout of Orléanist-led groups (doubled in government), plus legitimacy because Louis-Philippe is Orléanist. Reaching 480 first lets you cement the dynasty, which removes the Legacy of the French Revolution malus (revolution clock +12.5%, radicals from low legitimacy ×2)."
 sources = ["game files: common/scripted_effects/00_victoria_scripted_effects.txt, common/journal_entries/01_french_monarchism.txt"]
 patch = "1.13.9"
+how = ["Politics panel: Reform Government, then Add To Government the Industrialists.", "Analyzer, Economy tab: for each loss-making factory listed, open the building and press Downsize, or switch it to a cheaper production method."]
 [rule.when]
 until_year = 1855
 laws = ["law_monarchy"]
@@ -113,6 +115,7 @@ detail = "Take Mascara, Constantine and Ait Abbas, then Touggourt, with single-t
 why = "The Conquest of Algeria has no deadline and fails only if you lose all three footholds. Completing it gives Saharan and Tunisian claims, double incorporation speed and follow-up journals. Mobilising the whole army against small unrecognised principalities raises military spending for weeks for nothing."
 sources = ["game files: common/journal_entries/01_algeria.txt", "https://vic3.paradoxwikis.com/France"]
 patch = "1.13.9"
+how = ["Diplomacy panel: start a Diplomatic Play against one principality at a time - Mascara, Constantine, Ait Abbas, then Touggourt.", "Mobilise only the formations the play needs and press Demobilize after the peace."]
 [rule.when]
 until_year = 1850
 balance_at_least = 0.0
@@ -144,6 +147,7 @@ detail = "Wine sells below 85% of base: put construction into industry or food p
 why = "France starts with 78 vineyard levels and taxes wine consumption. Extra supply pushes the price down, which cuts the profits and wages of every vineyard."
 sources = ["game files: common/history/buildings/00_west_europe.txt"]
 patch = "1.13.9"
+how = ["Construction panel: queue no more Vineyards.", "Build what the analyzer's Market tab lists as dear (factories or Food Industries) instead."]
 [rule.when]
 levels_at_least = { building_vineyard = 60.0 }
 price_ratio_at_most = { wine = 0.85 }

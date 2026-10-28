@@ -224,6 +224,9 @@ fn describe(groups: &[BudgetGroup], n: usize) -> String {
         .join("; ")
 }
 
+/// How to remove a peacetime battalion, in the game's own button names (1.13.9 localization).
+const ARMY_DOWNSIZE: &str = "Army: open an army, its Buildings tab, a Barracks, and press Downsize once per battalion you do not need in peacetime.";
+
 /// Budget-guard advice: runway, then the biggest levers, cost side first.
 pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
     let urgent = r.risk >= Risk::Danger;
@@ -243,7 +246,10 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
                     "You gain {} a week and nothing is being built. Queue construction: the budget pays for it.",
                     money(r.weekly_balance.unwrap_or_default())
                 ),
-                steps: Vec::new(),
+                steps: vec![
+                    "Construction panel: queue the expansions the analyzer's Now list ranks first (shortest payback).".into(),
+                    "Keep queuing until the weekly balance in the Budget panel is close to zero.".into(),
+                ],
                 why_now: Vec::new(),
                 why: Some("Money in the treasury earns nothing. Construction is paid from the state budget (construction goods), and every finished building pays wages and taxes back. A small deficit while building is normal; a surplus with an empty queue is growth you are not getting.".into()),
                 goal: None,
@@ -293,7 +299,22 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             _ => format!("Budget deficit: {} a week", money(balance)),
         },
         detail,
-        steps: Vec::new(),
+        steps: if investment {
+            vec![
+                "Keep the construction queue full (Construction panel): the deficit is paying for growth.".into(),
+                "Cut the upkeep instead: follow the military and administration items in this list.".into(),
+            ]
+        } else {
+            let mut s = vec![
+                "Budget panel: set Military Wages and Government Wages one step lower.".into(),
+                ARMY_DOWNSIZE.into(),
+            ];
+            if urgent {
+                s.push("Budget panel: raise the tax level one step.".into());
+                s.push("Construction panel: press Cancel Construction on the most expensive item in the queue.".into());
+            }
+            s
+        },
         why_now: Vec::new(),
         why: Some(if investment {
             "Borrowing to build is how a Victoria 3 economy grows: new buildings pay wages, taxes and dividends and make their goods cheaper, so the debt pays itself back. An empty treasury only means the state starts borrowing; the danger line is debt at half the credit limit, where the game counts the economy as unhealthy and interest starts to bite. Until then, cut costs that earn nothing (an oversized peacetime army, overpriced government goods) rather than construction or the tax level.".into()
@@ -326,7 +347,11 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             priority: if urgent || military >= 0.3 { 1 } else { 2 },
             title: format!("Military upkeep is {:.0}% of spending", military * 100.0),
             detail: format!("{}.", lines(&["military_goods", "military_wages"])),
-            steps: Vec::new(),
+            steps: vec![
+                format!("{ARMY_DOWNSIZE} Cavalry and artillery battalions use the most goods."),
+                "Budget panel: set Military Wages one step lower.".into(),
+                "Keep the conscription centers: they cost almost nothing until you raise conscripts for a war.".into(),
+            ],
             why_now: Vec::new(),
             why: Some("Every battalion pays wages to its soldiers and officers (barracks) and consumes arms, ammunition and other goods from the market (the army logistics line). In peacetime you can lower military wages in the Budget panel (soldiers' standard of living and the Armed Forces' approval fall), disband battalions you don't need, or keep older, cheaper unit equipment until a war is coming. Mobilising multiplies these costs, so a war while in deficit drains the treasury fast.".into()),
             goal: None,
@@ -340,7 +365,10 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             priority: 1,
             title: "Do not start a war yet".into(),
             detail: "Mobilised armies cost far more than peacetime ones, and the budget is already heading for default.".into(),
-            steps: Vec::new(),
+            steps: vec![
+                "Diplomacy panel: back down from or settle any Diplomatic Play you are in before it turns into a war.".into(),
+                "Start no Diplomatic Play until the weekly balance in the Budget panel is positive.".into(),
+            ],
             why_now: Vec::new(),
             why: Some("Mobilisation adds wages and supply goods for every mobilised battalion, and lost trade during a war cuts tax income. Starting a war in debt is the classic road to default.".into()),
             goal: None,
@@ -356,7 +384,10 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             priority: 2,
             title: format!("Administration is {:.0}% of spending", government * 100.0),
             detail: format!("{}.", lines(&["government_goods", "government_wages"])),
-            steps: Vec::new(),
+            steps: vec![
+                "Construction panel: queue Paper Mills in a state with Logging Camps: paper is the main good government buildings buy.".into(),
+                "Budget panel: set Government Wages one step lower, only while bureaucracy shows a surplus (Budget panel, Bureaucracy).".into(),
+            ],
             why_now: Vec::new(),
             why: Some("Government administrations produce bureaucracy, which laws, institutions and taxes consume; cutting below what you use brings penalties, so cut the price instead of the buildings. Government goods are mostly paper: a cheap local supply (paper mills, wood) lowers this line. Government wages can be lowered in the Budget panel at the cost of bureaucrats' standard of living.".into()),
             goal: None,
@@ -370,9 +401,12 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             id: "budget:subsidies".into(),
             domain: Domain::Economy,
             priority: 2,
-            title: format!("Review subsidies and loss-making state buildings ({})", money(support)),
+            title: format!("Subsidies and loss-making state buildings cost {} a week", money(support)),
             detail: format!("{}.", lines(&["subsidies", "government_share_losses"])),
-            steps: Vec::new(),
+            steps: vec![
+                "Open each building named above and turn off its subsidy in the building panel, unless it makes construction materials or arms you need.".into(),
+                "For a loss-making state-owned building: open it and press Downsize, or pick a cheaper production method.".into(),
+            ],
             why_now: Vec::new(),
             why: Some("Subsidies keep unprofitable buildings staffed at the state's expense. They are worth it for what you need (construction inputs, arms before a war); otherwise turn them off in the building's panel and let the market decide.".into()),
             goal: None,
@@ -388,9 +422,12 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
         id: "budget:revenue".into(),
         domain: Domain::Economy,
         priority: 2,
-        title: "Raise revenue".into(),
+        title: "Raise revenue: the tax level one step up".into(),
         detail: format!("Income: {}.", describe(&r.incomes, 4)),
-        steps: Vec::new(),
+        steps: vec![
+            "Budget panel: raise the tax level one step.".into(),
+            "Budget panel, Consumption Taxes: if the option is available, tax a good your pops buy a lot of (liquor, tobacco, wine).".into(),
+        ],
         why_now: Vec::new(),
         why: Some("The tax level in the Budget panel scales income and poll taxes: one step up is the quickest fix, but it lowers pops' standard of living and grows radicals. Consumption taxes on goods your pops buy a lot of add income without touching the tax level. In the long run revenue follows the economy: profitable, well-paid buildings pay income tax, and taxation laws decide who pays.".into()),
         goal: None,

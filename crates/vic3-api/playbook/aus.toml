@@ -121,6 +121,7 @@ detail = "The Age of Metternich fails after 6 months without them."
 why = "je_metternich fails once the Landowners have been out of government for more than 6 consecutive months, and Metternich resigns and flees. Keep them in until Franz Joseph takes the throne for the orderly retirement instead."
 sources = ["game files: common/journal_entries/05_metternich.txt"]
 patch = "1.13.9"
+how = ["Politics panel: press Reform Government.", "Press Add To Government on the Landowners and confirm, within six months."]
 [rule.when]
 until_year = 1850
 igs_not_in_government = ["ig_landowners"]
@@ -171,6 +172,7 @@ detail = "Integrate them after the Springtime, once every crown land is at liber
 why = "Integration adds Hungarian, Polish and Croat radicals and −10% authority just when the Springtime is most likely. As crown lands they already fight your wars without needing your tax capacity."
 sources = ["game files: common/decisions/austria_decisions.txt", "https://vic3.paradoxwikis.com/Strategy:_Austria"]
 patch = "1.13"
+how = ["Nothing to press until 1849: leave Hungary, Transylvania and Croatia as crown lands.", "Then integrate each crown land whose liberty desire is 25 or below, with its button in the journal."]
 [rule.when]
 until_year = 1848
 laws = ["law_crownland_diets"]
@@ -187,6 +189,7 @@ detail = "The button is now available; choose your track: Greater Germany or a H
 why = "Germany cannot be formed by a dual or triple monarchy, and the button's own tooltip says so. Clicking it rules out Greater Germany for good; choose it only for the Habsburg track (Dual Monarchy, then the Federal Solution)."
 sources = ["game files: common/scripted_buttons/05_austria_buttons.txt, common/country_formation/00_major_formables.txt"]
 patch = "1.13.9"
+how = ["If you want Germany: do not press the Dual Monarchy button in the journal.", "If you want a Habsburg empire instead: press it."]
 [rule.when]
 techs = ["philosophical_pragmatism", "nationalism"]
 laws = ["law_monarchy"]

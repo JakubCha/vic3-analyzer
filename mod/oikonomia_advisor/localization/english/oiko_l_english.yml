@@ -19,7 +19,7 @@
  je_oiko_pru_germany_status:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_public_schools'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Public schools (cultural fervor)\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_nationalism'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Nationalism researched\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_schleswig_solved'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Schleswig-Holstein question solved\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_war_chest_ok'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Debt under 30% of the credit limit (ready for war)\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_is_ngf'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] North German Federation formed\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_pan_nationalism'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Pan-nationalism researched"
 
  oiko.1.t:0 "The Treasury on the Brink"
- oiko.1.d:0 "The state borrows to pay its running costs and debt is approaching the credit limit.\n\n$oiko_numbers$\n\n#bold Do it now:#! raise taxes one level, lower military and government wages one level, pause the most expensive construction and start no war. Details and levers: the #bold Budget Guard#! journal entry."
+ oiko.1.d:0 "The state borrows to pay its running costs and debt is approaching the credit limit.\n\n$oiko_numbers$\n\n#bold Do it now:#! Budget panel: tax level one step higher, Military Wages and Government Wages one step lower. Construction panel: Cancel Construction on the most expensive item. Start no Diplomatic Play. Details: the #bold Budget Guard#! journal entry."
  oiko.1.f:0 "Past the credit limit comes default: construction stops, and penalties to production, offense and defense grow every week up to -50%."
  oiko.1.a:0 "I'll fix the budget"
 
@@ -32,12 +32,12 @@
  oiko_debt_progress_bar:0 "Debt / credit limit"
  oiko_debt_progress_bar_desc:0 "How close the debt is to the credit limit; at 100% the country defaults. Borrowing to build is fine up to about half the limit; past it, stop the debt growing."
 
- oiko_verdict_critical:0 "#bold Default is close!#! This week: military and government wages down one level, taxes up one level, pause the most expensive construction, start no war."
- oiko_verdict_danger:0 "#bold Debt is past half the credit limit.#! Stop it growing: military and government wages down first, then taxes up one level. No new wars or costly laws."
- oiko_verdict_hoarding:0 "#bold Surplus and a full treasury.#! Money in the treasury earns nothing: queue more construction."
- oiko_verdict_surplus:0 "#bold Surplus.#! Keep every construction sector busy: the surplus is what pays for growth."
- oiko_verdict_military:0 "#bold Deficit, and the army takes [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] of spending.#! This deficit pays upkeep, not growth: in peacetime use cheaper production methods or fewer battalions before raising taxes."
- oiko_verdict_deficit:0 "#bold Deficit, debt well below the credit limit.#! Fine while the money pays for construction (Budget panel: construction is the biggest expense), so keep building. If it pays wages and upkeep instead, cut those first."
+ oiko_verdict_critical:0 "#bold Default is close!#! This week, Budget panel: Military Wages and Government Wages one step lower, tax level one step higher. Construction panel: Cancel Construction on the most expensive item. Start no Diplomatic Play."
+ oiko_verdict_danger:0 "#bold Debt is past half the credit limit.#! Stop it growing. Budget panel: Military Wages and Government Wages one step lower first; then the tax level one step higher. Start no Diplomatic Play and no law that costs money."
+ oiko_verdict_hoarding:0 "#bold Surplus and a full treasury.#! Money in the treasury earns nothing. Construction panel: queue the expansions the Oikonomia Analyzer ranks first, until the weekly balance is close to zero."
+ oiko_verdict_surplus:0 "#bold Surplus.#! Keep the construction queue full (Construction panel): the surplus is what pays for growth."
+ oiko_verdict_military:0 "#bold Deficit, and the army takes [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] of spending.#! This deficit pays upkeep, not growth. Open an army, its Buildings tab, a Barracks, and press Downsize once per battalion you do not need in peacetime; Budget panel: Military Wages one step lower. Raise taxes only after that."
+ oiko_verdict_deficit:0 "#bold Deficit, debt well below the credit limit.#! Fine while the money pays for construction (Budget panel: construction is the biggest expense), so keep building. If wages and upkeep are the biggest expense instead: Budget panel, Military Wages and Government Wages one step lower."
 
  rule_oiko_help_level:0 "Oikonomia: advisor help"
  setting_oiko_help_budget:0 "Budget only"
@@ -66,7 +66,7 @@
  oiko.3.a:0 "I'll check the cost"
 
  oiko.4.t:0 "The State Has Defaulted"
- oiko.4.d:0 "Debt passed the credit limit: construction stops and production, offense and defense penalties grow every week.\n\n#bold The way back:#! raise taxes as high as the interest groups tolerate, lower military and government wages, demobilise and leave any war, and pause the most expensive construction until the debt is back under the limit. Every week in default costs more than the cuts."
+ oiko.4.d:0 "Debt passed the credit limit: construction stops and production, offense and defense penalties grow every week.\n\n#bold The way back:#! Budget panel: tax level up as far as the interest groups tolerate, Military Wages and Government Wages down. Military panel: Demobilize all armies and make peace in any war. Construction panel: Cancel Construction on the most expensive items, until the debt is back under the limit. Every week in default costs more than the cuts."
  oiko.4.f:0 "Default ends as soon as the debt is back under the credit limit."
  oiko.4.a:0 "Back to the budget"
 
@@ -85,15 +85,15 @@
 
  alert_oiko_idle_construction_alert_name:0 "Construction is running dry"
  alert_oiko_idle_construction_alert_desc:0 "The state's construction queue has less than two weeks of work left."
- alert_oiko_idle_construction_alert_hint:0 "Construction sectors cost money every week whether they build or not. Queue buildings that pay back fast."
+ alert_oiko_idle_construction_alert_hint:0 "Construction sectors cost money every week whether they build or not. Construction panel: queue the expansions the Oikonomia Analyzer ranks first (shortest payback)."
  alert_oiko_idle_construction_alert_action:0 "Construction"
  alert_oiko_debt_half_alert_name:0 "Debt past half the credit limit"
  alert_oiko_debt_half_alert_desc:0 "Debt is at [GetPlayer.MakeScope.ScriptValue('oiko_debt_share')|0%] of the credit limit."
- alert_oiko_debt_half_alert_hint:0 "Stop the debt growing: military and government wages down first, then taxes up one level. No new wars or costly laws."
+ alert_oiko_debt_half_alert_hint:0 "Budget panel: Military Wages and Government Wages one step lower first, then the tax level one step higher. Start no Diplomatic Play and no law that costs money."
  alert_oiko_debt_half_alert_action:0 "Budget"
  alert_oiko_upkeep_deficit_alert_name:0 "The deficit pays the army"
  alert_oiko_upkeep_deficit_alert_desc:0 "You lose money and the army takes [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] of spending."
- alert_oiko_upkeep_deficit_alert_hint:0 "In peacetime use cheaper production methods or fewer battalions before raising taxes."
+ alert_oiko_upkeep_deficit_alert_hint:0 "Open an army, its Buildings tab, a Barracks, and press Downsize once per battalion you do not need in peacetime. Budget panel: Military Wages one step lower. Raise taxes only after that."
  alert_oiko_upkeep_deficit_alert_action:0 "Budget"
 
  rule_oiko_cheats:0 "Oikonomia: cheat menu"

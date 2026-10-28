@@ -19,7 +19,7 @@
  je_oiko_pru_germany_status:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_public_schools'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Szkoły publiczne (zapał kulturowy)\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_nationalism'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Zbadany nacjonalizm\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_schleswig_solved'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Kwestia Szlezwika-Holsztyna rozwiązana\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_war_chest_ok'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Dług poniżej 30% limitu kredytu (gotowość do wojny)\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_is_ngf'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Federacja Północnoniemiecka utworzona\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_pan_nationalism'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Zbadany pan-nationalism"
 
  oiko.1.t:0 "Skarbiec na krawędzi bankructwa"
- oiko.1.d:0 "Państwo pożycza na bieżące wydatki, a dług zbliża się do limitu kredytu.\n\n$oiko_numbers$\n\n#bold Co zrobić od razu:#! podnieś podatki o jeden poziom, obniż płace wojska i urzędników o jeden poziom, wstrzymaj najdroższe budowy i nie zaczynaj wojny. Szczegóły i dźwignie: dziennik #bold Strażnik budżetu#!."
+ oiko.1.d:0 "Państwo pożycza na bieżące wydatki, a dług zbliża się do limitu kredytu.\n\n$oiko_numbers$\n\n#bold Zrób to od razu:#! panel Budżetu: poziom podatków o stopień w górę, płace wojska (Military Wages) i urzędników (Government Wages) o stopień w dół. Panel Budowy: Cancel Construction na najdroższej pozycji. Nie zaczynaj zagrywki dyplomatycznej. Szczegóły: dziennik #bold Strażnik budżetu#!."
  oiko.1.f:0 "Po przekroczeniu limitu kredytu przychodzi niewypłacalność: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień aż do -50%."
  oiko.1.a:0 "Biorę się za budżet"
 
@@ -32,12 +32,12 @@
  oiko_debt_progress_bar:0 "Dług / limit kredytu"
  oiko_debt_progress_bar_desc:0 "Jak blisko limitu kredytu jest dług; przy 100% kraj bankrutuje. Pożyczanie na budowę jest w porządku mniej więcej do połowy limitu; dalej zatrzymaj wzrost długu."
 
- oiko_verdict_critical:0 "#bold Bankructwo blisko!#! Jeszcze w tym tygodniu: płace wojska i urzędników o poziom w dół, podatki o poziom w górę, wstrzymaj najdroższe budowy, nie zaczynaj wojny."
- oiko_verdict_danger:0 "#bold Dług przekroczył połowę limitu kredytu.#! Zatrzymaj jego wzrost: najpierw płace wojska i urzędników w dół, potem podatki o poziom w górę. Żadnych nowych wojen ani drogich ustaw."
- oiko_verdict_hoarding:0 "#bold Nadwyżka i pełny skarbiec.#! Pieniądze w skarbcu nic nie zarabiają: zleć więcej budów."
- oiko_verdict_surplus:0 "#bold Nadwyżka.#! Trzymaj wszystkie sektory budowlane w pracy: to nadwyżka opłaca wzrost."
- oiko_verdict_military:0 "#bold Deficyt, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków.#! Ten deficyt opłaca utrzymanie, nie wzrost: w czasie pokoju tańsze metody produkcji albo mniej batalionów, zanim podniesiesz podatki."
- oiko_verdict_deficit:0 "#bold Deficyt, dług daleko od limitu kredytu.#! W porządku, dopóki pieniądze idą na budowę (panel Budżetu: budowa to największy wydatek), więc buduj dalej. Jeśli idą na płace i utrzymanie, tnij je najpierw."
+ oiko_verdict_critical:0 "#bold Bankructwo blisko!#! Jeszcze w tym tygodniu, panel Budżetu: płace wojska (Military Wages) i urzędników (Government Wages) o stopień w dół, poziom podatków o stopień w górę. Panel Budowy: Cancel Construction na najdroższej pozycji. Nie zaczynaj żadnej zagrywki dyplomatycznej."
+ oiko_verdict_danger:0 "#bold Dług przekroczył połowę limitu kredytu.#! Zatrzymaj jego wzrost. Panel Budżetu: najpierw płace wojska i urzędników o stopień w dół, potem poziom podatków o stopień w górę. Żadnej zagrywki dyplomatycznej ani ustawy, która kosztuje."
+ oiko_verdict_hoarding:0 "#bold Nadwyżka i pełny skarbiec.#! Pieniądze w skarbcu nic nie zarabiają. Panel Budowy: zleć rozbudowy, które Oikonomia Analyzer stawia najwyżej, aż saldo tygodniowe spadnie blisko zera."
+ oiko_verdict_surplus:0 "#bold Nadwyżka.#! Trzymaj kolejkę budowy pełną (panel Budowy): to nadwyżka opłaca wzrost."
+ oiko_verdict_military:0 "#bold Deficyt, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków.#! Ten deficyt opłaca utrzymanie, nie wzrost. Otwórz armię, jej zakładkę Buildings, koszary (Barracks) i naciśnij Downsize raz na każdy batalion niepotrzebny w czasie pokoju; panel Budżetu: płace wojska o stopień w dół. Podatki podnoś dopiero potem."
+ oiko_verdict_deficit:0 "#bold Deficyt, dług daleko od limitu kredytu.#! W porządku, dopóki pieniądze idą na budowę (panel Budżetu: budowa to największy wydatek), więc buduj dalej. Jeśli największy wydatek to płace i utrzymanie: panel Budżetu, płace wojska i urzędników o stopień w dół."
 
  rule_oiko_help_level:0 "Oikonomia: pomoc doradcy"
  setting_oiko_help_budget:0 "Tylko budżet"
@@ -66,7 +66,7 @@
  oiko.3.a:0 "Sprawdzę koszt"
 
  oiko.4.t:0 "Państwo zbankrutowało"
- oiko.4.d:0 "Dług przekroczył limit kredytu: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień.\n\n#bold Droga powrotna:#! podnieś podatki tak wysoko, jak zniosą grupy interesu, obniż płace wojska i urzędników, zdemobilizuj armię i wyjdź z wojny, wstrzymaj najdroższe budowy, aż dług wróci pod limit. Każdy tydzień bankructwa kosztuje więcej niż cięcia."
+ oiko.4.d:0 "Dług przekroczył limit kredytu: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień.\n\n#bold Droga powrotna:#! panel Budżetu: podatki tak wysoko, jak zniosą grupy interesu, płace wojska i urzędników w dół. Panel wojska: Demobilize all armies i zawrzyj pokój w każdej wojnie. Panel Budowy: Cancel Construction na najdroższych pozycjach, aż dług wróci pod limit. Każdy tydzień bankructwa kosztuje więcej niż cięcia."
  oiko.4.f:0 "Bankructwo kończy się, gdy tylko dług wróci pod limit kredytu."
  oiko.4.a:0 "Wracam do budżetu"
 
@@ -85,15 +85,15 @@
 
  alert_oiko_idle_construction_alert_name:0 "Budowa staje"
  alert_oiko_idle_construction_alert_desc:0 "Państwowej kolejce budowy zostało mniej niż dwa tygodnie pracy."
- alert_oiko_idle_construction_alert_hint:0 "Sektory budowlane kosztują co tydzień, czy budują, czy nie. Zleć budowy, które szybko się zwracają."
+ alert_oiko_idle_construction_alert_hint:0 "Sektory budowlane kosztują co tydzień, czy budują, czy nie. Panel Budowy: zleć rozbudowy, które Oikonomia Analyzer stawia najwyżej (najkrótszy zwrot)."
  alert_oiko_idle_construction_alert_action:0 "Budowa"
  alert_oiko_debt_half_alert_name:0 "Dług ponad połowę limitu kredytu"
  alert_oiko_debt_half_alert_desc:0 "Dług wynosi [GetPlayer.MakeScope.ScriptValue('oiko_debt_share')|0%] limitu kredytu."
- alert_oiko_debt_half_alert_hint:0 "Zatrzymaj wzrost długu: najpierw płace wojska i urzędników w dół, potem podatki o poziom w górę. Żadnych nowych wojen ani drogich ustaw."
+ alert_oiko_debt_half_alert_hint:0 "Panel Budżetu: najpierw płace wojska i urzędników o stopień w dół, potem poziom podatków o stopień w górę. Żadnej zagrywki dyplomatycznej ani ustawy, która kosztuje."
  alert_oiko_debt_half_alert_action:0 "Budżet"
  alert_oiko_upkeep_deficit_alert_name:0 "Deficyt opłaca armię"
  alert_oiko_upkeep_deficit_alert_desc:0 "Tracisz pieniądze, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków."
- alert_oiko_upkeep_deficit_alert_hint:0 "W czasie pokoju tańsze metody produkcji albo mniej batalionów, zanim podniesiesz podatki."
+ alert_oiko_upkeep_deficit_alert_hint:0 "Otwórz armię, jej zakładkę Buildings, koszary (Barracks) i naciśnij Downsize raz na każdy batalion niepotrzebny w czasie pokoju. Panel Budżetu: płace wojska o stopień w dół. Podatki podnoś dopiero potem."
  alert_oiko_upkeep_deficit_alert_action:0 "Budżet"
 
  rule_oiko_cheats:0 "Oikonomia: cheat menu"

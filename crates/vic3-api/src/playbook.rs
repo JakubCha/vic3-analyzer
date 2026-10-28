@@ -483,9 +483,24 @@ pub fn steps(rule: &Rule, label: &dyn Fn(&str) -> String) -> Vec<String> {
         || w.runway_weeks_below.is_some()
         || !w.expense_share_at_least.is_empty()
         || !w.expense_ratio_at_least.is_empty();
+    if w.infrastructure_short_states_at_least.is_some() {
+        out.push("Find the states short of infrastructure: the overlay lists them live, and each state's panel shows infrastructure against its use.".into());
+        out.push(if w.techs_missing.iter().any(|t| t == "railways") {
+            "Construction panel: queue a Port level in the coastal ones; railways need the Railways technology first.".into()
+        } else {
+            "Construction panel: queue a Railway level in each of them (a Port in coastal states)."
+                .into()
+        });
+    }
+    if w.radicals_share_at_least.is_some() {
+        out.push("Politics panel, Interest Groups: hover each group to see how many radicals it has.".into());
+        out.push("If you are enacting a law the groups with the most radicals oppose, stop enacting it (Politics panel, the law in progress).".into());
+        out.push("Analyzer, Market tab: build what it lists for the dearest of Grain, Clothes and Furniture.".into());
+    }
     if out.is_empty() && budget {
-        out.push("Open the Budget panel: the tax level and the military and government wage levels are set there and take effect weekly.".into());
-        out.push("Army costs: in the Military panel disband battalions you do not need in peacetime, or switch them to cheaper equipment.".into());
+        out.push("Budget panel: the tax level and the Military Wages and Government Wages levels are set there; change the one the detail names by one step.".into());
+        out.push("Army: open an army, its Buildings tab, a Barracks, and press Downsize once per battalion you do not need in peacetime.".into());
+        out.push("Construction panel: if the detail says to pause building, press Cancel Construction on the most expensive item in the queue.".into());
     }
     if out.is_empty() {
         out.push("Follow the detail above; ask Muse (tool explain_rule) if a step is unclear.".into());
@@ -597,6 +612,18 @@ mod tests {
         assert!(terms.contains(&"credit_limit"), "{terms:?}");
         assert!(explain("nope", None).is_none());
         assert!(glossary().iter().all(|t| !t.en.is_empty() && !t.pl.is_empty()));
+    }
+
+    #[test]
+    fn every_rule_has_concrete_steps() {
+        let fallback = steps(&rules()[0], &vic3_defs::pretty_id).last().cloned().filter(|s| s.starts_with("Follow the detail"));
+        assert!(fallback.is_none() || rules()[0].how.is_empty());
+        let vague: Vec<&str> = rules()
+            .iter()
+            .filter(|r| steps(r, &vic3_defs::pretty_id).iter().any(|s| s.starts_with("Follow the detail")))
+            .map(|r| r.id.as_str())
+            .collect();
+        assert!(vague.is_empty(), "rules without concrete steps (add `how`): {vague:?}");
     }
 
     #[test]

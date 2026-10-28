@@ -279,7 +279,10 @@ fn law_advice(defs: &GameDefs, country: &WorldCountry, education_short: bool, ou
                 Support::list(&support.against)
             ),
             goal: Some(Goal::Law(goal)),
-            steps: Vec::new(),
+            steps: vec![
+                format!("Politics panel, Laws: find {} and press Enact.", label(next)),
+                format!("While it is being enacted, keep its supporters in government ({}): Politics panel, Reform Government, Add To Government.", Support::list(&support.for_)),
+            ],
             why_now: Vec::new(),
             why: None,
             check: Some(Check::LawActive { law: next.to_string() }),
@@ -487,6 +490,15 @@ impl<'a> Market<'a> {
         }
     }
 
+    /// Queueing one more level of `site`, in the game's button names (1.13.9 localization).
+    fn expand_steps(&self, site: &Site) -> Vec<String> {
+        let state = self.state_label(site.state_id);
+        vec![
+            format!("Right-click {} in {state} (map or state panel) and pick \"Expand in {state}\", or open the building and press Expand.", site.type_label),
+            "The level joins the construction queue (Construction panel); queue the next one when it is done.".into(),
+        ]
+    }
+
     fn state_label(&self, id: u32) -> String {
         self.prices
             .states
@@ -650,7 +662,7 @@ impl<'a> Market<'a> {
                 priority: if rank < 2 { 1 } else { 2 },
                 title: format!("Expand {} in {}", site.type_label, self.state_label(site.state_id)),
                 detail,
-                steps: Vec::new(),
+                steps: self.expand_steps(site),
                 why_now: Vec::new(),
                 why: Some("Ranked by profit per construction point. Construction capacity is the scarce resource early on, so the level that repays its construction soonest compounds growth fastest; its wages and profits are also taxed. Profit is today's, at current prices: a level that floods its own market earns less.".into()),
                 check: Some(Check::BuildingLevels {
@@ -716,7 +728,7 @@ impl<'a> Market<'a> {
                             site.type_label,
                             site.profit_per_level()
                         ),
-                        steps: Vec::new(),
+                        steps: self.expand_steps(site),
                         why_now: Vec::new(),
                         why: None,
                         check: Some(Check::BuildingLevels {
@@ -751,7 +763,10 @@ impl<'a> Market<'a> {
                         detail: format!(
                             "{why} None of your states has a {type_label} yet; pick a state with the resource and idle workers."
                         ),
-                        steps: Vec::new(),
+                        steps: vec![
+                            format!("Construction panel: choose {type_label}; the map then shows the states where it can be built."),
+                            "Pick one with free workers (the overlay lists unemployment by state) and queue a level.".into(),
+                        ],
                         why_now: Vec::new(),
                         why: None,
                         check: Some(Check::BuildingLevels {
@@ -790,7 +805,11 @@ impl<'a> Market<'a> {
                 site.staffed() * 100.0,
                 if self.idle_states.contains(&site.state_id) { " and workers are idle" } else { "" }
             ),
-            steps: Vec::new(),
+            steps: {
+                let mut s = self.expand_steps(site);
+                s.push("If wood, iron or tools are dear, the analyzer's Market tab says which building to add for them.".into());
+                s
+            },
             why_now: Vec::new(),
             why: None,
             check: Some(Check::BuildingLevels {
@@ -821,12 +840,13 @@ impl<'a> Market<'a> {
                 domain: Domain::Economy,
                 goal: None,
                 priority: 2,
-                title: format!("Fix the loss-making {} in {}", site.type_label, self.state_label(site.state_id)),
-                detail: format!(
-                    "It loses about {:.0} per level.{inputs} Switch to a cheaper production method, secure its inputs, or stop expanding it.",
-                    -site.profit_per_level()
-                ),
-                steps: Vec::new(),
+                title: format!("{} in {} loses money", site.type_label, self.state_label(site.state_id)),
+                detail: format!("It loses about {:.0} per level.{inputs}", -site.profit_per_level()),
+                steps: vec![
+                    format!("Click {} in {} and, in its production methods, pick one that needs fewer of its dear or short inputs (each method's tooltip lists them).", site.type_label, self.state_label(site.state_id)),
+                    "If it still loses money a few weeks later, press Downsize in the same building panel.".into(),
+                    format!("Queue no more levels of {} until it earns again.", site.type_label),
+                ],
                 why_now: Vec::new(),
                 why: None,
                 check: None,
@@ -854,7 +874,10 @@ impl<'a> Market<'a> {
                     l.sell,
                     l.buy
                 ),
-                steps: Vec::new(),
+                steps: vec![
+                    format!("Queue no more buildings that make {}.", self.good_label(good)),
+                    format!("Analyzer, Market tab: build what it lists as using {}, next to where you make it.", self.good_label(good)),
+                ],
                 why_now: Vec::new(),
                 why: None,
                 check: None,
@@ -962,7 +985,10 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
             detail: format!(
                 "{total} of your buildings can't fill skilled jobs (engineers, clerks, machinists) for lack of literate pops, most of them ({count}) in {label}. A university there and a schooling law raise qualifications."
             ),
-            steps: Vec::new(),
+            steps: vec![
+                format!("Construction panel: queue a University in {label}."),
+                "Politics panel, Laws, Education group: if you have No Schools, enact Religious Schools, Private Schools or Public Schools.".into(),
+            ],
             why_now: Vec::new(),
             why: None,
             check: Some(Check::BuildingLevels {

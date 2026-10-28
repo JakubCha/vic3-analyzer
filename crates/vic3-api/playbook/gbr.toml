@@ -111,6 +111,7 @@ detail = "Fabric sells below 80% of base price: build goods that are above base 
 why = "A building's profit falls with its output price. With fabric far below base, new mills spread wages and dividends thinner across the whole sector and lower tax income. The exception is ship construction, which needs 390 fabric per ship of the line."
 sources = ["game files: common/history/buildings/00_west_europe.txt"]
 patch = "1.13.9"
+how = ["Construction panel: queue no more Textile Mills or Livestock Ranches.", "Build what the analyzer's Market tab lists as dear instead."]
 [rule.when]
 levels_at_least = { building_textile_mill = 40.0 }
 price_ratio_at_most = { fabric = 0.8 }
@@ -143,6 +144,7 @@ detail = "Then Regulatory Bodies: the Trade Unions are growing in the most indus
 why = "Britain alone starts with Labor Movement and its Trade Unions can start non-marginal. A strong union group opposed to anti-strike laws produces radicals and movements; giving them legal room keeps the workforce loyal."
 sources = ["game files: common/laws/00_labor_rights.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
 patch = "1.13"
+how = ["Politics panel, Laws, the trade-union law group: find Right to Associate and press Enact.", "Once it passes, find Regulatory Bodies and press Enact."]
 [rule.when]
 laws = ["law_anti_strike_laws"]
 techs = ["labor_movement"]
@@ -159,6 +161,7 @@ detail = "Ideally while Brazil is in a civil war."
 why = "Britain carries −100 prestige and −10% influence until Brazil drops the slave trade; fixing it frees influence for managing the many subjects. The journal fails if Britain itself legalises slavery."
 sources = ["game files: common/journal_entries/02_brazilian_slavery.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
 patch = "1.13"
+how = ["Journal: open the entry about the slave trade and use its button against Brazil.", "Do it while Brazil is in a civil war (select Brazil in the Diplomacy panel to see its wars)."]
 [rule.when]
 from_year = 1840
 until_year = 1886
@@ -175,6 +178,7 @@ detail = "Take \"Proclaim the British Raj\" while at peace."
 why = "The decision ends East India Company rule (21 states) and moves India under the crown. It needs Civilizing Mission, colonial affairs at level 5, peace, and the Company as a non-player subject."
 sources = ["game files: common/decisions/british_raj_decisions.txt"]
 patch = "1.13.9"
+how = ["Politics panel, Institutions: raise Colonial Affairs one level at a time to level 5.", "Decisions panel: take \"Proclaim the British Raj\" while you are at peace."]
 [rule.when]
 from_year = 1850
 techs = ["civilizing_mission"]
@@ -207,6 +211,7 @@ detail = "Use the Canada and Australia journal buttons to merge the colonies."
 why = "Britain starts with 4 Canadian and 4 Australian colonies, each costing influence as a separate subject. Merging them cuts the subject count and the number of independent liberty-desire risks."
 sources = ["game files: common/journal_entries/00_canada_australia.txt", "https://vic3.paradoxwikis.com/Great_Britain"]
 patch = "1.13"
+how = ["Journal: open the Canada entry and press its button to unite the colonies.", "Do the same in the Australia entry."]
 [rule.when]
 techs = ["nationalism"]
 until_year = 1880
