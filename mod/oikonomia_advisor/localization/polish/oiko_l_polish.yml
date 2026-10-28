@@ -3,9 +3,6 @@
 
  je_oiko_budget_guard:0 "Strażnik budżetu"
  je_oiko_budget_guard_reason:0 "Państwo wydaje więcej, niż zarabia.\n\n#bold Jak to działa:#! deficyt sam w sobie nie jest problemem. Gdy skarbiec się wyczerpie, państwo pożycza, a pożyczka na budowę zwraca się z podatków i dywidend nowych zakładów. Problemem staje się, gdy dług opłaca utrzymanie (armię, administrację) zamiast wzrostu: rośnie, dochodzą odsetki, a gdy przekroczy limit kredytu, kraj bankrutuje (budowa staje, kary do produkcji, ataku i obrony do -50%).\n\n#bold Dźwignie:#! poziom podatków i płace (wojsko, urzędnicy) w panelu Budżetu, mniejsza lub tańsza armia w czasie pokoju, tańsze towary, które kupuje państwo (papier, broń), oraz nowe zakłady płacące podatki."
- je_oiko_budget_guard_status_deficit:0 "$oiko_numbers$\n\n#bold Deficyt, ale bez długu.#! Napraw go, póki skarbiec ma pieniądze: najpierw największa pozycja wydatków."
- je_oiko_budget_guard_status_danger:0 "$oiko_numbers$\n\n#bold Niebezpieczeństwo:#! pożyczasz i dalej tracisz pieniądze. Nie zaczynaj wojny ani nowych drogich ustaw; zetnij wydatki lub podnieś podatki o jeden poziom."
- je_oiko_budget_guard_status_critical:0 "$oiko_numbers$\n\n#bold Bankructwo blisko!#! Jeszcze w tym tygodniu: podatki o jeden poziom w górę, płace wojska i urzędników w dół, wstrzymaj najdroższe budowy."
 
  oiko_box_military:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_military_target'), GetPlayer.MakeScope.ScriptValue('oiko_military_share')),'@green_checkmark_box!','@simple_box!')] Wojsko poniżej 40% wydatków (teraz [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%])"
  oiko_box_balance:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_balance'), GetPlayer.MakeScope.ScriptValue('oiko_zero')),'@green_checkmark_box!','@simple_box!')] Saldo tygodniowe nie jest ujemne (teraz [GetPlayer.MakeScope.ScriptValue('oiko_balance')|D] @money!)"
@@ -28,4 +25,16 @@
 
  je_oiko_dashboard:0 "Oikonomia: panel budżetu"
  je_oiko_dashboard_reason:0 "Bieżące liczby budżetu. Co tydzień ten wpis zapisuje je też do logu gry, skąd Oikonomia Analyzer (overlay i Muse) czyta je na żywo, bez czekania na autozapis."
- je_oiko_dashboard_status:0 "$oiko_numbers$"
+ je_oiko_dashboard_status:0 "$oiko_numbers$\n\n[GetPlayer.GetCustom('oiko_budget_verdict')]"
+ je_oiko_budget_guard_status:0 "$oiko_numbers$\n\n[GetPlayer.GetCustom('oiko_budget_verdict')]"
+
+ je_group_oikonomia:0 "Doradca Oikonomia"
+ oiko_debt_progress_bar:0 "Dług / limit kredytu"
+ oiko_debt_progress_bar_desc:0 "Jak blisko limitu kredytu jest dług; przy 100% kraj bankrutuje. Pożyczanie na budowę jest w porządku mniej więcej do połowy limitu; dalej zatrzymaj wzrost długu."
+
+ oiko_verdict_critical:0 "#bold Bankructwo blisko!#! Jeszcze w tym tygodniu: płace wojska i urzędników o poziom w dół, podatki o poziom w górę, wstrzymaj najdroższe budowy, nie zaczynaj wojny."
+ oiko_verdict_danger:0 "#bold Dług przekroczył połowę limitu kredytu.#! Zatrzymaj jego wzrost: najpierw płace wojska i urzędników w dół, potem podatki o poziom w górę. Żadnych nowych wojen ani drogich ustaw."
+ oiko_verdict_hoarding:0 "#bold Nadwyżka i pełny skarbiec.#! Pieniądze w skarbcu nic nie zarabiają: zleć więcej budów."
+ oiko_verdict_surplus:0 "#bold Nadwyżka.#! Trzymaj wszystkie sektory budowlane w pracy: to nadwyżka opłaca wzrost."
+ oiko_verdict_military:0 "#bold Deficyt, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków.#! Ten deficyt opłaca utrzymanie, nie wzrost: w czasie pokoju tańsze metody produkcji albo mniej batalionów, zanim podniesiesz podatki."
+ oiko_verdict_deficit:0 "#bold Deficyt, dług daleko od limitu kredytu.#! W porządku, dopóki pieniądze idą na budowę (panel Budżetu: budowa to największy wydatek), więc buduj dalej. Jeśli idą na płace i utrzymanie, tnij je najpierw."

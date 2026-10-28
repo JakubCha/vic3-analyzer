@@ -128,6 +128,14 @@ pub struct When {
     /// Market price over base at most the value (1.0 = at base).
     #[serde(default)]
     pub price_ratio_at_most: BTreeMap<String, f64>,
+    /// Latest national literacy (0–1) below the value.
+    pub literacy_below: Option<f64>,
+    /// Latest average standard of living below the value.
+    pub sol_below: Option<f64>,
+    /// Latest radicals over population (0–1) at least the value.
+    pub radicals_share_at_least: Option<f64>,
+    /// Owned states using more infrastructure than they have, at least this many.
+    pub infrastructure_short_states_at_least: Option<usize>,
 }
 
 /// All embedded rules, parsed once.
@@ -200,6 +208,22 @@ impl Facts<'_> {
             let below = self.expense(b).0;
             (below > 0.0).then(|| self.expense(a).0 / below)
         };
+        // Trends are only kept for the player; without them these conditions do not hold.
+        let latest = |s: Option<&vic3_load::TrendSeries>| s.and_then(|s| s.chronological()).and_then(|(_, v)| v.last().copied());
+        let trends = c.trends.as_deref();
+        let pops = trends.and_then(|t| t.pop_statistics.as_ref());
+        let literacy = latest(trends.and_then(|t| t.literacy.as_ref()));
+        let sol = latest(trends.and_then(|t| t.avgsoltrend.as_ref()));
+        let population = latest(pops.and_then(|p| p.trend_population.as_ref())).filter(|p| *p > 0.0);
+        let radicals = latest(pops.and_then(|p| p.trend_radicals.as_ref())).zip(population).map(|(r, p)| r / p);
+        let infra_short = || {
+            let owned: BTreeSet<u32> = c.states.iter().copied().collect();
+            self.world
+                .states
+                .iter()
+                .filter(|s| owned.contains(&s.id) && s.infrastructure_usage.zip(s.infrastructure).is_some_and(|(u, i)| u > i))
+                .count()
+        };
         w.from_year.is_none_or(|y| year.is_some_and(|now| now >= y))
             && w.until_year.is_none_or(|y| year.is_some_and(|now| now <= y))
             && w.laws.iter().all(has_law)
@@ -228,6 +252,10 @@ impl Facts<'_> {
             && (w.any_price_above_base.is_empty()
                 || w.any_price_above_base.iter().any(|(good, x)| self.price_ratio(good).is_some_and(|r| r - 1.0 >= *x)))
             && w.price_ratio_at_most.iter().all(|(good, x)| self.price_ratio(good).is_some_and(|r| r <= *x))
+            && w.literacy_below.is_none_or(|x| literacy.is_some_and(|l| l < x))
+            && w.sol_below.is_none_or(|x| sol.is_some_and(|s| s < x))
+            && w.radicals_share_at_least.is_none_or(|x| radicals.is_some_and(|r| r >= x))
+            && w.infrastructure_short_states_at_least.is_none_or(|n| infra_short() >= n)
     }
 }
 
@@ -319,5 +347,55 @@ mod tests {
         let army = out.iter().find(|a| a.id == "playbook:pru.opening-army").expect("army");
         assert_eq!(army.priority, 1);
         assert!(army.why.as_deref().is_some_and(|w| w.contains("Sources (1.13.9)")));
+    }
+
+    fn trend(values: &[f64]) -> vic3_load::TrendSeries {
+        let values: Vec<String> = values.iter().map(f64::to_string).collect();
+        let text = format!("sample_rate=28 count=5214 channels={{ 0={{ date=1860.1.1 index={} values={{ {} }} }} }}", values.len(), values.join(" "));
+        jomini::text::de::from_utf8_slice(text.as_bytes()).expect("trend")
+    }
+
+    #[test]
+    fn trend_and_infrastructure_conditions_read_the_latest_values() {
+        let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let save = std::fs::read(dir.join("../vic3-load/tests/fixtures/plaintext.txt")).expect("save");
+        let defs = vic3_defs::load_from_path(dir.join("../vic3-defs/tests/fixtures")).expect("defs");
+        let blob = vic3_defs::encode_blob(&defs).expect("blob");
+        let mut snap = crate::load_analysis_snapshot(&save, None, &blob, "{}", false).expect("snapshot");
+        let tag = snap.world.player_tag.clone().expect("player");
+        let player = snap.world.countries.iter_mut().find(|c| c.tag == tag).expect("player");
+        let no_trends = player.clone();
+        player.trends = Some(Box::new(vic3_load::CountryTrends {
+            literacy: Some(trend(&[0.1, 0.4])),
+            avgsoltrend: Some(trend(&[12.0, 8.0])),
+            pop_statistics: Some(vic3_load::CountryPopStatistics {
+                trend_population: Some(trend(&[1000.0, 1000.0])),
+                trend_radicals: Some(trend(&[10.0, 200.0])),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }));
+        let state = *player.states.first().expect("owned state");
+        let s = snap.world.states.iter_mut().find(|s| s.id == state).expect("state");
+        s.infrastructure = Some(10.0);
+        s.infrastructure_usage = Some(12.0);
+        let country = snap.world.country_by_tag(&tag).expect("country");
+        let none = BTreeSet::new();
+        let facts = |country| Facts { world: &snap.world, defs: &snap.defs, prices: &snap.prices, country, states: &none, budget: None };
+        let when = |f: fn(&mut When)| {
+            let mut w = When::default();
+            f(&mut w);
+            w
+        };
+        let f = facts(country);
+        assert!(f.holds(&when(|w| w.literacy_below = Some(0.5))));
+        assert!(!f.holds(&when(|w| w.literacy_below = Some(0.3))), "latest literacy is 0.4, not the oldest 0.1");
+        assert!(f.holds(&when(|w| w.sol_below = Some(10.0))));
+        assert!(f.holds(&when(|w| w.radicals_share_at_least = Some(0.15))));
+        assert!(!f.holds(&when(|w| w.radicals_share_at_least = Some(0.25))));
+        assert!(f.holds(&when(|w| w.infrastructure_short_states_at_least = Some(1))));
+        assert!(!f.holds(&when(|w| w.infrastructure_short_states_at_least = Some(2))));
+        // Without trends (other countries) the trend conditions never fire.
+        assert!(!facts(&no_trends).holds(&when(|w| w.literacy_below = Some(1.0))));
     }
 }

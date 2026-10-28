@@ -66,6 +66,14 @@ oiko_lvl_building_naval_administration = {
 	}
 }
 
+oiko_lvl_building_power_plant = {
+	value = 0
+	every_scope_building = {
+		limit = { is_building_type = building_power_plant }
+		add = this.level
+	}
+}
+
 oiko_lvl_building_shipyard = {
 	value = 0
 	every_scope_building = {
@@ -94,6 +102,14 @@ oiko_lvl_building_textile_mill = {
 	value = 0
 	every_scope_building = {
 		limit = { is_building_type = building_textile_mill }
+		add = this.level
+	}
+}
+
+oiko_lvl_building_university = {
+	value = 0
+	every_scope_building = {
+		limit = { is_building_type = building_university }
 		add = this.level
 	}
 }

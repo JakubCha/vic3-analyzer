@@ -1,0 +1,15 @@
+﻿# Oikonomia Advisor: debt as a share of the credit limit, set weekly by the journal
+# entries that show it (set_bar_progress); 100 = default.
+oiko_debt_progress_bar = {
+	name = "oiko_debt_progress_bar"
+	desc = "oiko_debt_progress_bar_desc"
+
+	default_bad = yes
+
+	monthly_progress = {
+	}
+
+	start_value = 0
+	min_value = 0
+	max_value = 100
+}

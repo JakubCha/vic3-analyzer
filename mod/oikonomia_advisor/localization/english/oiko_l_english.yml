@@ -3,9 +3,6 @@
 
  je_oiko_budget_guard:0 "Budget Guard"
  je_oiko_budget_guard_reason:0 "The state spends more than it earns.\n\n#bold How it works:#! a deficit is not a problem by itself. Once the treasury is empty the state borrows, and borrowing to build pays back through the taxes and dividends of the new buildings. It becomes one when it pays for upkeep (army, administration) instead of growth: debt only grows, interest is added, and when debt passes the credit limit the country defaults (construction stops, production, offense and defense penalties up to -50%).\n\n#bold Levers:#! tax level and wages (military, government) in the Budget panel, a smaller or cheaper peacetime army, cheaper goods the state buys (paper, arms), and new buildings that pay taxes."
- je_oiko_budget_guard_status_deficit:0 "$oiko_numbers$\n\n#bold Deficit, no debt yet.#! Fix it while the treasury still has money: biggest expense first."
- je_oiko_budget_guard_status_danger:0 "$oiko_numbers$\n\n#bold Danger:#! you are borrowing and still losing money. Start no war and no costly laws; cut spending or raise taxes one level."
- je_oiko_budget_guard_status_critical:0 "$oiko_numbers$\n\n#bold Default is close!#! This week: taxes up one level, military and government wages down, pause the most expensive construction."
 
  oiko_box_military:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_military_target'), GetPlayer.MakeScope.ScriptValue('oiko_military_share')),'@green_checkmark_box!','@simple_box!')] Military under 40% of spending (now [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%])"
  oiko_box_balance:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_balance'), GetPlayer.MakeScope.ScriptValue('oiko_zero')),'@green_checkmark_box!','@simple_box!')] Weekly balance not negative (now [GetPlayer.MakeScope.ScriptValue('oiko_balance')|D] @money!)"
@@ -28,4 +25,16 @@
 
  je_oiko_dashboard:0 "Oikonomia: Budget Dashboard"
  je_oiko_dashboard_reason:0 "Live budget numbers. Every week this entry also writes them to the game log, where the Oikonomia Analyzer (overlay and Muse) reads them live, without waiting for an autosave."
- je_oiko_dashboard_status:0 "$oiko_numbers$"
+ je_oiko_dashboard_status:0 "$oiko_numbers$\n\n[GetPlayer.GetCustom('oiko_budget_verdict')]"
+ je_oiko_budget_guard_status:0 "$oiko_numbers$\n\n[GetPlayer.GetCustom('oiko_budget_verdict')]"
+
+ je_group_oikonomia:0 "Oikonomia Advisor"
+ oiko_debt_progress_bar:0 "Debt / credit limit"
+ oiko_debt_progress_bar_desc:0 "How close the debt is to the credit limit; at 100% the country defaults. Borrowing to build is fine up to about half the limit; past it, stop the debt growing."
+
+ oiko_verdict_critical:0 "#bold Default is close!#! This week: military and government wages down one level, taxes up one level, pause the most expensive construction, start no war."
+ oiko_verdict_danger:0 "#bold Debt is past half the credit limit.#! Stop it growing: military and government wages down first, then taxes up one level. No new wars or costly laws."
+ oiko_verdict_hoarding:0 "#bold Surplus and a full treasury.#! Money in the treasury earns nothing: queue more construction."
+ oiko_verdict_surplus:0 "#bold Surplus.#! Keep every construction sector busy: the surplus is what pays for growth."
+ oiko_verdict_military:0 "#bold Deficit, and the army takes [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] of spending.#! This deficit pays upkeep, not growth: in peacetime use cheaper production methods or fewer battalions before raising taxes."
+ oiko_verdict_deficit:0 "#bold Deficit, debt well below the credit limit.#! Fine while the money pays for construction (Budget panel: construction is the biggest expense), so keep building. If it pays wages and upkeep instead, cut those first."

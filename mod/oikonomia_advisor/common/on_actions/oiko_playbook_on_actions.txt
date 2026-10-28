@@ -168,6 +168,159 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
+				has_law_or_variant = law_type:law_no_schools
+				literacy_rate < 0.3
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_schools }
+				NOT = { has_variable = je_oiko_pb_gen_early_schools_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_schools }
+		}
+		if = {
+			limit = {
+				has_technology_researched = manufacturies
+				market_capital.market = { mg:tools = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_tools }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_tools }
+		}
+		if = {
+			limit = {
+				market_capital.market = { mg:coal = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_coal }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_coal }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				NOT = { has_technology_researched = railways }
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_railways_research }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_railways_research }
+		}
+		if = {
+			limit = {
+				has_technology_researched = atmospheric_engine
+				market_capital.market = { mg:engines = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_mid_engines }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_mid_engines }
+		}
+		if = {
+			limit = {
+				has_technology_researched = academia
+				oiko_lvl_building_university < 1
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_gen_mid_universities }
+				NOT = { has_variable = je_oiko_pb_gen_mid_universities_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_mid_universities }
+		}
+		if = {
+			limit = {
+				game_date >= 1850.1.1
+				has_law_or_variant = law_type:law_peasant_levies
+				has_technology_researched = military_drill
+				NOT = { has_journal_entry = je_oiko_pb_gen_mid_professional_army }
+				NOT = { has_variable = je_oiko_pb_gen_mid_professional_army_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_mid_professional_army }
+		}
+		if = {
+			limit = {
+				NOT = { has_law_or_variant = law_type:law_no_schools }
+				NOT = { has_law_or_variant = law_type:law_public_schools }
+				has_technology_researched = empiricism
+				oiko_pb_balance_share >= 0.05
+				scaled_debt < 0.3
+				literacy_rate < 0.5
+				NOT = { has_journal_entry = je_oiko_pb_gen_mid_public_schools }
+				NOT = { has_variable = je_oiko_pb_gen_mid_public_schools_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_mid_public_schools }
+		}
+		if = {
+			limit = {
+				has_technology_researched = electrical_generation
+				oiko_lvl_building_power_plant < 1
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_electricity }
+				NOT = { has_variable = je_oiko_pb_gen_late_electricity_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_electricity }
+		}
+		if = {
+			limit = {
+				has_technology_researched = pumpjacks
+				market_capital.market = { mg:oil = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_oil }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_oil }
+		}
+		if = {
+			limit = {
+				has_technology_researched = rubber_mastication
+				market_capital.market = { mg:rubber = { market_goods_pricier >= 0.3 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_rubber }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_rubber }
+		}
+		if = {
+			limit = {
+				has_technology_researched = intensive_agriculture
+				market_capital.market = { mg:fertilizer = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_fertilizer }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_fertilizer }
+		}
+		if = {
+			limit = {
+				game_date >= 1880.1.1
+				has_technology_researched = gunsmithing
+				market_capital.market = { mg:artillery = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_artillery }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_artillery }
+		}
+		if = {
+			limit = {
+				has_law_or_variant = law_type:law_poor_laws
+				has_technology_researched = labor_movement
+				oiko_pb_balance_share >= 0.1
+				scaled_debt < 0.2
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_wage_subsidies }
+				NOT = { has_variable = je_oiko_pb_gen_late_wage_subsidies_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_wage_subsidies }
+		}
+		if = {
+			limit = {
+				game_date >= 1885.1.1
+				has_law_or_variant = law_type:law_wealth_voting
+				has_technology_researched = egalitarianism
+				radical_fraction = { value >= 0.1 }
+				NOT = { has_journal_entry = je_oiko_pb_gen_late_universal_suffrage }
+				NOT = { has_variable = je_oiko_pb_gen_late_universal_suffrage_done }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_late_universal_suffrage }
+		}
+		if = {
+			limit = {
+				radical_fraction = { value >= 0.15 }
+				NOT = { has_journal_entry = je_oiko_pb_gen_radicals_high }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_radicals_high }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { market_capital.market = { mg:clothes = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:furniture = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:grain = { market_goods_pricier >= 0.1 } } }
+				average_sol < 10
+				NOT = { has_journal_entry = je_oiko_pb_gen_sol_low }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_sol_low }
+		}
+		if = {
+			limit = {
 				OR = { c:PRU ?= root }
 				game_date < 1841.1.1
 				military_expenses_share >= 0.45

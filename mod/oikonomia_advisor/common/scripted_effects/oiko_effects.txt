@@ -5,3 +5,15 @@
 oiko_log_status = {
 	debug_log = "OIKO1;[THIS.GetCountry.GetTagName];[TimeKeeper.GetCurrentDate.GetString];[THIS.ScriptValue('oiko_balance')|0];[THIS.ScriptValue('oiko_income')|0];[THIS.ScriptValue('oiko_treasury')|0];[THIS.ScriptValue('oiko_debt_permille')|0];[THIS.ScriptValue('oiko_military_permille')|0];[THIS.ScriptValue('oiko_weeks_to_debt')|0];[THIS.ScriptValue('oiko_gdp')|0]"
 }
+
+# Debt bar (common/scripted_progress_bars/oiko_progress_bars.txt). Call from a journal
+# entry's on_weekly_pulse: root = the country, scope:journal_entry = the entry with the bar.
+oiko_update_debt_bar = {
+	set_variable = { name = oiko_debt_pct value = oiko_debt_percent }
+	scope:journal_entry = {
+		set_bar_progress = {
+			value = root.var:oiko_debt_pct
+			name = oiko_debt_progress_bar
+		}
+	}
+}

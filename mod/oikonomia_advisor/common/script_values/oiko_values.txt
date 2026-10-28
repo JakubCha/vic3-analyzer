@@ -123,3 +123,10 @@ oiko_military_permille = {
 	value = military_expenses_share
 	multiply = 1000
 }
+
+# Debt bar: percent of the credit limit, capped at the bar's 100.
+oiko_debt_percent = {
+	value = scaled_debt
+	multiply = 100
+	max = 100
+}

@@ -1,0 +1,40 @@
+﻿# Oikonomia Advisor: one verdict on the budget, first matching text wins. Mirrors
+# the analyzer's risk levels (crates/vic3-api/src/budget.rs): urgency comes from the
+# credit limit, not from an empty treasury.
+oiko_budget_verdict = {
+	type = country
+	random_valid = no
+
+	text = {
+		trigger = {
+			OR = {
+				in_default = yes
+				scaled_debt >= 0.85
+			}
+		}
+		localization_key = oiko_verdict_critical
+	}
+	text = {
+		trigger = { scaled_debt >= 0.5 }
+		localization_key = oiko_verdict_danger
+	}
+	text = {
+		trigger = {
+			net_fixed_income >= 0
+			gold_reserves > gold_reserves_limit
+		}
+		localization_key = oiko_verdict_hoarding
+	}
+	text = {
+		trigger = { net_fixed_income >= 0 }
+		localization_key = oiko_verdict_surplus
+	}
+	text = {
+		trigger = { military_expenses_share >= 0.3 }
+		localization_key = oiko_verdict_military
+	}
+	text = {
+		trigger = { always = yes }
+		localization_key = oiko_verdict_deficit
+	}
+}

@@ -108,6 +108,18 @@ fn when_triggers(w: &When, levels: &mut BTreeSet<String>) -> Result<Vec<String>,
         t.push(format!("OR = {{ {} }}", any.join(" ")));
     }
     t.extend(w.price_ratio_at_most.iter().map(|(g, r)| price(g, "<=", r - 1.0)));
+    if let Some(x) = w.literacy_below {
+        t.push(format!("literacy_rate < {}", num(x)));
+    }
+    if let Some(x) = w.sol_below {
+        t.push(format!("average_sol < {}", num(x)));
+    }
+    if let Some(x) = w.radicals_share_at_least {
+        t.push(format!("radical_fraction = {{ value >= {} }}", num(x)));
+    }
+    if w.infrastructure_short_states_at_least.is_some() {
+        return Err("the game has no trigger comparing a state's infrastructure use to its capacity".into());
+    }
     Ok(t)
 }
 
@@ -175,7 +187,7 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
         let _ = writeln!(jes, "# {}", rule.id);
         let _ = writeln!(jes, "{name} = {{");
         let _ = writeln!(jes, "\ticon = \"{icon}\"");
-        let _ = writeln!(jes, "\tgroup = je_group_internal_affairs");
+        let _ = writeln!(jes, "\tgroup = je_group_oikonomia");
         let when_all = format!("AND = {{ {} }}", when.join(" "));
         match &done {
             Some(done) => {

@@ -4,32 +4,20 @@
 # Live budget guard: added with a deficit, silently removed once the balance is positive.
 je_oiko_budget_guard = {
 	icon = "gfx/interface/icons/objectives/economic_dominance.dds"
-	group = je_group_internal_affairs
+	group = je_group_oikonomia
+
+	scripted_progress_bar = oiko_debt_progress_bar
 
 	invalid = {
 		net_fixed_income >= 0
 	}
 
-	status_desc = {
-		first_valid = {
-			triggered_desc = {
-				desc = je_oiko_budget_guard_status_critical
-				trigger = {
-					OR = {
-						in_default = yes
-						scaled_debt >= 0.85
-					}
-				}
-			}
-			triggered_desc = {
-				desc = je_oiko_budget_guard_status_danger
-				# Already borrowing and still losing money.
-				trigger = { scaled_debt > 0 }
-			}
-			triggered_desc = {
-				desc = je_oiko_budget_guard_status_deficit
-				trigger = { always = yes }
-			}
+	# The verdict text itself comes from common/customizable_localization/oiko_custom_loc.txt.
+	status_desc = je_oiko_budget_guard_status
+
+	on_weekly_pulse = {
+		effect = {
+			oiko_update_debt_bar = yes
 		}
 	}
 
@@ -40,7 +28,7 @@ je_oiko_budget_guard = {
 # Prussia's first years: the army is the deficit.
 je_oiko_pru_opening = {
 	icon = "gfx/interface/icons/event_icons/event_military.dds"
-	group = je_group_internal_affairs
+	group = je_group_oikonomia
 
 	complete = {
 		military_expenses_share < 0.4
@@ -62,7 +50,7 @@ je_oiko_pru_opening = {
 # Prussia to the North German Federation to Germany.
 je_oiko_pru_germany = {
 	icon = "gfx/interface/icons/event_icons/event_portrait.dds"
-	group = je_group_internal_affairs
+	group = je_group_oikonomia
 
 	complete = {
 		c:GER ?= root
@@ -87,11 +75,14 @@ je_oiko_pru_germany = {
 # Always-on dashboard: live budget numbers, and the weekly line the analyzer reads.
 je_oiko_dashboard = {
 	icon = "gfx/interface/icons/event_icons/event_scales.dds"
-	group = je_group_internal_affairs
+	group = je_group_oikonomia
+
+	scripted_progress_bar = oiko_debt_progress_bar
 
 	on_weekly_pulse = {
 		effect = {
 			oiko_log_status = yes
+			oiko_update_debt_bar = yes
 		}
 	}
 

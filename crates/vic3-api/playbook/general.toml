@@ -344,3 +344,294 @@ laws = ["law_no_social_security"]
 techs = ["democracy"]
 balance_share_of_income_at_least = 0.1
 debt_share_of_limit_below = 0.2
+
+# --- Early game (1836–1850): foundations ------------------------------------
+
+[[rule]]
+id = "gen.early-schools"
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Start schooling: enact Religious or Private Schools"
+detail = "Literacy is under 30% and there is no school system: enact Religious Schools (with rationalism) or Private Schools (with academia)."
+why = "Literacy gates research speed, the qualifications pops need for skilled jobs (clerks, engineers, machinists) and the political awareness of the middle class. A school law started early pays for decades; Public Schools (empiricism) is the stronger but costlier step later."
+sources = ["game files: common/laws/00_education_system.txt (law_religious_schools: rationalism, law_private_schools: academia, law_public_schools: empiricism)"]
+patch = "1.13.9"
+done = { type = "law_inactive", law = "law_no_schools" }
+[rule.when]
+laws = ["law_no_schools"]
+literacy_below = 0.3
+
+[[rule]]
+id = "gen.early-tools"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Make tools at home: build tooling workshops"
+detail = "Tools are over 20% above base price: build tooling workshops next to iron and wood."
+why = "Tools are the input of almost every early upgrade: mines, logging camps, farms and Iron Frame construction all run on them. Dear tools make every later production-method switch unprofitable, so the tool chain comes before consumer factories."
+sources = ["game files: building_tooling_workshop (unlocked by manufacturies)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["manufacturies"]
+price_above_base = { tools = 0.2 }
+
+[[rule]]
+id = "gen.early-coal"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Open coal mines before railways and steel"
+detail = "Coal is over 20% above base price: open coal mines in your coal states."
+why = "Coal powers railways, steam engines in mines and later steel. Building the mines before the demand arrives keeps the first railways and steel mills profitable instead of fighting over imports."
+sources = ["game files: building_coal_mine"]
+patch = "1.13.9"
+[rule.when]
+price_above_base = { coal = 0.2 }
+
+[[rule]]
+id = "gen.early-railways-research"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Research railways"
+detail = "It is past 1840 and railways is not researched: put it at the front of the production queue."
+why = "Railways unlock the railway building, the main source of infrastructure and market access. Without it, every state you industrialise hits its infrastructure cap and loses output to the market-access penalty."
+sources = ["game files: building_railway (unlocked by railways)"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1840
+techs_missing = ["railways"]
+
+# --- Mid game (1850–1890): railways, heavy industry, institutions ------------
+
+[[rule]]
+id = "gen.mid-railways"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Build railways where infrastructure runs out"
+detail = "One or more of your states use more infrastructure than they have: build railways there before new factories."
+why = "A state over its infrastructure gets a market-access penalty: its buildings sell and buy less on the national market, so new factories there earn less than the analyzer's ranking expects. Railways also raise demand for engines and coal at home."
+sources = ["game files: building_railway (unlocked by railways), building_port"]
+patch = "1.13.9"
+[rule.when]
+techs = ["railways"]
+infrastructure_short_states_at_least = 1
+
+[[rule]]
+id = "gen.mid-engines"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Make engines: build motor industry"
+detail = "Engines are over 20% above base price: build motor industry next to your steel or iron."
+why = "Railways, steam-powered mines and later factories all consume engines. Importing them at high prices drains the money the railways were meant to make."
+sources = ["game files: building_motor_industry (unlocked by atmospheric_engine)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["atmospheric_engine"]
+price_above_base = { engines = 0.2 }
+
+[[rule]]
+id = "gen.mid-universities"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Build a university"
+detail = "You have academia and no university: build one in your most literate state."
+why = "Universities add innovation (research speed) and are the first building that turns the budget into faster technology. Later technologies are what make each worker more productive."
+sources = ["game files: building_university (unlocked by academia)"]
+patch = "1.13.9"
+done = { type = "building_levels", building_type = "building_university", at_least = 1.0 }
+[rule.when]
+techs = ["academia"]
+levels_below = { building_university = 1.0 }
+balance_at_least = 0.0
+
+[[rule]]
+id = "gen.mid-professional-army"
+domain = "war"
+goal = "military"
+phase = "mid"
+title = "Move from Peasant Levies to a Professional Army"
+detail = "You have military drill and still raise peasant levies: enact Professional Army."
+why = "Levies pull workers out of farms and factories when mobilised and fight poorly. A smaller professional army costs wages but keeps the economy running in war, which is the war you can afford."
+sources = ["game files: common/laws/00_army_model.txt (law_professional_army: military_drill)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_professional_army" }
+[rule.when]
+from_year = 1850
+laws = ["law_peasant_levies"]
+techs = ["military_drill"]
+
+[[rule]]
+id = "gen.mid-public-schools"
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Upgrade to Public Schools while the budget allows"
+detail = "Literacy is under 50% and you run Religious or Private Schools with a surplus: enact Public Schools."
+why = "Public Schools raise literacy fastest and feed the qualifications late industry needs. It is a budget expense, so it belongs to a surplus, not a deficit."
+sources = ["game files: common/laws/00_education_system.txt (law_public_schools: empiricism)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_public_schools" }
+[rule.when]
+techs = ["empiricism"]
+laws_missing = ["law_no_schools", "law_public_schools"]
+literacy_below = 0.5
+balance_share_of_income_at_least = 0.05
+debt_share_of_limit_below = 0.3
+
+# --- Late game (1890–1936): new goods, welfare, the great war ----------------
+
+[[rule]]
+id = "gen.late-electricity"
+domain = "economy"
+goal = "industry"
+phase = "late"
+title = "Build power plants"
+detail = "You have electrical generation and no power plants: build them next to coal (later oil)."
+why = "Electricity is the input of the late production methods that multiply factory output. A late-game economy without power plants pays more per unit than its rivals in every factory."
+sources = ["game files: building_power_plant (unlocked by electrical_generation)"]
+patch = "1.13.9"
+done = { type = "building_levels", building_type = "building_power_plant", at_least = 1.0 }
+[rule.when]
+techs = ["electrical_generation"]
+levels_below = { building_power_plant = 1.0 }
+
+[[rule]]
+id = "gen.late-oil"
+domain = "economy"
+goal = "industry"
+phase = "late"
+title = "Drill oil"
+detail = "Oil is over 20% above base price: build oil rigs in your oil states (or secure one)."
+why = "Oil feeds power plants, motor vehicles, synthetics and late warships. Late wars and late factories are decided by who owns the oil; buying it on a tight market costs more each year."
+sources = ["game files: building_oil_rig (unlocked by pumpjacks)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["pumpjacks"]
+price_above_base = { oil = 0.2 }
+
+[[rule]]
+id = "gen.late-rubber"
+domain = "economy"
+goal = "industry"
+phase = "late"
+title = "Secure rubber"
+detail = "Rubber is over 30% above base price: build rubber plantations in tropical states you own, or trade for it."
+why = "Rubber grows only in a few tropical states and is needed by automobiles, electrics and late military goods. It is usually the reason for late colonial or trade deals, so plan it before demand peaks."
+sources = ["game files: building_rubber_plantation (unlocked by rubber_mastication)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["rubber_mastication"]
+price_above_base = { rubber = 0.3 }
+
+[[rule]]
+id = "gen.late-fertilizer"
+domain = "economy"
+goal = "industry"
+phase = "late"
+title = "Make fertilizer: build chemical plants"
+detail = "Fertilizer is over 20% above base price: build chemical plants."
+why = "Fertilizer production methods raise farm output a lot, freeing peasants for factories. Dear fertilizer keeps farms on old methods and food expensive."
+sources = ["game files: building_chemical_plant (unlocked by intensive_agriculture)"]
+patch = "1.13.9"
+[rule.when]
+techs = ["intensive_agriculture"]
+price_above_base = { fertilizer = 0.2 }
+
+[[rule]]
+id = "gen.late-artillery"
+domain = "war"
+goal = "military"
+phase = "late"
+title = "Make artillery at home before a great war"
+detail = "Artillery is over 20% above base price after 1880: build artillery foundries."
+why = "Late armies consume artillery every week, and mobilisation multiplies that. An army supplied from imports turns a war into a budget crisis in months."
+sources = ["game files: building_artillery_foundry (unlocked by gunsmithing)"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1880
+techs = ["gunsmithing"]
+price_above_base = { artillery = 0.2 }
+
+[[rule]]
+id = "gen.late-wage-subsidies"
+domain = "laws"
+goal = "reforms"
+phase = "late"
+title = "Move from Poor Laws to Wage Subsidies when solvent"
+detail = "You have labor movement, Poor Laws, a solid surplus and little debt: enact Wage Subsidies."
+why = "Wage subsidies lift the poorest workers' standard of living and cut radicals, but they are a budget expense that grows in recessions, so only with a surplus."
+sources = ["game files: common/laws/00_welfare.txt (law_wage_subsidies: labor_movement)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_wage_subsidies" }
+[rule.when]
+laws = ["law_poor_laws"]
+techs = ["labor_movement"]
+balance_share_of_income_at_least = 0.1
+debt_share_of_limit_below = 0.2
+
+[[rule]]
+id = "gen.late-universal-suffrage"
+domain = "laws"
+goal = "reforms"
+phase = "late"
+title = "Answer the radicals: enact Universal Suffrage"
+detail = "After 1885, with Wealth Voting, egalitarianism and over 10% radicals: enact Universal Suffrage."
+why = "A narrow franchise leaves lower-strata movements no road but radicalism. A wider franchise turns them into parties, which costs the old ruling groups clout but lowers turmoil and revolution risk."
+sources = ["game files: common/laws/00_distribution_of_power.txt (law_universal_suffrage: egalitarianism)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_universal_suffrage" }
+[rule.when]
+from_year = 1885
+laws = ["law_wealth_voting"]
+techs = ["egalitarianism"]
+radicals_share_at_least = 0.1
+
+# --- Every phase: warning signs ----------------------------------------------
+
+[[rule]]
+id = "gen.radicals-high"
+domain = "laws"
+goal = "stability"
+phase = "any"
+priority = 1
+title = "Radicals are over 15% of the population"
+detail = "Stop enacting laws the largest interest groups oppose, make food and clothes cheaper, and check which interest group's radicals grow fastest."
+why = "Radicals lower legitimacy and fuel political movements that can revolt. A revolution splits off states and their buildings; prevention is cheaper than the civil war."
+sources = ["game files: radical_fraction trigger, common/journal_entries/00_fascism.txt"]
+patch = "1.13.9"
+[rule.when]
+radicals_share_at_least = 0.15
+
+[[rule]]
+id = "gen.sol-low"
+domain = "economy"
+goal = "stability"
+phase = "any"
+title = "Standard of living is low: make basic goods cheaper"
+detail = "Average standard of living is under 10 after 1840 and grain, clothes or furniture is dear: build farms, textile mills or furniture manufacturies for the dearest one."
+why = "Low standard of living turns pops radical and slows the growth of the middle class that pays most taxes. Cheaper basic goods raise it without a budget cost."
+sources = ["game files: average_sol trigger"]
+patch = "1.13.9"
+[rule.when]
+from_year = 1840
+sol_below = 10.0
+any_price_above_base = { grain = 0.1, clothes = 0.1, furniture = 0.1 }
+
+[[rule]]
+id = "gen.infrastructure-short"
+domain = "economy"
+goal = "industry"
+phase = "any"
+title = "A state is short of infrastructure and you have no railways"
+detail = "At least one of your states uses more infrastructure than it has: build a port there if it is coastal, and research railways."
+why = "Over the infrastructure cap a state's market access drops, so new buildings there earn less than they cost. Fix the cap first, then expand."
+sources = ["game files: building_railway, building_port"]
+patch = "1.13.9"
+[rule.when]
+infrastructure_short_states_at_least = 1
+techs_missing = ["railways"]

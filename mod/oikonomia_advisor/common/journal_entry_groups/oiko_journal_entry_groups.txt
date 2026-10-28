@@ -1,0 +1,5 @@
+﻿# Oikonomia Advisor: its own collapsible group in the journal. Loaded after the
+# game's groups, so it is listed last.
+je_group_oikonomia = {
+	context = country
+}
