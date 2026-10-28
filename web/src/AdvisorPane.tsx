@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { Advice, AdviceDomain, AdviceGoal, AdviceResult, BudgetReport, MarketCase } from './types'
+import type { Advice, AdviceDomain, AdviceGoal, AdviceResult, BudgetReport, MarketCase, StateRow } from './types'
 import { isTauri } from './env'
 import { invokeTauri } from './tauriApi'
 import type { WasmApi } from './wasm'
 
 /** `now`: the few most important items across every domain; `market`: the market doctor. */
-export type View = AdviceDomain | 'now' | 'market'
+export type View = AdviceDomain | 'now' | 'market' | 'states'
 
 /** How many items the Now tab shows: a short session's worth. */
 const NOW_LIMIT = 5
@@ -16,6 +16,7 @@ const DOMAINS: readonly { id: View; label: string }[] = [
   { id: 'laws', label: 'Laws' },
   { id: 'war', label: 'War' },
   { id: 'market', label: 'Market' },
+  { id: 'states', label: 'States' },
 ]
 
 /** A suggestion the player chose to act on, kept across saves. */
@@ -177,7 +178,12 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
 
       <div className="advisor-domains" role="tablist" aria-label="Advisor domain">
         {DOMAINS.map((item) => {
-          const count = item.id === 'market' ? (result?.market?.length ?? 0) : inTab(item.id).length
+          const count =
+            item.id === 'market'
+              ? (result?.market?.length ?? 0)
+              : item.id === 'states'
+                ? (result?.states?.length ?? 0)
+                : inTab(item.id).length
           return (
             <button
               key={item.id}
@@ -223,8 +229,11 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
 
       {error && <p role="alert">{error}</p>}
       {!result && !error && <p>Preparing advice…</p>}
-      {result && domain !== 'market' && list.length === 0 && <p>Nothing to suggest here for this save.</p>}
+      {result && domain !== 'market' && domain !== 'states' && list.length === 0 && (
+        <p>Nothing to suggest here for this save.</p>
+      )}
       {result && domain === 'market' && <MarketDoctor cases={result.market ?? []} />}
+      {result && domain === 'states' && <StatesTable rows={result.states ?? []} />}
 
       <ol className="advisor-list" aria-label="Suggestions">
         {list.map((item) => (
@@ -323,6 +332,47 @@ export function AdviceExtras({ item }: { item: Advice }) {
   )
 }
 
+/** The player's states side by side: where people are, idle and short of infrastructure. */
+function StatesTable({ rows }: { rows: StateRow[] }) {
+  if (rows.length === 0) return <p>No states in this save.</p>
+  const pct = (x: number) => `${Math.round(x * 100)}%`
+  return (
+    <table className="advisor-states" aria-label="States">
+      <thead>
+        <tr>
+          <th>State</th>
+          <th>Population</th>
+          <th>Unemployed</th>
+          <th>Peasants</th>
+          <th>Literacy</th>
+          <th>Infrastructure</th>
+          <th>Best build</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((s) => {
+          const short = s.infrastructure != null && s.infrastructure_usage != null && s.infrastructure_usage > s.infrastructure
+          return (
+            <tr key={s.id}>
+              <td>{s.label}</td>
+              <td>{money(s.population)}</td>
+              <td>{money(s.unemployed)}</td>
+              <td>{pct(s.peasant_share)}</td>
+              <td>{pct(s.literacy)}</td>
+              <td className={short ? 'advisor-short' : undefined}>
+                {s.infrastructure_usage != null && s.infrastructure != null
+                  ? `${Math.round(s.infrastructure_usage)} / ${Math.round(s.infrastructure)}${short ? ' short' : ''}`
+                  : '?'}
+              </td>
+              <td>{s.best_build ?? ''}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}
+
 /** Dear and cheap goods with what makes them and the real cause. */
 function MarketDoctor({ cases }: { cases: MarketCase[] }) {
   if (cases.length === 0) return <p>No good is more than 20% off its base price on your market.</p>
@@ -397,6 +447,14 @@ export function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
           b.weeks_to_default != null && <> · credit limit in ~{weeks(b.weeks_to_default)}</>
         )}
       </p>
+      {b.war && b.war.extra_weekly > 0 && (
+        <p className="advisor-war" aria-label="War cost">
+          At war (whole army mobilised): at least {money(b.war.extra_weekly)} more a week, balance{' '}
+          {money(b.war.weekly_balance)}/week
+          {b.war.weeks_to_unhealthy != null && <> · debt at half the credit limit after ~{weeks(b.war.weeks_to_unhealthy)}</>}
+          {b.war.weeks_to_default != null && <> · default after ~{weeks(b.war.weeks_to_default)} of war</>}
+        </p>
+      )}
       {b.expenses.length > 0 && (
         <ul className="budget-bars" aria-label="Weekly expenses">
           {b.expenses.slice(0, 5).map((g) => (

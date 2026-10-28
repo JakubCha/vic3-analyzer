@@ -56,6 +56,22 @@ pub struct BudgetReport {
     pub deficit_kind: Option<DeficitKind>,
     pub expenses: Vec<BudgetGroup>,
     pub incomes: Vec<BudgetGroup>,
+    /// What a war with the whole army mobilised would do to this budget.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub war: Option<WarEstimate>,
+}
+
+/// Budget at war, a lower bound: a mobilised battalion consumes twice its peacetime
+/// goods (static modifier `mobilized_battalion_consumption`, `building_goods_input_mult = 1`,
+/// 1.13.9). Not included: mobilisation options, raised conscripts, lost trade and taxes.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WarEstimate {
+    /// Added weekly cost with every battalion mobilised.
+    pub extra_weekly: f64,
+    pub weekly_balance: f64,
+    /// Weeks of war until debt reaches half the credit limit / the credit limit.
+    pub weeks_to_unhealthy: Option<f64>,
+    pub weeks_to_default: Option<f64>,
 }
 
 /// What a deficit pays for.
@@ -195,6 +211,12 @@ pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
     } else {
         DeficitKind::Upkeep
     });
+    let war = balance.map(|b| {
+        let extra: f64 = expenses.iter().filter(|g| g.group == "military_goods").map(|g| g.amount).sum();
+        let at_war = b - extra;
+        let weeks = |fraction: f64| limit.filter(|_| at_war < 0.0).map(|l| ((treasury + l * fraction - debt) / -at_war).max(0.0));
+        WarEstimate { extra_weekly: extra, weekly_balance: at_war, weeks_to_unhealthy: weeks(0.5), weeks_to_default: weeks(1.0) }
+    });
     Some(BudgetReport {
         risk,
         treasury,
@@ -209,6 +231,7 @@ pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
         deficit_kind,
         expenses,
         incomes: groups(defs, country, true, country.weekly_income),
+        war,
     })
 }
 
@@ -482,7 +505,14 @@ mod tests {
         assert_eq!(ids, ["budget:balance", "budget:military", "budget:government", "budget:revenue"]);
         assert_eq!(out[0].priority, 2);
         assert!(out[0].detail.contains("67 weeks"), "{}", out[0].detail);
-        assert!(out.iter().all(|a| a.why.is_some()));
+        assert!(out.iter().all(|a| a.why.is_some() && !a.steps.is_empty()));
+
+        // Mobilised, the army's goods bill doubles: 24.8K more a week.
+        let war = r.war.expect("war estimate");
+        assert!((war.extra_weekly - 24_769.0).abs() < 1e-6);
+        assert!((war.weekly_balance - (-7_231.0 - 24_769.0)).abs() < 1e-6);
+        let to_default = (486_803.0 + 17_058_032.0) / 32_000.0;
+        assert!(war.weeks_to_default.is_some_and(|w| (w - to_default).abs() < 1e-6));
     }
 
     #[test]

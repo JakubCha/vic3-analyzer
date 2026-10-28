@@ -234,6 +234,7 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
     let mut monthly = String::new();
     let mut active = String::new();
     let mut loc = String::new();
+    let mut loc_pl = String::new();
     let mut ordered: Vec<&Rule> = rules.iter().collect();
     ordered.sort_by_key(|r| r.priority);
 
@@ -311,24 +312,32 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
         } else {
             format!("\n\nSources ({}): {}", rule.patch, rule.sources.join(", "))
         };
-        let _ = writeln!(loc, " {name}:0 \"{}\"", loc_text(&format!("Playbook: {}", rule.title)));
-        let how: Vec<String> = crate::playbook::steps(rule, &vic3_defs::pretty_id).iter().enumerate().map(|(i, s)| format!("{}. {s}", i + 1)).collect();
-        let _ = writeln!(
-            loc,
-            " {name}_reason:0 \"{}\"",
-            concept_links(&loc_text(&format!(
-                "{} · {}\n\n{}\n\nHow to do it:\n{}\n\nHow it works: {}{sources}",
-                rule.goal,
-                rule.phase,
-                rule.detail,
-                how.join("\n"),
-                rule.why
-            )))
-        );
-        let status = status_lines(&rule.when);
-        if !status.is_empty() {
-            // Built from our own format strings, so not passed through loc_text.
-            let _ = writeln!(loc, " {name}_status:0 \"Now:\\n{}\"", status.join("\\n"));
+        let steps = crate::playbook::steps(rule, &vic3_defs::pretty_id);
+        // The Polish file names the Polish game's buttons next to the English ones.
+        for (text, polish) in [(&mut loc, false), (&mut loc_pl, true)] {
+            let how: Vec<String> = steps
+                .iter()
+                .enumerate()
+                .map(|(i, s)| format!("{}. {}", i + 1, if polish { crate::playbook::with_polish_labels(s) } else { s.clone() }))
+                .collect();
+            let _ = writeln!(text, " {name}:0 \"{}\"", loc_text(&format!("Playbook: {}", rule.title)));
+            let _ = writeln!(
+                text,
+                " {name}_reason:0 \"{}\"",
+                concept_links(&loc_text(&format!(
+                    "{} · {}\n\n{}\n\nHow to do it:\n{}\n\nHow it works: {}{sources}",
+                    rule.goal,
+                    rule.phase,
+                    rule.detail,
+                    how.join("\n"),
+                    rule.why
+                )))
+            );
+            let status = status_lines(&rule.when);
+            if !status.is_empty() {
+                // Built from our own format strings, so not passed through loc_text.
+                let _ = writeln!(text, " {name}_status:0 \"Now:\\n{}\"", status.join("\\n"));
+            }
         }
     }
 
@@ -366,7 +375,7 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
         ("common/scripted_buttons/oiko_playbook_buttons.txt".into(), buttons),
         // Rules are written in English; the Polish file repeats them so a Polish game shows text, not keys.
         ("localization/english/oiko_playbook_l_english.yml".into(), format!("{BOM}l_english:\n{loc}")),
-        ("localization/polish/oiko_playbook_l_polish.yml".into(), format!("{BOM}l_polish:\n{loc}")),
+        ("localization/polish/oiko_playbook_l_polish.yml".into(), format!("{BOM}l_polish:\n{loc_pl}")),
     ];
     out
 }

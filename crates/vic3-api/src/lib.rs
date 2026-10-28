@@ -59,6 +59,7 @@ pub mod modgen;
 pub mod playbook;
 mod error;
 pub mod rakaly;
+pub mod states;
 
 use arc_swap::ArcSwapOption;
 use serde::{Deserialize, Serialize};

@@ -77,6 +77,7 @@ async fn tool_schemas_match_mcp_contract() {
             "explain_rule",
             "market_doctor",
             "glossary",
+            "states",
         ])
     );
 

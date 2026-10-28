@@ -347,7 +347,7 @@ impl Vic3McpServer {
 
     /// Budget guard for the played country.
     #[tool(
-        description = "After use_save: the played country's budget straight from the save: risk (safe | deficit | danger | critical), treasury, weekly_balance/income/expenses, debt, credit_limit, weeks_to_debt, weeks_to_default, and expenses/incomes per category with their largest buildings. Call it first when the player asks about money, debt or bankruptcy; null when the save has no budget."
+        description = "After use_save: the played country's budget straight from the save: risk (safe | deficit | danger | critical), treasury, weekly_balance/income/expenses, debt, credit_limit, weeks_to_debt, weeks_to_default, expenses/incomes per category with their largest buildings, and war {extra_weekly, weekly_balance, weeks_to_unhealthy, weeks_to_default}: a lower bound with the whole army mobilised (goods doubled), for \"can I afford this war\". Call it first when the player asks about money, debt or bankruptcy; null when the save has no budget."
     )]
     async fn budget(
         &self,
@@ -383,6 +383,20 @@ impl Vic3McpServer {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         match self.runtime.advice(None).await {
             Ok(result) => Ok(tool_ok_json(&json!(result.market))),
+            Err(e) => Ok(sql_to_tool_result(e)),
+        }
+    }
+
+    /// The player's states side by side.
+    #[tool(
+        description = "After use_save: the player's states, most populous first: [{label, population, workforce, unemployed (estimate), peasant_share (labour new buildings can hire), literacy, infrastructure, infrastructure_usage (over infrastructure = short), best_build (the advisor's top build there)}]. Use it for \"where should I build\" and for unemployment or infrastructure questions."
+    )]
+    async fn states(
+        &self,
+        Parameters(_args): Parameters<CampaignBriefArgs>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        match self.runtime.advice(None).await {
+            Ok(result) => Ok(tool_ok_json(&json!(result.states))),
             Err(e) => Ok(sql_to_tool_result(e)),
         }
     }

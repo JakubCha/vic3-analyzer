@@ -27,3 +27,13 @@ Hand-written texts are in Polish and English; generated playbook texts are in En
 Copy this folder to `Documents\Paradox Interactive\Victoria 3\mod\oikonomia_advisor` and enable it in the launcher playset. Like any mod it changes the checksum: no Ironman achievements, and every multiplayer player needs it.
 
 Errors, if any, appear in `Documents\Paradox Interactive\Victoria 3\logs\error.log` (search for `oiko`).
+
+## Checking the mod without the game
+
+`crates/vic3-api/tests/mod_lint.rs` checks every file of this mod against the game's own files: law, technology, building, goods, interest-group and country ids, concept links, icons, every localization key in English and Polish, and every cross-reference (buttons, script values, events, game rules, journal entries). It does not check trigger syntax; `error.log` still has the last word.
+
+```
+VIC3_GAME_DIR="M:/games/Victoria 3" cargo test -p vic3-api --test mod_lint
+```
+
+Polish button names in the steps come from `crates/vic3-api/playbook/ui_terms.toml`, built from the game's localization by `scripts/ui_terms.js`.

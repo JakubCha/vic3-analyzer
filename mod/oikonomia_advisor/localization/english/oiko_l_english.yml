@@ -103,7 +103,7 @@
  setting_oiko_cheats_on_desc:0 "A journal entry with cheat buttons: money, paying off debt, faster research, construction and laws, calmer population, less infamy, better relations. Blocks achievements."
 
  je_oiko_cheats:0 "Oikonomia: Cheat Menu"
- je_oiko_cheats_reason:0 "Cheats for learning without restarting the campaign. Use them to get out of a mistake, then fix its cause: the Budget Guard and the playbook say what that is.\n\n#bold Budget rescue:#! money, paying off the debt (this also ends a default).\n#bold Speed-up (one year):#! research, construction, law enactment.\n#bold Politics:#! loyalists, infamy, relations."
+ je_oiko_cheats_reason:0 "#bold Pause the game before pressing a button.#! Cheats for learning without restarting the campaign. Use them to get out of a mistake, then fix its cause: the Budget Guard and the playbook say what that is.\n\n#bold Budget rescue:#! money, paying off the debt (this also ends a default).\n#bold Speed-up (one year):#! research, construction, law enactment.\n#bold Politics:#! loyalists, infamy, relations."
  oiko_cheat_cash_button:0 "Add money"
  oiko_cheat_cash_button_desc:0 "Adds about ten weeks of spending to the treasury (at least 100K): [GetPlayer.MakeScope.ScriptValue('oiko_cheat_cash')|D] @money!."
  oiko_cheat_debt_button:0 "Pay off the debt"

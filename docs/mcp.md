@@ -192,7 +192,7 @@ Trends over time for the played country as numbers. Optional `{ "points": 24 }` 
 ### 11. `budget`
 The played country's budget straight from the save, no market solve. Takes `{}`.
 
-- **Output:** `risk` (`safe` | `deficit` | `danger` | `critical`), `treasury`, `weekly_balance` / `weekly_income` / `weekly_expenses`, `debt`, `credit_limit`, `weeks_to_debt`, `weeks_to_default`, and `expenses` / `incomes` per budget category with their largest buildings. `null` when the save has no budget.
+- **Output:** `risk` (`safe` | `deficit` | `danger` | `critical`), `treasury`, `weekly_balance` / `weekly_income` / `weekly_expenses`, `debt`, `credit_limit`, `weeks_to_debt`, `weeks_to_default`, and `expenses` / `incomes` per budget category with their largest buildings. `war` estimates the budget with the whole army mobilised: `extra_weekly` (mobilised battalions consume twice their goods, `mobilized_battalion_consumption` in 1.13.9), `weekly_balance`, `weeks_to_unhealthy`, `weeks_to_default`; a lower bound without mobilisation options, conscripts or lost trade. Steps name the game's buttons with the Polish game's label in brackets (`playbook/ui_terms.toml`, from the game localization). `null` when the save has no budget.
 - `advice` carries the same report as `budget`, plus budget-guard and playbook items; every item may have a `why` explaining the game mechanism.
 - Items may also carry `steps` (what to click in the game) and `why_now` (the save's values against the rule's thresholds). `market` lists dear and cheap goods (see `market_doctor`); `outcomes` lists followed suggestions with the budget before and after, measured against `<app data>/advice_log.jsonl`.
 
@@ -208,6 +208,9 @@ After `use_save`: goods at least 20% off base price, worst first (up to 6 dear a
 
 ### 14. `glossary`
 Polish glossary of the game terms the advisor uses: `[{ key, en, pl_name, pl }]`. Takes `{}`.
+
+### 15. `states`
+After `use_save`: the player's states, most populous first: `[{ label, population, workforce, unemployed, peasant_share, literacy, infrastructure, infrastructure_usage, best_build }]`. `unemployed` counts working-age pops without a workplace (peasants and slaves aside), an estimate.
 
 ---
 

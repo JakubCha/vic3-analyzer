@@ -357,6 +357,63 @@ impl Facts<'_> {
     }
 }
 
+/// An interface label in the game's English and Polish text (`playbook/ui_terms.toml`).
+#[derive(Debug, Clone, Deserialize)]
+pub struct UiTerm {
+    pub key: String,
+    pub en: String,
+    pub pl: String,
+}
+
+/// The embedded interface labels, longest English label first.
+pub fn ui_terms() -> &'static [UiTerm] {
+    #[derive(Deserialize)]
+    struct File {
+        term: Vec<UiTerm>,
+    }
+    static TERMS: OnceLock<Vec<UiTerm>> = OnceLock::new();
+    TERMS.get_or_init(|| {
+        let mut terms = toml::from_str::<File>(include_str!("../playbook/ui_terms.toml")).expect("playbook/ui_terms.toml").term;
+        // Step wording that names a label differently from the game.
+        terms.extend(terms.iter().filter(|t| t.key == "concept_tax_level").map(|t| UiTerm { key: t.key.clone(), en: "tax level".into(), pl: t.pl.clone() }).collect::<Vec<_>>());
+        terms.sort_by_key(|t| std::cmp::Reverse(t.en.len()));
+        terms
+    })
+}
+
+/// `step` with the Polish game label after the first use of each English one,
+/// e.g. "press Downsize (PL: Zmniejszenie poziomu)". Labels of the analyzer
+/// itself ("the analyzer's Market tab") are left alone.
+pub fn with_polish_labels(step: &str) -> String {
+    let mut taken: Vec<(usize, usize, &str)> = Vec::new();
+    for t in ui_terms() {
+        let found = step.match_indices(t.en.as_str()).find(|(at, _)| {
+            let end = at + t.en.len();
+            let whole = !step[..*at].chars().next_back().is_some_and(char::is_alphanumeric) && !step[end..].chars().next().is_some_and(char::is_alphanumeric);
+            let ours = step[..*at].ends_with("analyzer's ") || step[..*at].ends_with("Analyzer, ");
+            whole && !ours && !taken.iter().any(|(s, e, _)| at < e && end > *s)
+        });
+        if let Some((at, _)) = found {
+            taken.push((at, at + t.en.len(), t.pl.as_str()));
+        }
+    }
+    taken.sort_by_key(|(s, _, _)| *s);
+    let mut out = String::with_capacity(step.len() + 32);
+    let mut last = 0;
+    for (_, end, pl) in taken {
+        // After "Budget panel" rather than inside it.
+        let end = [" panel", " tab"].iter().find(|w| step[end..].starts_with(**w)).map_or(end, |w| end + w.len());
+        if end < last {
+            continue;
+        }
+        out.push_str(&step[last..end]);
+        out.push_str(&format!(" (PL: {pl})"));
+        last = end;
+    }
+    out.push_str(&step[last..]);
+    out
+}
+
 /// A game term explained in Polish (`playbook/glossary.toml`).
 #[derive(Debug, Clone, Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
@@ -612,6 +669,18 @@ mod tests {
         assert!(terms.contains(&"credit_limit"), "{terms:?}");
         assert!(explain("nope", None).is_none());
         assert!(glossary().iter().all(|t| !t.en.is_empty() && !t.pl.is_empty()));
+    }
+
+    #[test]
+    fn polish_labels_follow_the_english_ones() {
+        assert_eq!(
+            with_polish_labels("Budget panel: set Military Wages one step lower, then press Downsize."),
+            "Budget panel (PL: Budżet): set Military Wages (PL: Wynagrodzenia wojskowe) one step lower, then press Downsize (PL: Zmniejszenie poziomu)."
+        );
+        assert_eq!(with_polish_labels("Press Cancel Construction."), "Press Cancel Construction (PL: Anuluj budowę).");
+        // The analyzer's own tab is not a game label.
+        assert_eq!(with_polish_labels("the analyzer's Market tab"), "the analyzer's Market tab");
+        assert_eq!(with_polish_labels("raise the tax level"), "raise the tax level (PL: Poziom opodatkowania)");
     }
 
     #[test]

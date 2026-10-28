@@ -222,4 +222,45 @@ describe('AdvisorPane', () => {
     expect(screen.getByLabelText('Do this: Tools')).toHaveTextContent('build more Iron Mines in Silesia')
     expect(market).toHaveTextContent('Yours: Tooling Workshops in Silesia, 3 levels, 1.2K profit per level')
   })
+
+  it('shows the states table and the cost of a war', async () => {
+    const user = userEvent.setup()
+    const result: AdviceResult = {
+      advice: [],
+      limitations: [],
+      budget: {
+        risk: 'deficit',
+        treasury: 486803,
+        weekly_balance: -7231,
+        debt: 0,
+        credit_limit: 17058032,
+        expenses: [],
+        incomes: [],
+        war: { extra_weekly: 24769, weekly_balance: -32000, weeks_to_unhealthy: 282, weeks_to_default: 548 },
+      },
+      states: [
+        {
+          id: 1,
+          label: 'Brandenburg',
+          population: 1250000,
+          workforce: 500000,
+          unemployed: 12400,
+          peasant_share: 0.42,
+          literacy: 0.31,
+          infrastructure: 20,
+          infrastructure_usage: 23,
+          best_build: 'Expand Logging Camps in Brandenburg',
+        },
+      ],
+    }
+    const api = { loaded_advice: vi.fn(async () => JSON.stringify(result)), loaded_checks: vi.fn(async () => '[]') } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" date="1840.1.1" />)
+    expect(await screen.findByLabelText('War cost')).toHaveTextContent('at least 24.8K more a week, balance −32.0K/week')
+    await user.click(screen.getByRole('tab', { name: /States \(1\)/ }))
+    const table = screen.getByLabelText('States')
+    expect(table).toHaveTextContent('Brandenburg')
+    expect(table).toHaveTextContent('12.4K')
+    expect(table).toHaveTextContent('23 / 20 short')
+    expect(table).toHaveTextContent('Expand Logging Camps in Brandenburg')
+  })
 })

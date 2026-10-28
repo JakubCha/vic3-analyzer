@@ -452,6 +452,27 @@ export interface BudgetReport {
   deficit_kind?: 'investment' | 'upkeep' | null
   expenses: BudgetGroup[]
   incomes: BudgetGroup[]
+  /** With the whole army mobilised (a lower bound, `vic3_api::budget::WarEstimate`). */
+  war?: {
+    extra_weekly: number
+    weekly_balance: number
+    weeks_to_unhealthy?: number | null
+    weeks_to_default?: number | null
+  } | null
+}
+
+/** One owned state (`vic3_api::states::StateRow`). */
+export interface StateRow {
+  id: number
+  label: string
+  population: number
+  workforce: number
+  unemployed: number
+  peasant_share: number
+  literacy: number
+  infrastructure?: number | null
+  infrastructure_usage?: number | null
+  best_build?: string | null
 }
 
 export interface AdviceResult {
@@ -460,6 +481,7 @@ export interface AdviceResult {
   budget?: BudgetReport
   market?: MarketCase[]
   outcomes?: AdviceOutcome[]
+  states?: StateRow[]
 }
 
 export type AnalysisResult = PricesResult | GapsResult | PlanResult

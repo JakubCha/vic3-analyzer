@@ -63,6 +63,9 @@ pub struct AdviceResult {
     /// Followed suggestions with the budget before and after (filled by callers that keep a store).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub outcomes: Vec<crate::outcomes::Outcome>,
+    /// The player's states side by side.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub states: Vec<crate::states::StateRow>,
 }
 
 /// Condition on a later save that means the suggestion was carried out.
@@ -930,6 +933,7 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
             budget: None,
             market: Vec::new(),
             outcomes: Vec::new(),
+            states: Vec::new(),
         };
     };
 
@@ -1024,8 +1028,13 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
         _ => 2,
     };
     advice.sort_by(|a, b| (a.priority, rank(a), &a.id).cmp(&(b.priority, rank(b), &b.id)));
-    let market = crate::market::market_doctor(defs, prices, &states);
-    AdviceResult { advice, limitations, budget, market, outcomes: Vec::new() }
+    let mut market = crate::market::market_doctor(defs, prices, &states);
+    // Steps name game buttons; the Polish game shows them under its own names.
+    for step in advice.iter_mut().flat_map(|a| a.steps.iter_mut()).chain(market.iter_mut().flat_map(|c| c.fixes.iter_mut())) {
+        *step = crate::playbook::with_polish_labels(step);
+    }
+    let states = crate::states::state_overview(prices, &states, &advice);
+    AdviceResult { advice, limitations, budget, market, outcomes: Vec::new(), states }
 }
 
 /// Whether each check holds on the loaded save. `false` when there is no player.
