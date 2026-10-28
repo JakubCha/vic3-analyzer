@@ -405,6 +405,8 @@ export interface MarketCase {
   /** [state, building, levels, profit per level] where the player already makes it. */
   yours: [string, string, number, number][]
   advice: string
+  /** Concrete actions: which method to switch where, what to build where. */
+  fixes?: string[]
 }
 
 /** Budget at one save (`vic3_api::outcomes::Snapshot`). */

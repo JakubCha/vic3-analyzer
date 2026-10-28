@@ -18,6 +18,7 @@ Player-only journal entries with live values computed by the game every tick. Th
 - **Warnings at the moment of decision** – popups when a diplomatic play starts with a weak budget, when a law is started with high debt, and after a default.
 - **Top-bar alerts** – idle construction, debt past half the credit limit, deficit paying the army.
 - **Game rules** (chosen at game start) – help level (budget only / standard / everything) and warning popups on or off.
+- **Cheat menu** (game rule, off by default; on blocks achievements) – journal entry with buttons: add ten weeks of spending, pay off the debt (ends a default), one-year boosts to research, construction and law enactment, loyalists, −10 infamy, +20 relations with every country.
 
 Hand-written texts are in Polish and English; generated playbook texts are in English.
 

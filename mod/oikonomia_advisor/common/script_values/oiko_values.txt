@@ -270,3 +270,17 @@ oiko_ch3_done_count = {
 	add = oiko_war_chest_ok
 	add = oiko_ch_radicals_ok
 }
+
+# --- Cheat menu (scripted_buttons/oiko_cheat_buttons.txt) ---
+
+# Ten weeks of spending, at least 100K.
+oiko_cheat_cash = {
+	value = fixed_income
+	subtract = net_fixed_income
+	multiply = 10
+	min = 100000
+}
+
+oiko_cheat_debt = {
+	value = principal
+}

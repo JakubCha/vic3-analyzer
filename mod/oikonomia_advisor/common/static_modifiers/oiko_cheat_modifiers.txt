@@ -1,0 +1,17 @@
+﻿# Oikonomia Advisor cheat menu: one-year boosts added by the buttons in
+# scripted_buttons/oiko_cheat_buttons.txt.
+
+oiko_cheat_research = {
+	icon = gfx/interface/icons/timed_modifier_icons/modifier_lightbulb_positive.dds
+	country_weekly_innovation_mult = 1
+}
+
+oiko_cheat_construction = {
+	icon = gfx/interface/icons/timed_modifier_icons/modifier_gear_positive.dds
+	country_construction_add = 50
+}
+
+oiko_cheat_laws = {
+	icon = gfx/interface/icons/timed_modifier_icons/modifier_documents_positive.dds
+	country_law_enactment_success_add = 0.5
+}

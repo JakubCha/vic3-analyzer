@@ -58,6 +58,14 @@ oiko_monthly_country = {
 			}
 			add_journal_entry = { type = je_oiko_construction_idle }
 		}
+		# Cheat menu, only with the game rule on.
+		if = {
+			limit = {
+				has_game_rule = oiko_cheats_on
+				NOT = { has_journal_entry = je_oiko_cheats }
+			}
+			add_journal_entry = { type = je_oiko_cheats }
+		}
 		# Chapters, one at a time; budget-only help shows none.
 		if = {
 			limit = { NOT = { has_game_rule = oiko_help_budget } }

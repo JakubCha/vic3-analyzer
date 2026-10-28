@@ -196,7 +196,8 @@ describe('AdvisorPane', () => {
           dear_inputs: ['Iron'],
           consumers: [],
           yours: [['Silesia', 'Tooling Workshops', 3, 1200]],
-          advice: 'Tools is +35%, but its input Iron is dear too: fix that first.',
+          advice: 'Tools is +35%, but your Tooling Workshops run on Iron, which is also dear.',
+          fixes: ['Construction panel: build more Iron Mines in Silesia; it makes Iron.'],
         },
       ],
       outcomes: [
@@ -218,6 +219,7 @@ describe('AdvisorPane', () => {
     const market = screen.getByLabelText('Market')
     expect(market).toHaveTextContent('Tools +35%')
     expect(market).toHaveTextContent('Dear inputs (fix first): Iron')
+    expect(screen.getByLabelText('Do this: Tools')).toHaveTextContent('build more Iron Mines in Silesia')
     expect(market).toHaveTextContent('Yours: Tooling Workshops in Silesia, 3 levels, 1.2K profit per level')
   })
 })

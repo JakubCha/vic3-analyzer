@@ -336,6 +336,13 @@ function MarketDoctor({ cases }: { cases: MarketCase[] }) {
             {Math.round(Math.abs(c.price_vs_base) * 100)}%
           </strong>
           <p>{c.advice}</p>
+          {c.fixes && c.fixes.length > 0 && (
+            <ol className="advisor-fixes" aria-label={`Do this: ${c.label}`}>
+              {c.fixes.map((fix) => (
+                <li key={fix}>{fix}</li>
+              ))}
+            </ol>
+          )}
           <ul className="advisor-why-now">
             {c.producers.length > 0 && <li>Made by: {c.producers.join(', ')}</li>}
             {c.dear_inputs.length > 0 && <li>Dear inputs (fix first): {c.dear_inputs.join(', ')}</li>}

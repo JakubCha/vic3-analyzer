@@ -24,3 +24,16 @@ oiko_warnings = {
 	oiko_warnings_off = {
 	}
 }
+
+# Cheat menu: a journal entry with buttons (money, debt, research, construction, laws,
+# stability, infamy, relations). Off by default; turning it on blocks achievements.
+oiko_cheats = {
+	default = oiko_cheats_off
+
+	oiko_cheats_off = {
+	}
+
+	oiko_cheats_on = {
+		flag = blocks_achievements
+	}
+}

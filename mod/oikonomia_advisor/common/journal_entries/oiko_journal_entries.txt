@@ -160,3 +160,24 @@ je_oiko_chapter_3 = {
 
 	weight = 300
 }
+
+# Cheat menu (game rule oiko_cheats): buttons in scripted_buttons/oiko_cheat_buttons.txt.
+je_oiko_cheats = {
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+	group = je_group_oikonomia
+
+	scripted_button = oiko_cheat_cash_button
+	scripted_button = oiko_cheat_debt_button
+	scripted_button = oiko_cheat_research_button
+	scripted_button = oiko_cheat_construction_button
+	scripted_button = oiko_cheat_laws_button
+	scripted_button = oiko_cheat_calm_button
+	scripted_button = oiko_cheat_infamy_button
+	scripted_button = oiko_cheat_relations_button
+
+	invalid = {
+		NOT = { has_game_rule = oiko_cheats_on }
+	}
+
+	weight = 50
+}

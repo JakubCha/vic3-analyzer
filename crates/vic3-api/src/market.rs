@@ -34,6 +34,77 @@ pub struct MarketCase {
     pub yours: Vec<(String, String, f64, f64)>,
     /// What to do, in one or two sentences.
     pub advice: String,
+    /// Concrete actions, one per line: which method to switch where, what to build where.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fixes: Vec<String>,
+}
+
+/// `good`'s output of production method `pm` (0 when it makes none).
+fn output_of(defs: &GameDefs, pm: &str, good: &str) -> f64 {
+    defs.production_methods
+        .get(pm)
+        .map_or(0.0, |m| m.outputs.iter().filter(|(g, _)| defs.goods_order.get(g.as_usize()).is_some_and(|n| n == good)).map(|(_, q)| q).sum())
+}
+
+fn uses(defs: &GameDefs, pm: &str, input: &str) -> bool {
+    defs.production_methods
+        .get(pm)
+        .is_some_and(|m| m.inputs.iter().any(|(g, _)| defs.goods_order.get(g.as_usize()).is_some_and(|n| n == input)))
+}
+
+/// Concrete ways around a dear `input` of the player's buildings making `good`:
+/// switch the method that uses it (naming both methods, the states and the output
+/// change), and build what makes the input (where the player already does, if so).
+fn input_fixes(defs: &GameDefs, prices: &PricesResult, states: &BTreeSet<u32>, producers: &[&String], good: &str, input: &str) -> Vec<String> {
+    let label = |id: &str| defs.display_label(id);
+    let state_label = |id: u32| prices.states.iter().find(|s| s.id == id).map_or_else(|| format!("state {id}"), |s| s.label.clone());
+    // (building, method, alternative) → states running it.
+    let mut switches: BTreeMap<(String, String, String), Vec<String>> = BTreeMap::new();
+    for site in prices.buildings.iter().filter(|b| producers.contains(&&b.building_type_name) && b.state_id.is_some_and(|s| states.contains(&s)) && b.level > 0.0) {
+        let Some(bt) = defs.building_types.get(&site.building_type_name) else { continue };
+        for pm in site.production_method_ids.iter().filter(|pm| uses(defs, pm, input)) {
+            let group = bt.production_method_groups.iter().filter_map(|g| defs.production_method_groups.get(g)).find(|g| g.contains(pm));
+            if let Some(alt) = group.and_then(|g| g.iter().find(|alt| *alt != pm && !uses(defs, alt, input))) {
+                switches.entry((site.building_type_name.clone(), pm.clone(), alt.clone())).or_default().push(state_label(site.state_id.unwrap_or_default()));
+            }
+        }
+    }
+    let mut out: Vec<String> = switches
+        .into_iter()
+        .map(|((building, pm, alt), mut where_)| {
+            let count = where_.len();
+            where_.truncate(MAX_NAMES);
+            let more = if count > MAX_NAMES { format!(" and {} more", count - MAX_NAMES) } else { String::new() };
+            let (from, to) = (output_of(defs, &pm, good), output_of(defs, &alt, good));
+            let change = if from > 0.0 && to < from {
+                format!(" It makes about {:.0}% less {} but needs no {}.", (1.0 - to / from) * 100.0, label(good), label(input))
+            } else {
+                format!(" It needs no {}.", label(input))
+            };
+            format!(
+                "Switch {} in {}{more} from \"{}\" to \"{}\": click the building, then pick the method in its production methods.{change}",
+                label(&building),
+                where_.join(", "),
+                label(&pm),
+                label(&alt)
+            )
+        })
+        .collect();
+    // Or make the input: at the player's best site for it, else name the building.
+    let makers = buildings_with(defs, input, true);
+    let best = prices
+        .buildings
+        .iter()
+        .filter(|b| makers.contains(&b.building_type_name) && b.state_id.is_some_and(|s| states.contains(&s)) && b.level > 0.0)
+        .max_by(|a, b| (a.profit / a.level).total_cmp(&(b.profit / b.level)));
+    out.push(match best {
+        Some(b) => format!("Construction panel: build more {} in {}; it makes {}.", b.building_type_label, state_label(b.state_id.unwrap_or_default()), label(input)),
+        None => match makers.iter().next() {
+            Some(m) => format!("Construction panel: build {} in a state with the resource and free workers; it makes {}.", label(m), label(input)),
+            None => format!("No building you can build makes {}: it has to be imported.", label(input)),
+        },
+    });
+    out
 }
 
 /// Building types whose methods output (`output = true`) or input `good`, with the other side's goods.
@@ -115,34 +186,45 @@ pub fn market_doctor(defs: &GameDefs, prices: &PricesResult, states: &BTreeSet<u
         let mut ordered: Vec<&String> = owned.iter().copied().collect();
         ordered.extend(producers.iter().filter(|p| !owned.contains(p)));
         let relevant: Vec<&String> = if owned.is_empty() { ordered.clone() } else { owned.iter().copied().collect() };
-        let dear_inputs: Vec<String> = relevant
+        let dear_ids: Vec<String> = relevant
             .iter()
             .flat_map(|b| running_inputs(defs, prices, states, b))
-            .filter(|i| *i != g.name && ratio.get(i.as_str()).is_some_and(|r| *r >= DEAR))
+            .filter(|i| dear && *i != g.name && ratio.get(i.as_str()).is_some_and(|r| *r >= DEAR))
             .collect::<BTreeSet<_>>()
             .into_iter()
-            .map(|i| label(&i))
             .take(MAX_NAMES)
             .collect();
+        let dear_inputs: Vec<String> = dear_ids.iter().map(|i| label(i)).collect();
+        let mut fixes: Vec<String> = dear_ids.iter().flat_map(|i| input_fixes(defs, prices, states, &relevant, &g.name, i)).collect();
         yours.truncate(MAX_NAMES);
         let consumers: Vec<String> = if dear { Vec::new() } else { buildings_with(defs, &g.name, false).iter().take(MAX_NAMES).map(|b| label(b)).collect() };
         let producer_labels: Vec<String> = ordered.iter().take(MAX_NAMES).map(|b| label(b)).collect();
         let pct = (r - 1.0) * 100.0;
         let advice = if dear && !dear_inputs.is_empty() {
             let building = yours.first().map_or_else(|| producer_labels.first().cloned().unwrap_or_default(), |y| y.1.clone());
-            let verb = if dear_inputs.len() > 1 { "are" } else { "is" };
-            format!("{} is {pct:+.0}%, but your {building} also need {}, which {verb} dear too: make that cheaper first or switch them to a production method without it, or new levels will earn little.", g.label, dear_inputs.join(", "))
+            let verb = if dear_inputs.len() > 1 { "are also" } else { "is also" };
+            format!("{} is {pct:+.0}%, but your {building} run on {}, which {verb} dear: new levels would earn little until you do one of these.", g.label, dear_inputs.join(", "))
         } else if consumers.is_empty() && !dear {
-            format!("{} is {pct:+.0}%: nothing you can build uses it; do not expand its producers.", g.label)
+            format!("{} is {pct:+.0}%: nothing you can build uses it, so queue no more of its producers.", g.label)
         } else if dear {
             match yours.first() {
-                Some((state, building, _, profit)) if *profit > 0.0 => format!("{} is {pct:+.0}%: expand {building} in {state}, your most profitable site for it.", g.label),
-                _ => format!("{} is {pct:+.0}%: build {} in a state with the resource and free workers.", g.label, producer_labels.join(" or ")),
+                Some((state, building, _, profit)) if *profit > 0.0 => {
+                    fixes.push(format!("Construction panel: queue one more level of {building} in {state}."));
+                    format!("{} is {pct:+.0}%: expand {building} in {state}, your most profitable site for it.", g.label)
+                }
+                _ => {
+                    fixes.push(format!("Construction panel: build {} in a state with the resource and free workers.", producer_labels.join(" or ")));
+                    format!("{} is {pct:+.0}%: you make too little of it.", g.label)
+                }
             }
         } else if yours.is_empty() {
-            format!("{} is {pct:+.0}%: cheap input. Buildings that use it ({}) earn more now.", g.label, consumers.join(", "))
+            fixes.push(format!("Construction panel: {} use it and now buy it cheap; build one where you have free workers.", consumers.join(", ")));
+            format!("{} is {pct:+.0}%: cheap input for {}.", g.label, consumers.join(", "))
         } else {
-            format!("{} is {pct:+.0}%: do not expand its producers; build what uses it ({}) or switch some producers to other methods.", g.label, consumers.join(", "))
+            let (state, building, _, _) = &yours[0];
+            fixes.push(format!("Queue no more levels of {building}."));
+            fixes.push(format!("Construction panel: build {} in {state}, next to your {building}: it uses the cheap {}.", consumers.first().cloned().unwrap_or_default(), g.label));
+            format!("{} is {pct:+.0}%: you make more than your market uses.", g.label)
         };
         out.push(MarketCase {
             good: g.name.clone(),
@@ -154,6 +236,7 @@ pub fn market_doctor(defs: &GameDefs, prices: &PricesResult, states: &BTreeSet<u
             consumers,
             yours,
             advice,
+            fixes,
         });
     }
     out

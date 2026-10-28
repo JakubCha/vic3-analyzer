@@ -1,0 +1,93 @@
+﻿# Oikonomia Advisor cheat menu buttons, shown in je_oiko_cheats (game rule oiko_cheats).
+
+oiko_cheat_cash_button = {
+	name = "oiko_cheat_cash_button"
+	desc = "oiko_cheat_cash_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { always = yes }
+	effect = {
+		add_treasury = { value = oiko_cheat_cash }
+	}
+}
+
+oiko_cheat_debt_button = {
+	name = "oiko_cheat_debt_button"
+	desc = "oiko_cheat_debt_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { scaled_debt > 0 }
+	effect = {
+		# Money received pays the debt first.
+		add_treasury = { value = oiko_cheat_debt }
+	}
+}
+
+oiko_cheat_research_button = {
+	name = "oiko_cheat_research_button"
+	desc = "oiko_cheat_research_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { NOT = { has_modifier = oiko_cheat_research } }
+	effect = {
+		add_modifier = { name = oiko_cheat_research days = 365 }
+	}
+}
+
+oiko_cheat_construction_button = {
+	name = "oiko_cheat_construction_button"
+	desc = "oiko_cheat_construction_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { NOT = { has_modifier = oiko_cheat_construction } }
+	effect = {
+		add_modifier = { name = oiko_cheat_construction days = 365 }
+	}
+}
+
+oiko_cheat_laws_button = {
+	name = "oiko_cheat_laws_button"
+	desc = "oiko_cheat_laws_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { NOT = { has_modifier = oiko_cheat_laws } }
+	effect = {
+		add_modifier = { name = oiko_cheat_laws days = 365 }
+	}
+}
+
+oiko_cheat_calm_button = {
+	name = "oiko_cheat_calm_button"
+	desc = "oiko_cheat_calm_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { always = yes }
+	effect = {
+		add_loyalists = { value = 0.1 }
+	}
+}
+
+oiko_cheat_infamy_button = {
+	name = "oiko_cheat_infamy_button"
+	desc = "oiko_cheat_infamy_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { infamy > 0 }
+	effect = {
+		change_infamy = -10
+	}
+}
+
+oiko_cheat_relations_button = {
+	name = "oiko_cheat_relations_button"
+	desc = "oiko_cheat_relations_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_cheats }
+	possible = { always = yes }
+	effect = {
+		every_country = {
+			limit = { NOT = { THIS = ROOT } }
+			change_relations = { country = ROOT value = 20 }
+		}
+	}
+}
