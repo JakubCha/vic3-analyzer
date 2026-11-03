@@ -204,6 +204,14 @@ pub struct WorldCountry {
     pub budget_lines: Vec<BudgetLine>,
     /// The save's sampled histories, kept for the played country only.
     pub trends: Option<Box<vic3_load::CountryTrends>>,
+    /// Power rank (`great_power`, `major_power`, …); the save records it for the player only.
+    pub rank: Option<String>,
+    /// `recognized`, `unrecognized`, `colonial`, …
+    pub country_type: Option<String>,
+    /// Tax level (`very_low` … `very_high`); `None` = medium.
+    pub tax_level: Option<String>,
+    /// Goods under a consumption tax.
+    pub taxed_goods: Vec<String>,
 }
 
 /// One `country_building_budget` entry, e.g. military wages of barracks.
@@ -438,6 +446,12 @@ impl World {
                         .collect(),
                     trends: (player.as_deref() == Some(country.definition.as_str()))
                         .then(|| Box::new(country.trends())),
+                    rank: (player.as_deref() == Some(country.definition.as_str()))
+                        .then(|| save.meta_data().rank.clone())
+                        .flatten(),
+                    country_type: country.country_type.clone(),
+                    tax_level: country.tax_level.clone(),
+                    taxed_goods: country.taxed_goods.clone(),
                     debt_principal: budget.principal.filter(|value| value.is_finite()),
                     credit_limit: budget.credit.filter(|value| value.is_finite()),
                     credit_headroom: budget.credit_headroom(),

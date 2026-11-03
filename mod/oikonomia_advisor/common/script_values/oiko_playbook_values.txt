@@ -21,6 +21,7 @@ oiko_pb_active = {
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_near_default } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_tax_bridge } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_radicals_high } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_minor_no_deficit } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_pru_opening_army } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_pru_war_chest } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gbr_grain_warning } add = 1 }
@@ -39,7 +40,8 @@ oiko_pb_active = {
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_dual_monarchy_blocks_germany } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_no_war_on_credit } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy } add = 1 }
-	if = { limit = { has_journal_entry = je_oiko_pb_gen_lower_taxes_when_rich } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_proportional_tax } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_surplus_to_construction } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_army_share } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_small_arms } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_ammunition } add = 1 }
@@ -70,6 +72,9 @@ oiko_pb_active = {
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_wage_subsidies } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_late_universal_suffrage } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_sol_low } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_debt_great_power } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_agrarianism_first } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gen_tax_level_too_high } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_pru_opening_plan } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_pru_industry_chain } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_pru_public_schools } add = 1 }

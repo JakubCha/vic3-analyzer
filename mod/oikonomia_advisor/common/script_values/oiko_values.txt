@@ -288,3 +288,16 @@ oiko_cheat_debt = {
 # Weekly balance including construction (net_fixed_income leaves it out: the 1836
 # Prussian log shows +6K fixed while the save's balance with construction is −32K).
 oiko_total_balance = { value = net_total_income }
+
+# --- Standard of living and tax waste (journal entries je_oiko_low_sol, je_oiko_tax_waste) ---
+
+oiko_sol = { value = average_sol }
+oiko_expected_sol = { value = average_expected_sol }
+# Below 0 the average pop lives under what it expects: radicals grow. The average hides
+# the poorest, so the warning starts at a margin of 1 (Generalist Gaming, Economics & Budget).
+oiko_sol_margin = {
+	value = average_sol
+	subtract = average_expected_sol
+}
+oiko_tax_waste = { value = tax_waste }
+oiko_bureaucracy = { value = bureaucracy }

@@ -28,6 +28,15 @@ je_oiko_pb_gen_radicals_high_skip = {
 	effect = { set_variable = je_oiko_pb_gen_radicals_high_skipped }
 }
 
+je_oiko_pb_gen_minor_no_deficit_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gen_minor_no_deficit }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gen_minor_no_deficit_skipped }
+}
+
 je_oiko_pb_pru_opening_army_skip = {
 	name = "oiko_pb_skip_button"
 	desc = "oiko_pb_skip_button_desc"
@@ -190,13 +199,22 @@ je_oiko_pb_gen_debt_unhealthy_skip = {
 	effect = { set_variable = je_oiko_pb_gen_debt_unhealthy_skipped }
 }
 
-je_oiko_pb_gen_lower_taxes_when_rich_skip = {
+je_oiko_pb_gen_proportional_tax_skip = {
 	name = "oiko_pb_skip_button"
 	desc = "oiko_pb_skip_button_desc"
 	ai_chance = { value = 0 }
-	visible = { has_journal_entry = je_oiko_pb_gen_lower_taxes_when_rich }
+	visible = { has_journal_entry = je_oiko_pb_gen_proportional_tax }
 	possible = { always = yes }
-	effect = { set_variable = je_oiko_pb_gen_lower_taxes_when_rich_skipped }
+	effect = { set_variable = je_oiko_pb_gen_proportional_tax_skipped }
+}
+
+je_oiko_pb_gen_surplus_to_construction_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gen_surplus_to_construction }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gen_surplus_to_construction_skipped }
 }
 
 je_oiko_pb_gen_army_share_skip = {
@@ -467,6 +485,33 @@ je_oiko_pb_gen_sol_low_skip = {
 	visible = { has_journal_entry = je_oiko_pb_gen_sol_low }
 	possible = { always = yes }
 	effect = { set_variable = je_oiko_pb_gen_sol_low_skipped }
+}
+
+je_oiko_pb_gen_debt_great_power_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gen_debt_great_power }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gen_debt_great_power_skipped }
+}
+
+je_oiko_pb_gen_agrarianism_first_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gen_agrarianism_first }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gen_agrarianism_first_skipped }
+}
+
+je_oiko_pb_gen_tax_level_too_high_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gen_tax_level_too_high }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gen_tax_level_too_high_skipped }
 }
 
 je_oiko_pb_pru_opening_plan_skip = {

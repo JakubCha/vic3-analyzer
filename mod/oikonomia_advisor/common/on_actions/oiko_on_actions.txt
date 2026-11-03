@@ -58,6 +58,22 @@ oiko_monthly_country = {
 			}
 			add_journal_entry = { type = je_oiko_construction_idle }
 		}
+		# Standard of living within 1 of what pops expect; closes again at a margin of 2.
+		if = {
+			limit = {
+				oiko_sol_margin < 1
+				NOT = { has_journal_entry = je_oiko_low_sol }
+			}
+			add_journal_entry = { type = je_oiko_low_sol }
+		}
+		# Bureaucracy deficit: taxes are being lost.
+		if = {
+			limit = {
+				bureaucracy < 0
+				NOT = { has_journal_entry = je_oiko_tax_waste }
+			}
+			add_journal_entry = { type = je_oiko_tax_waste }
+		}
 		# Cheat menu, only with the game rule on.
 		if = {
 			limit = {

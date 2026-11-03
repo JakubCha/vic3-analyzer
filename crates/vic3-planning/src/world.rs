@@ -1182,6 +1182,7 @@ mod tests {
                 version: "1.9.0".into(),
                 game_date: Some(Vic3Date::from_ymdh(1850, 6, 1, 0)),
                 name: Some("Fixture".into()),
+                rank: None,
             },
             country_manager: countries,
             ..Save::default()

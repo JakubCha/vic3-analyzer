@@ -447,8 +447,13 @@ export interface BudgetReport {
   credit_limit?: number | null
   weeks_to_debt?: number | null
   weeks_to_default?: number | null
-  /** Weeks until debt reaches half the credit limit (the game's unhealthy line). */
+  /** Weeks until debt reaches `unhealthy_share` of the credit limit. */
   weeks_to_unhealthy?: number | null
+  /** Safe debt share: 0.5 (the game's health line), 0.8 for a great power. */
+  unhealthy_share?: number
+  rank?: string | null
+  tax_level?: string | null
+  taxed_goods?: string[]
   deficit_kind?: 'investment' | 'upkeep' | null
   expenses: BudgetGroup[]
   incomes: BudgetGroup[]

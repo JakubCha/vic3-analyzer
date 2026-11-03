@@ -1,5 +1,5 @@
 ﻿l_polish:
- oiko_numbers:0 "Saldo tygodniowe: #bold [GetPlayer.MakeScope.ScriptValue('oiko_balance')|D]#! @money!\nSkarbiec: #bold [GetPlayer.MakeScope.ScriptValue('oiko_treasury')|D]#! @money! (starczy na ok. #bold [GetPlayer.MakeScope.ScriptValue('oiko_weeks_to_debt')|0]#! tyg.)\nDług / limit kredytu: #bold [GetPlayer.MakeScope.ScriptValue('oiko_debt_share')|0%]#!\nWojsko w wydatkach: #bold [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%]#!"
+ oiko_numbers:0 "Saldo tygodniowe: #bold [GetPlayer.MakeScope.ScriptValue('oiko_balance')|D]#! @money!\nSkarbiec: #bold [GetPlayer.MakeScope.ScriptValue('oiko_treasury')|D]#! @money! (starczy na ok. #bold [GetPlayer.MakeScope.ScriptValue('oiko_weeks_to_debt')|0]#! tyg.)\nDług / limit kredytu: #bold [GetPlayer.MakeScope.ScriptValue('oiko_debt_share')|0%]#!\nWojsko w wydatkach: #bold [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%]#!\nPoziom życia: #bold [GetPlayer.MakeScope.ScriptValue('oiko_sol')|1]#! (oczekiwany #bold [GetPlayer.MakeScope.ScriptValue('oiko_expected_sol')|1]#!)\nMarnotrawstwo podatków: #bold [GetPlayer.MakeScope.ScriptValue('oiko_tax_waste')|D]#! @money! tygodniowo (biurokracja #bold [GetPlayer.MakeScope.ScriptValue('oiko_bureaucracy')|0]#!)"
 
  je_oiko_budget_guard:0 "Strażnik budżetu"
  je_oiko_budget_guard_reason:0 "Państwo wydaje więcej, niż zarabia.\n\n#bold Jak to działa:#! deficyt sam w sobie nie jest problemem. Gdy skarbiec się wyczerpie, państwo pożycza, a pożyczka na budowę zwraca się z podatków i dywidend nowych zakładów. Problemem staje się, gdy dług opłaca utrzymanie (armię, administrację) zamiast wzrostu: rośnie, dochodzą odsetki, a gdy przekroczy limit kredytu, kraj bankrutuje (budowa staje, kary do produkcji, ataku i obrony do -50%).\n\n#bold Dźwignie:#! Poziom opodatkowania i płace (wojsko, urzędnicy) w panelu Budżetu, mniejsza lub tańsza armia w czasie pokoju, tańsze towary, które kupuje państwo (papier, broń), oraz nowe zakłady płacące podatki."
@@ -19,7 +19,7 @@
  je_oiko_pru_germany_status:0 "[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_public_schools'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Szkoły publiczne (zapał kulturowy)\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_nationalism'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Zbadany nacjonalizm\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_schleswig_solved'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Kwestia Szlezwika-Holsztyna rozwiązana\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_war_chest_ok'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Dług poniżej 30% limitu kredytu (gotowość do wojny)\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_is_ngf'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Federacja Północnoniemiecka utworzona\n[SelectLocalization(GreaterThanOrEqualTo_CFixedPoint(GetPlayer.MakeScope.ScriptValue('oiko_has_pan_nationalism'), GetPlayer.MakeScope.ScriptValue('oiko_one')),'@green_checkmark_box!','@simple_box!')] Zbadany pan-nationalism"
 
  oiko.1.t:0 "Skarbiec na krawędzi bankructwa"
- oiko.1.d:0 "Państwo pożycza na bieżące wydatki, a dług zbliża się do limitu kredytu.\n\n$oiko_numbers$\n\n#bold Zrób to od razu:#! panel Budżetu: Poziom opodatkowania o stopień w górę, Wynagrodzenia wojskowe i Wynagrodzenia pracowników rządowych o stopień w dół. Panel Budowa: Anuluj budowę na najdroższej pozycji. Nie zaczynaj zagrywki dyplomatycznej. Szczegóły: dziennik #bold Strażnik budżetu#!."
+ oiko.1.d:0 "Państwo pożycza na bieżące wydatki, a dług zbliża się do limitu kredytu.\n\n$oiko_numbers$\n\n#bold Zrób to od razu:#! panel Budżet: Poziom opodatkowania o stopień w górę, Wynagrodzenia pracowników rządowych o stopień w dół (Wynagrodzeń wojskowych nie ruszaj). Zmniejszenie poziomu jednego sektora budowlanego i zbędnych budynków rządowych, najpierw uniwersytetów. Żadnego posunięcia dyplomatycznego. Szczegóły: dziennik #bold Strażnik budżetu#!."
  oiko.1.f:0 "Po przekroczeniu limitu kredytu przychodzi niewypłacalność: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień aż do -50%."
  oiko.1.a:0 "Biorę się za budżet"
 
@@ -32,12 +32,12 @@
  oiko_debt_progress_bar:0 "Dług / limit kredytu"
  oiko_debt_progress_bar_desc:0 "Jak blisko limitu kredytu jest dług; przy 100% kraj bankrutuje. Pożyczanie na budowę jest w porządku mniej więcej do połowy limitu; dalej zatrzymaj wzrost długu."
 
- oiko_verdict_critical:0 "#bold Bankructwo blisko!#! Jeszcze w tym tygodniu, panel Budżetu: Wynagrodzenia wojskowe i Wynagrodzenia pracowników rządowych o stopień w dół, Poziom opodatkowania o stopień w górę. Panel Budowa: Anuluj budowę na najdroższej pozycji. Nie zaczynaj żadnej zagrywki dyplomatycznej."
- oiko_verdict_danger:0 "#bold Dług przekroczył połowę limitu kredytu.#! Zatrzymaj jego wzrost. Panel Budżetu: najpierw płace wojska i urzędników o stopień w dół, potem Poziom opodatkowania o stopień w górę. Żadnej zagrywki dyplomatycznej ani ustawy, która kosztuje."
- oiko_verdict_hoarding:0 "#bold Nadwyżka i pełny skarbiec.#! Pieniądze w skarbcu nic nie zarabiają. Panel Budowa: zleć rozbudowy, które Oikonomia Analyzer stawia najwyżej, aż saldo tygodniowe spadnie blisko zera."
- oiko_verdict_surplus:0 "#bold Nadwyżka.#! Trzymaj kolejkę budowy pełną (panel Budowa): to nadwyżka opłaca wzrost."
- oiko_verdict_military:0 "#bold Deficyt, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków.#! Ten deficyt opłaca utrzymanie, nie wzrost. Otwórz armię, jej zakładkę Budynki, Koszary i naciśnij Zmniejszenie poziomu raz na każdy batalion niepotrzebny w czasie pokoju; panel Budżetu: płace wojska o stopień w dół. Podatki podnoś dopiero potem."
- oiko_verdict_deficit:0 "#bold Deficyt, dług daleko od limitu kredytu.#! W porządku, dopóki pieniądze idą na budowę (panel Budżetu: budowa to największy wydatek), więc buduj dalej. Jeśli największy wydatek to płace i utrzymanie: panel Budżetu, płace wojska i urzędników o stopień w dół."
+ oiko_verdict_critical:0 "#bold Bankructwo blisko!#! Jeszcze w tym tygodniu, panel Budżet: Wynagrodzenia pracowników rządowych o stopień w dół, Poziom opodatkowania o stopień w górę (Wynagrodzeń wojskowych nie ruszaj: niskie to -50% tempa szkolenia). Zmniejszenie poziomu jednego sektora budowlanego i zbędnych budynków rządowych, najpierw uniwersytetów; nie anuluj całej budowy. Żadnego posunięcia dyplomatycznego."
+ oiko_verdict_danger:0 "#bold Dług przekroczył bezpieczną część limitu kredytu (połowę, a u wielkiego mocarstwa 80%).#! Zatrzymaj jego wzrost. Panel Budżet: najpierw Wynagrodzenia pracowników rządowych o stopień w dół, potem Poziom opodatkowania o stopień w górę. Żadnego posunięcia dyplomatycznego ani ustawy, która kosztuje."
+ oiko_verdict_hoarding:0 "#bold Nadwyżka i pełny skarbiec.#! Pieniądze w skarbcu nic nie zarabiają i spowalniają gospodarkę. Panel Budowa: dodaj poziom sektora budowlanego i zleć rozbudowy, które Oikonomia Analyzer stawia najwyżej, aż saldo tygodniowe spadnie blisko zera. Nie obniżaj z tego powodu podatków."
+ oiko_verdict_surplus:0 "#bold Nadwyżka.#! Wydaj ją na budowę (panel Budowa), nie na niższe podatki: mały deficyt w czasie budowy jest normalny."
+ oiko_verdict_military:0 "#bold Deficyt, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków.#! Ten deficyt opłaca utrzymanie, nie wzrost. Otwórz armię, jej zakładkę Budynki, Koszary i naciśnij Zmniejszenie poziomu raz na każdy batalion niepotrzebny w czasie pokoju. Nie obniżaj Wynagrodzeń wojskowych: niskie to -50% tempa szkolenia."
+ oiko_verdict_deficit:0 "#bold Deficyt, dług daleko od limitu kredytu.#! W porządku, dopóki pieniądze idą na budowę (panel Budżet: budowa to największy wydatek), więc buduj dalej. Jeśli największy wydatek to płace i utrzymanie: panel Budżet, Wynagrodzenia pracowników rządowych o stopień w dół."
 
  rule_oiko_help_level:0 "Oikonomia: pomoc doradcy"
  setting_oiko_help_budget:0 "Tylko budżet"
@@ -66,7 +66,7 @@
  oiko.3.a:0 "Sprawdzę koszt"
 
  oiko.4.t:0 "Państwo zbankrutowało"
- oiko.4.d:0 "Dług przekroczył limit kredytu: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień.\n\n#bold Droga powrotna:#! panel Budżetu: podatki tak wysoko, jak zniosą grupy interesu, płace wojska i urzędników w dół. Panel Wojsko: Zdemobilizuj wszystkie armie i zawrzyj pokój w każdej wojnie. Panel Budowa: Anuluj budowę na najdroższych pozycjach, aż dług wróci pod limit. Każdy tydzień bankructwa kosztuje więcej niż cięcia."
+ oiko.4.d:0 "Dług przekroczył limit kredytu: budowa staje, a kary do produkcji, ataku i obrony rosną co tydzień.\n\n#bold Droga powrotna:#! panel Budżet: podatki tak wysoko, jak zniosą grupy interesu, Wynagrodzenia pracowników rządowych w dół. Panel Wojsko: Zdemobilizuj wszystkie armie i zawrzyj pokój w każdej wojnie. Zmniejszenie poziomu zbędnych budynków rządowych, najpierw uniwersytetów, i sektorów budowlanych po jednym, aż dług wróci pod limit."
  oiko.4.f:0 "Bankructwo kończy się, gdy tylko dług wróci pod limit kredytu."
  oiko.4.a:0 "Wracam do budżetu"
 
@@ -87,13 +87,13 @@
  alert_oiko_idle_construction_alert_desc:0 "Państwowej kolejce budowy zostało mniej niż dwa tygodnie pracy."
  alert_oiko_idle_construction_alert_hint:0 "Sektory budowlane kosztują co tydzień, czy budują, czy nie. Panel Budowa: zleć rozbudowy, które Oikonomia Analyzer stawia najwyżej (najkrótszy zwrot)."
  alert_oiko_idle_construction_alert_action:0 "Budowa"
- alert_oiko_debt_half_alert_name:0 "Dług ponad połowę limitu kredytu"
+ alert_oiko_debt_half_alert_name:0 "Dług ponad bezpieczną część limitu kredytu"
  alert_oiko_debt_half_alert_desc:0 "Dług wynosi [GetPlayer.MakeScope.ScriptValue('oiko_debt_share')|0%] limitu kredytu."
- alert_oiko_debt_half_alert_hint:0 "Panel Budżetu: najpierw płace wojska i urzędników o stopień w dół, potem Poziom opodatkowania o stopień w górę. Żadnej zagrywki dyplomatycznej ani ustawy, która kosztuje."
+ alert_oiko_debt_half_alert_hint:0 "Panel Budżet: najpierw Wynagrodzenia pracowników rządowych o stopień w dół, potem Poziom opodatkowania o stopień w górę. Wynagrodzeń wojskowych nie ruszaj: niskie to -50% tempa szkolenia. Żadnego posunięcia dyplomatycznego ani ustawy, która kosztuje."
  alert_oiko_debt_half_alert_action:0 "Budżet"
  alert_oiko_upkeep_deficit_alert_name:0 "Deficyt opłaca armię"
  alert_oiko_upkeep_deficit_alert_desc:0 "Tracisz pieniądze, a armia zjada [GetPlayer.MakeScope.ScriptValue('oiko_military_share')|0%] wydatków."
- alert_oiko_upkeep_deficit_alert_hint:0 "Otwórz armię, jej zakładkę Budynki, Koszary i naciśnij Zmniejszenie poziomu raz na każdy batalion niepotrzebny w czasie pokoju. Panel Budżetu: płace wojska o stopień w dół. Podatki podnoś dopiero potem."
+ alert_oiko_upkeep_deficit_alert_hint:0 "Otwórz armię, jej zakładkę Budynki, Koszary i naciśnij Zmniejszenie poziomu raz na każdy batalion niepotrzebny w czasie pokoju. Nie obniżaj Wynagrodzeń wojskowych (tempo szkolenia -50%). Podatki podnoś dopiero potem."
  alert_oiko_upkeep_deficit_alert_action:0 "Budżet"
 
  rule_oiko_cheats:0 "Oikonomia: cheat menu"
@@ -127,3 +127,21 @@
  oiko_idle_construction_alert_setting_name:0 "Oikonomia: budowa staje"
  oiko_debt_half_alert_setting_name:0 "Oikonomia: dług ponad połowę limitu"
  oiko_upkeep_deficit_alert_setting_name:0 "Oikonomia: deficyt opłaca armię"
+
+
+ je_oiko_low_sol:0 "Poziom życia pod presją"
+ je_oiko_low_sol_reason:0 "Średni [Concept('concept_sol','poziom życia')] jest najwyżej o 1 ponad tym, czego oczekuje ludność, albo poniżej. Pod tą linią ludzie stają się [Concept('concept_radical','radykałami')], a średnia ukrywa najbiedniejszych: gdy jest blisko, mniej więcej połowa niższej warstwy jest już pod nią.\n\n#bold Zrób, w tej kolejności:#!\n1. Panel Budżet, Podatki konsumpcyjne: usuń podatki na alkohol, zboże i opium; opodatkuj zamiast nich dobra bogatych (usługi, transport, towary luksusowe).\n2. Panel Budżet: przy Poziomie opodatkowania bardzo wysokim ustaw wysoki; jeśli jest wysoki, a ten wpis nie znika, ustaw średni.\n3. Panel Budowa: zbuduj to, co produkuje najdroższe ze zboża, ubrań i mebli (zakładka Rynek w Oikonomia Analyzer wskazuje budynek i stan).\n\nWpis zamknie się, gdy średnia będzie o 2 ponad oczekiwanym poziomem."
+ je_oiko_low_sol_status:0 "Poziom życia: #bold [GetPlayer.MakeScope.ScriptValue('oiko_sol')|1]#!, oczekiwany #bold [GetPlayer.MakeScope.ScriptValue('oiko_expected_sol')|1]#! (zapas #bold [GetPlayer.MakeScope.ScriptValue('oiko_sol_margin')|1]#!; zamknięcie przy 2)"
+ je_oiko_tax_waste:0 "Podatki przepadają"
+ je_oiko_tax_waste_reason:0 "Twoja [Concept('concept_bureaucracy','biurokracja')] jest ujemna, więc część każdego ściągniętego podatku przepada jako [Concept('concept_tax_waste','marnotrawstwo podatków')]: pieniądze zabrane ludności, które nie trafiają do skarbca.\n\n#bold Zrób:#!\n1. Panel Budowa: zbuduj Administrację rządową w przyłączonym stanie z wysokim PKB na mieszkańca (pokazuje go panel stanu); tam ściąga się najwięcej podatków.\n2. Zanim powstanie, nie ustanawiaj praw, które zużywają biurokrację.\n\nGdy biurokracja wróci powyżej 0, przestań: budowanie administracji tylko po to, by zmniejszyć resztę marnotrawstwa, kosztuje więcej, niż oszczędza. Wtedy ten wpis się zamknie."
+ je_oiko_tax_waste_status:0 "Marnotrawstwo podatków: #bold [GetPlayer.MakeScope.ScriptValue('oiko_tax_waste')|D]#! @money! tygodniowo · biurokracja #bold [GetPlayer.MakeScope.ScriptValue('oiko_bureaucracy')|0]#!"
+ alert_oiko_low_sol_alert_name:0 "Poziom życia blisko oczekiwanego"
+ alert_oiko_low_sol_alert_desc:0 "Średni poziom życia [GetPlayer.MakeScope.ScriptValue('oiko_sol')|1], oczekiwany [GetPlayer.MakeScope.ScriptValue('oiko_expected_sol')|1]."
+ alert_oiko_low_sol_alert_hint:0 "Usuń podatki konsumpcyjne na alkohol, zboże i opium; przy bardzo wysokich podatkach zejdź o stopień; zbuduj to, co produkuje najdroższe podstawowe towary. Zobacz wpis w dzienniku Poziom życia pod presją."
+ alert_oiko_low_sol_alert_action:0 "Budżet"
+ oiko_low_sol_alert_setting_name:0 "Oikonomia: poziom życia blisko oczekiwanego"
+ alert_oiko_tax_waste_alert_name:0 "Podatki przepadają"
+ alert_oiko_tax_waste_alert_desc:0 "Biurokracja jest ujemna: [GetPlayer.MakeScope.ScriptValue('oiko_tax_waste')|D] tygodniowo przepada jako marnotrawstwo podatków."
+ alert_oiko_tax_waste_alert_hint:0 "Zbuduj Administrację rządową w przyłączonym stanie z wysokim PKB na mieszkańca; przestań, gdy biurokracja wróci powyżej 0."
+ alert_oiko_tax_waste_alert_action:0 "Budżet"
+ oiko_tax_waste_alert_setting_name:0 "Oikonomia: podatki przepadają"

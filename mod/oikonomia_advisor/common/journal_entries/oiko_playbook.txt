@@ -30,7 +30,7 @@ je_oiko_pb_gen_tax_bridge = {
 		set_variable = je_oiko_pb_gen_tax_bridge_done
 	}
 	invalid = {
-		OR = { has_variable = je_oiko_pb_gen_tax_bridge_skipped AND = { NOT = { AND = { net_fixed_income < 0 scaled_debt >= 0.35 scaled_debt < 0.85 } } NOT = { net_fixed_income >= 0 } } }
+		OR = { has_variable = je_oiko_pb_gen_tax_bridge_skipped AND = { NOT = { AND = { net_fixed_income < 0 scaled_debt >= 0.35 scaled_debt < 0.85 country_rank < rank_value:great_power } } NOT = { net_fixed_income >= 0 } } }
 	}
 	should_be_pinned_by_default_uninvolved_or_context = yes
 	weight = 700
@@ -43,6 +43,24 @@ je_oiko_pb_gen_radicals_high = {
 	scripted_button = je_oiko_pb_gen_radicals_high_skip
 	invalid = {
 		OR = { has_variable = je_oiko_pb_gen_radicals_high_skipped NOT = { AND = { radical_fraction = { value >= 0.15 } } } }
+	}
+	should_be_pinned_by_default_uninvolved_or_context = yes
+	weight = 700
+}
+
+# gen.minor-no-deficit
+je_oiko_pb_gen_minor_no_deficit = {
+	icon = "gfx/interface/icons/event_icons/event_industry.dds"
+	group = je_group_oikonomia
+	scripted_button = je_oiko_pb_gen_minor_no_deficit_skip
+	complete = {
+		net_fixed_income >= 0
+	}
+	on_complete = {
+		set_variable = je_oiko_pb_gen_minor_no_deficit_done
+	}
+	invalid = {
+		OR = { has_variable = je_oiko_pb_gen_minor_no_deficit_skipped AND = { NOT = { AND = { net_fixed_income < 0 scaled_debt > 0 country_rank < rank_value:major_power } } NOT = { net_fixed_income >= 0 } } }
 	}
 	should_be_pinned_by_default_uninvolved_or_context = yes
 	weight = 700
@@ -288,18 +306,35 @@ je_oiko_pb_gen_debt_unhealthy = {
 	group = je_group_oikonomia
 	scripted_button = je_oiko_pb_gen_debt_unhealthy_skip
 	invalid = {
-		OR = { has_variable = je_oiko_pb_gen_debt_unhealthy_skipped NOT = { AND = { scaled_debt >= 0.5 scaled_debt < 0.85 } } }
+		OR = { has_variable = je_oiko_pb_gen_debt_unhealthy_skipped NOT = { AND = { scaled_debt >= 0.5 scaled_debt < 0.85 country_rank < rank_value:great_power } } }
 	}
 	weight = 500
 }
 
-# gen.lower-taxes-when-rich
-je_oiko_pb_gen_lower_taxes_when_rich = {
+# gen.proportional-tax
+je_oiko_pb_gen_proportional_tax = {
+	icon = "gfx/interface/icons/event_icons/event_portrait.dds"
+	group = je_group_oikonomia
+	scripted_button = je_oiko_pb_gen_proportional_tax_skip
+	complete = {
+		NOT = { has_law_or_variant = law_type:law_per_capita_based_taxation }
+	}
+	on_complete = {
+		set_variable = je_oiko_pb_gen_proportional_tax_done
+	}
+	invalid = {
+		OR = { has_variable = je_oiko_pb_gen_proportional_tax_skipped AND = { NOT = { AND = { has_law_or_variant = law_type:law_per_capita_based_taxation has_technology_researched = egalitarianism } } NOT = { NOT = { has_law_or_variant = law_type:law_per_capita_based_taxation } } } }
+	}
+	weight = 500
+}
+
+# gen.surplus-to-construction
+je_oiko_pb_gen_surplus_to_construction = {
 	icon = "gfx/interface/icons/event_icons/event_industry.dds"
 	group = je_group_oikonomia
-	scripted_button = je_oiko_pb_gen_lower_taxes_when_rich_skip
+	scripted_button = je_oiko_pb_gen_surplus_to_construction_skip
 	invalid = {
-		OR = { has_variable = je_oiko_pb_gen_lower_taxes_when_rich_skipped NOT = { AND = { oiko_pb_balance_share >= 0.15 scaled_debt <= 0 } } }
+		OR = { has_variable = je_oiko_pb_gen_surplus_to_construction_skipped NOT = { AND = { oiko_pb_balance_share >= 0.15 scaled_debt <= 0 } } }
 	}
 	weight = 500
 }
@@ -404,7 +439,7 @@ je_oiko_pb_gen_laissez_faire = {
 		set_variable = je_oiko_pb_gen_laissez_faire_done
 	}
 	invalid = {
-		OR = { has_variable = je_oiko_pb_gen_laissez_faire_skipped AND = { NOT = { AND = { has_law_or_variant = law_type:law_interventionism has_technology_researched = international_trade ig:ig_industrialists ?= { ig_clout >= 0.15 } } } NOT = { has_law_or_variant = law_type:law_laissez_faire } } }
+		OR = { has_variable = je_oiko_pb_gen_laissez_faire_skipped AND = { NOT = { AND = { NOR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root } NOT = { has_law_or_variant = law_type:law_laissez_faire } NOT = { has_law_or_variant = law_type:law_command_economy } NOT = { has_law_or_variant = law_type:law_cooperative_ownership } has_technology_researched = international_trade } } NOT = { has_law_or_variant = law_type:law_laissez_faire } } }
 	}
 	weight = 500
 }
@@ -696,6 +731,45 @@ je_oiko_pb_gen_sol_low = {
 	scripted_button = je_oiko_pb_gen_sol_low_skip
 	invalid = {
 		OR = { has_variable = je_oiko_pb_gen_sol_low_skipped NOT = { AND = { game_date >= 1840.1.1 OR = { market_capital.market = { mg:clothes = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:furniture = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:grain = { market_goods_pricier >= 0.1 } } } average_sol < 10 } } }
+	}
+	weight = 500
+}
+
+# gen.debt-great-power
+je_oiko_pb_gen_debt_great_power = {
+	icon = "gfx/interface/icons/event_icons/event_industry.dds"
+	group = je_group_oikonomia
+	scripted_button = je_oiko_pb_gen_debt_great_power_skip
+	invalid = {
+		OR = { has_variable = je_oiko_pb_gen_debt_great_power_skipped NOT = { AND = { scaled_debt >= 0.8 scaled_debt < 0.9 country_rank >= rank_value:great_power } } }
+	}
+	weight = 500
+}
+
+# gen.agrarianism-first
+je_oiko_pb_gen_agrarianism_first = {
+	icon = "gfx/interface/icons/event_icons/event_portrait.dds"
+	group = je_group_oikonomia
+	scripted_button = je_oiko_pb_gen_agrarianism_first_skip
+	complete = {
+		has_law_or_variant = law_type:law_agrarianism
+	}
+	on_complete = {
+		set_variable = je_oiko_pb_gen_agrarianism_first_done
+	}
+	invalid = {
+		OR = { has_variable = je_oiko_pb_gen_agrarianism_first_skipped AND = { NOT = { AND = { OR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root } NOT = { has_law_or_variant = law_type:law_agrarianism } NOT = { has_law_or_variant = law_type:law_laissez_faire } has_technology_researched = romanticism } } NOT = { has_law_or_variant = law_type:law_agrarianism } } }
+	}
+	weight = 500
+}
+
+# gen.tax-level-too-high
+je_oiko_pb_gen_tax_level_too_high = {
+	icon = "gfx/interface/icons/event_icons/event_industry.dds"
+	group = je_group_oikonomia
+	scripted_button = je_oiko_pb_gen_tax_level_too_high_skip
+	invalid = {
+		OR = { has_variable = je_oiko_pb_gen_tax_level_too_high_skipped NOT = { AND = { radical_fraction = { value >= 0.1 } tax_level >= very_high } } }
 	}
 	weight = 500
 }

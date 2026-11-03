@@ -16,7 +16,8 @@ Player-only journal entries with live values computed by the game every tick. Th
 - **Chapters** – one five-item checklist per era for every country: Foundations (to 1850), Industry (to 1885), Modern State.
 - **Construction Is Running Dry** – entry and top-bar alert when the state's construction queue has under two weeks of work.
 - **Warnings at the moment of decision** – popups when a diplomatic play starts with a weak budget, when a law is started with high debt, and after a default.
-- **Top-bar alerts** – idle construction, debt past half the credit limit, deficit paying the army.
+- **Top-bar alerts** – idle construction, debt past the safe share of the credit limit (half; 80% for a great power), deficit paying the army, standard of living within 1 of expected, taxes lost to a bureaucracy deficit.
+- **Standard of Living Under Pressure / Taxes Are Being Lost** – journal entries with the steps (consumption taxes off the poor's goods, tax level one step down, Government Administration in a rich incorporated state); the dashboard numbers include standard of living against expected and tax waste.
 - **Game rules** (chosen at game start) – help level (budget only / standard / everything) and warning popups on or off.
 - **Cheat menu** (game rule, off by default; on blocks achievements) – journal entry with buttons: add ten weeks of spending, pay off the debt (ends a default), one-year boosts to research, construction and law enactment, loyalists, −10 infamy, +20 relations with every country.
 

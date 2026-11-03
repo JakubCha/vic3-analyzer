@@ -891,6 +891,65 @@ impl<'a> Market<'a> {
 
 /// Market-driven advice from the solved prices for every economy goal plus war
 /// supply. One pass per goal over buildings and local goods; no re-solves.
+/// States where peasants are at least this share of the workforce: labour-saving
+/// methods there put workers back into subsistence (Generalist Gaming, "I Was WRONG About Peasants").
+const PEASANT_STATE_SHARE: f64 = 0.3;
+
+/// Buildings running a method that employs at least 10% fewer workers than its
+/// group's first method, in states that still have many peasants.
+fn labour_saving_advice(defs: &GameDefs, prices: &vic3_prices::PricesResult, states: &BTreeSet<u32>, out: &mut Vec<Advice>) {
+    let mut by_state: BTreeMap<u32, (f64, f64)> = BTreeMap::new();
+    for p in prices.state_pops.iter().filter(|p| states.contains(&p.state_id)) {
+        let e = by_state.entry(p.state_id).or_default();
+        let w = p.workforce.unwrap_or(0.0);
+        e.1 += w;
+        if p.profession_name.as_deref() == Some("peasants") {
+            e.0 += w;
+        }
+    }
+    let peasant_share = |state: u32| by_state.get(&state).filter(|(_, w)| *w > 0.0).map_or(0.0, |(p, w)| p / w);
+    let jobs = |pm: &str| defs.production_methods.get(pm).map_or(0.0, |m| m.employment.iter().map(|(_, n)| n).sum::<f64>());
+    // (building type, method, base method) -> (first building id, building label, states)
+    let mut found: BTreeMap<(String, String, String), (u32, String, Vec<String>)> = BTreeMap::new();
+    for b in prices.buildings.iter().filter(|b| b.level > 0.0 && !b.building_type_name.starts_with("building_subsistence")) {
+        let Some(state) = b.state_id.filter(|s| states.contains(s) && peasant_share(*s) >= PEASANT_STATE_SHARE) else { continue };
+        let Some(bt) = defs.building_types.get(&b.building_type_name) else { continue };
+        for pm in &b.production_method_ids {
+            let Some(base) = bt.production_method_groups.iter().filter_map(|g| defs.production_method_groups.get(g)).find(|g| g.contains(pm)).and_then(|g| g.first()) else { continue };
+            if base != pm && jobs(base) > 0.0 && jobs(pm) < jobs(base) * 0.9 {
+                let label = prices.states.iter().find(|st| st.id == state).map_or_else(|| format!("state {state}"), |st| st.label.clone());
+                found.entry((b.building_type_name.clone(), pm.clone(), base.clone())).or_insert_with(|| (b.id, b.building_type_label.clone(), Vec::new())).2.push(label);
+            }
+        }
+    }
+    for ((building, pm, base), (id, label, mut where_)) in found.into_iter().take(3) {
+        where_.truncate(3);
+        out.push(Advice {
+            id: format!("labour:{building}:{pm}"),
+            domain: Domain::Economy,
+            goal: None,
+            priority: 2,
+            title: format!("Switch {label} back to \"{}\" while peasants remain", defs.display_label(&base)),
+            detail: format!(
+                "{label} in {} run \"{}\", which employs {:.0}% fewer workers than \"{}\", in states where peasants are still {:.0}% or more of the workforce.",
+                where_.join(", "),
+                defs.display_label(&pm),
+                (1.0 - jobs(&pm) / jobs(&base)) * 100.0,
+                defs.display_label(&base),
+                PEASANT_STATE_SHARE * 100.0
+            ),
+            steps: vec![format!(
+                "Click {label} in {} and, in its production methods, pick \"{}\"; repeat in the other states named.",
+                where_[0],
+                defs.display_label(&base)
+            )],
+            why_now: Vec::new(),
+            why: Some("Workers a labour-saving method lets go return to subsistence farming, where they produce almost nothing for the market and buy almost nothing. While peasants remain, jobs are worth more than the saved wages; switch to labour-saving methods once a state runs out of peasants. Source: Generalist Gaming, I Was WRONG About Peasants.".into()),
+            check: Some(Check::ProductionMethod { building_id: id, method: base.clone() }),
+        });
+    }
+}
+
 fn market_advice(
     world: &World,
     defs: &GameDefs,
@@ -1004,10 +1063,12 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
     }
 
     law_advice(defs, country, education_short, &mut advice);
+    labour_saving_advice(defs, prices, &states, &mut advice);
 
     // Budget guard first: its ids ("budget:…") sort ahead within each priority.
     if let Some(report) = &budget {
         crate::budget::budget_advice(report, &mut advice);
+        crate::budget::consumption_tax_advice(report, &mut advice);
     }
     crate::playbook::playbook_advice(
         &crate::playbook::Facts {

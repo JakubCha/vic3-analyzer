@@ -27,6 +27,7 @@ oiko_playbook_monthly = {
 				net_fixed_income < 0
 				scaled_debt >= 0.35
 				scaled_debt < 0.85
+				country_rank < rank_value:great_power
 				NOT = { has_journal_entry = je_oiko_pb_gen_tax_bridge }
 				NOT = { has_variable = je_oiko_pb_gen_tax_bridge_done }
 				NOT = { has_variable = je_oiko_pb_gen_tax_bridge_skipped }
@@ -41,6 +42,18 @@ oiko_playbook_monthly = {
 				NOT = { has_variable = je_oiko_pb_gen_radicals_high_skipped }
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_radicals_high }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				net_fixed_income < 0
+				scaled_debt > 0
+				country_rank < rank_value:major_power
+				NOT = { has_journal_entry = je_oiko_pb_gen_minor_no_deficit }
+				NOT = { has_variable = je_oiko_pb_gen_minor_no_deficit_done }
+				NOT = { has_variable = je_oiko_pb_gen_minor_no_deficit_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_minor_no_deficit }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -250,6 +263,7 @@ oiko_playbook_monthly = {
 			limit = {
 				scaled_debt >= 0.5
 				scaled_debt < 0.85
+				country_rank < rank_value:great_power
 				NOT = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy }
 				NOT = { has_variable = je_oiko_pb_gen_debt_unhealthy_skipped }
 				var:oiko_pb_slots > 0
@@ -259,13 +273,25 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				oiko_pb_balance_share >= 0.15
-				scaled_debt <= 0
-				NOT = { has_journal_entry = je_oiko_pb_gen_lower_taxes_when_rich }
-				NOT = { has_variable = je_oiko_pb_gen_lower_taxes_when_rich_skipped }
+				has_law_or_variant = law_type:law_per_capita_based_taxation
+				has_technology_researched = egalitarianism
+				NOT = { has_journal_entry = je_oiko_pb_gen_proportional_tax }
+				NOT = { has_variable = je_oiko_pb_gen_proportional_tax_done }
+				NOT = { has_variable = je_oiko_pb_gen_proportional_tax_skipped }
 				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gen_lower_taxes_when_rich }
+			add_journal_entry = { type = je_oiko_pb_gen_proportional_tax }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				oiko_pb_balance_share >= 0.15
+				scaled_debt <= 0
+				NOT = { has_journal_entry = je_oiko_pb_gen_surplus_to_construction }
+				NOT = { has_variable = je_oiko_pb_gen_surplus_to_construction_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_surplus_to_construction }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -360,9 +386,11 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				has_law_or_variant = law_type:law_interventionism
+				NOR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
+				NOT = { has_law_or_variant = law_type:law_laissez_faire }
+				NOT = { has_law_or_variant = law_type:law_command_economy }
+				NOT = { has_law_or_variant = law_type:law_cooperative_ownership }
 				has_technology_researched = international_trade
-				ig:ig_industrialists ?= { ig_clout >= 0.15 }
 				NOT = { has_journal_entry = je_oiko_pb_gen_laissez_faire }
 				NOT = { has_variable = je_oiko_pb_gen_laissez_faire_done }
 				NOT = { has_variable = je_oiko_pb_gen_laissez_faire_skipped }
@@ -624,6 +652,43 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_sol_low }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				scaled_debt >= 0.8
+				scaled_debt < 0.9
+				country_rank >= rank_value:great_power
+				NOT = { has_journal_entry = je_oiko_pb_gen_debt_great_power }
+				NOT = { has_variable = je_oiko_pb_gen_debt_great_power_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_debt_great_power }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
+				NOT = { has_law_or_variant = law_type:law_agrarianism }
+				NOT = { has_law_or_variant = law_type:law_laissez_faire }
+				has_technology_researched = romanticism
+				NOT = { has_journal_entry = je_oiko_pb_gen_agrarianism_first }
+				NOT = { has_variable = je_oiko_pb_gen_agrarianism_first_done }
+				NOT = { has_variable = je_oiko_pb_gen_agrarianism_first_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_agrarianism_first }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				radical_fraction = { value >= 0.1 }
+				tax_level >= very_high
+				NOT = { has_journal_entry = je_oiko_pb_gen_tax_level_too_high }
+				NOT = { has_variable = je_oiko_pb_gen_tax_level_too_high_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_tax_level_too_high }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {

@@ -186,3 +186,28 @@ je_oiko_cheats = {
 
 	weight = 50
 }
+
+# Standard of living close to or under what pops expect: radicals grow.
+je_oiko_low_sol = {
+	icon = "gfx/interface/icons/event_icons/event_protest.dds"
+	group = je_group_oikonomia
+
+	invalid = {
+		oiko_sol_margin >= 2
+	}
+
+	should_be_pinned_by_default_uninvolved_or_context = yes
+	weight = 940
+}
+
+# Bureaucracy deficit: part of the taxes collected is lost as tax waste.
+je_oiko_tax_waste = {
+	icon = "gfx/interface/icons/event_icons/event_scales.dds"
+	group = je_group_oikonomia
+
+	invalid = {
+		bureaucracy >= 0
+	}
+
+	weight = 930
+}

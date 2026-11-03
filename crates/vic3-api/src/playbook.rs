@@ -60,6 +60,16 @@ pub struct Rule {
     /// Steps in the game's interface; empty = derived by [`steps`].
     #[serde(default)]
     pub how: Vec<String>,
+    /// Country tags the rule does not apply to.
+    #[serde(default)]
+    pub exclude_countries: Vec<String>,
+}
+
+impl Rule {
+    /// Whether the rule is meant for the country with `tag`.
+    pub fn applies_to(&self, tag: &str) -> bool {
+        (self.countries.is_empty() || self.countries.iter().any(|c| c == tag)) && !self.exclude_countries.iter().any(|c| c == tag)
+    }
 }
 
 fn worthwhile() -> u8 {
@@ -139,6 +149,37 @@ pub struct When {
     pub radicals_share_at_least: Option<f64>,
     /// Owned states using more infrastructure than they have, at least this many.
     pub infrastructure_short_states_at_least: Option<usize>,
+    /// Power rank at least / below this one (`great_power`, `major_power`, `minor_power`, …).
+    pub rank_at_least: Option<String>,
+    pub rank_below: Option<String>,
+    /// Tax level at most / at least (`very_low`, `low`, `medium`, `high`, `very_high`).
+    pub tax_level_at_most: Option<String>,
+    pub tax_level_at_least: Option<String>,
+    /// Peasants' share of the player's workforce (0–1) at least the value.
+    pub peasant_share_at_least: Option<f64>,
+}
+
+/// `rank_value` of each power rank (common/country_ranks, 1.13.9).
+pub const RANK_VALUES: &[(&str, u8)] = &[
+    ("decentralized_power", 0),
+    ("unrecognized_power", 1),
+    ("insignificant_power", 2),
+    ("unrecognized_regional_power", 3),
+    ("minor_power", 4),
+    ("unrecognized_major_power", 5),
+    ("major_power", 6),
+    ("great_power", 7),
+];
+
+/// Tax levels from lowest to highest; a save omits `tax_level` at medium.
+pub const TAX_LEVELS: &[&str] = &["very_low", "low", "medium", "high", "very_high"];
+
+fn rank_value(rank: &str) -> Option<u8> {
+    RANK_VALUES.iter().find(|(r, _)| *r == rank).map(|(_, v)| *v)
+}
+
+fn tax_index(level: &str) -> Option<usize> {
+    TAX_LEVELS.iter().position(|l| *l == level)
 }
 
 /// All embedded rules, parsed once.
@@ -231,12 +272,21 @@ impl Facts<'_> {
                 .iter()
                 .filter(|s| owned.contains(&s.id) && s.infrastructure_usage.zip(s.infrastructure).is_some_and(|(u, i)| u > i))
                 .count(),
+            peasant_share: {
+                let (peasants, workforce) = self.prices.state_pops.iter().filter(|p| owned.contains(&p.state_id)).fold((0.0, 0.0), |(pe, wf), p| {
+                    let w = p.workforce.unwrap_or(0.0);
+                    (pe + if p.profession_name.as_deref() == Some("peasants") { w } else { 0.0 }, wf + w)
+                });
+                (workforce > 0.0).then(|| peasants / workforce)
+            },
+            rank: c.rank.as_deref().and_then(rank_value),
+            tax: tax_index(c.tax_level.as_deref().unwrap_or("medium")),
         }
     }
 
     fn holds(&self, w: &When) -> bool {
         let c = self.country;
-        let Metrics { year, balance, debt, income_share, debt_share, runway, literacy, sol, radicals, infra_short } = self.metrics();
+        let Metrics { year, balance, debt, income_share, debt_share, runway, literacy, sol, radicals, infra_short, peasant_share, rank, tax } = self.metrics();
         let has_law = |l: &String| c.laws.contains(l);
         let has_tech = |t: &String| c.techs.contains(t);
         let levels = |b: &str| self.levels(b);
@@ -274,6 +324,11 @@ impl Facts<'_> {
             && w.sol_below.is_none_or(|x| sol.is_some_and(|s| s < x))
             && w.radicals_share_at_least.is_none_or(|x| radicals.is_some_and(|r| r >= x))
             && w.infrastructure_short_states_at_least.is_none_or(|n| infra_short() >= n)
+            && w.rank_at_least.as_deref().is_none_or(|r| rank.zip(rank_value(r)).is_some_and(|(have, need)| have >= need))
+            && w.rank_below.as_deref().is_none_or(|r| rank.zip(rank_value(r)).is_some_and(|(have, need)| have < need))
+            && w.tax_level_at_most.as_deref().is_none_or(|t| tax.zip(tax_index(t)).is_some_and(|(have, max)| have <= max))
+            && w.tax_level_at_least.as_deref().is_none_or(|t| tax.zip(tax_index(t)).is_some_and(|(have, min)| have >= min))
+            && w.peasant_share_at_least.is_none_or(|x| peasant_share.is_some_and(|p| p >= x))
     }
 
     /// The save's values for the rule's measurable conditions, against their thresholds.
@@ -348,6 +403,21 @@ impl Facts<'_> {
         }
         if let Some(n) = w.infrastructure_short_states_at_least {
             line(Some(format!("{} of your states are short of infrastructure", m.infra_short)), format!("at least {n}"));
+        }
+        let rank = self.country.rank.as_deref().map(|r| format!("Your rank is {}", vic3_defs::pretty_id(r)));
+        for (r, cmp) in [(&w.rank_at_least, "at least"), (&w.rank_below, "below")] {
+            if let Some(r) = r {
+                line(rank.clone(), format!("{cmp} {}", vic3_defs::pretty_id(r)));
+            }
+        }
+        let tax = Some(format!("Tax level is {}", vic3_defs::pretty_id(self.country.tax_level.as_deref().unwrap_or("medium"))));
+        for (t, cmp) in [(&w.tax_level_at_most, "at most"), (&w.tax_level_at_least, "at least")] {
+            if let Some(t) = t {
+                line(tax.clone(), format!("{cmp} {}", vic3_defs::pretty_id(t)));
+            }
+        }
+        if let Some(x) = w.peasant_share_at_least {
+            line(m.peasant_share.map(|p| format!("Peasants are {} of your workforce", pct(p))), format!("from {}", pct(x)));
         }
         if m.debt > 0.0 && out.is_empty() {
             // Nothing measurable in the rule: keep the budget context visible.
@@ -470,7 +540,7 @@ pub fn explain(id: &str, loaded: Option<(&World, &GameDefs, &vic3_prices::Prices
         if let Some((country, states)) = crate::advice::player(world) {
             let budget = crate::budget::report(defs, country);
             let facts = Facts { world, defs, prices, country, states: &states, budget: budget.as_ref() };
-            let for_country = rule.countries.is_empty() || rule.countries.iter().any(|c| *c == country.tag);
+            let for_country = rule.applies_to(&country.tag);
             out["applies_now"] = serde_json::json!(for_country && facts.holds(&rule.when));
             out["why_now"] = serde_json::json!(facts.why_now(&rule.when));
             out["steps"] = serde_json::json!(steps(rule, &|id| defs.display_label(id)));
@@ -491,6 +561,11 @@ struct Metrics {
     sol: Option<f64>,
     radicals: Option<f64>,
     infra_short: usize,
+    peasant_share: Option<f64>,
+    /// `rank_value` of the country's power rank (player only).
+    rank: Option<u8>,
+    /// Index into [`TAX_LEVELS`].
+    tax: Option<usize>,
 }
 
 fn pretty_group(key: &str) -> String {
@@ -569,7 +644,7 @@ pub fn steps(rule: &Rule, label: &dyn Fn(&str) -> String) -> Vec<String> {
 pub fn playbook_advice(facts: &Facts<'_>, out: &mut Vec<Advice>) {
     let tag = facts.country.tag.as_str();
     for rule in rules() {
-        if !(rule.countries.is_empty() || rule.countries.iter().any(|c| c == tag)) || !facts.holds(&rule.when) {
+        if !rule.applies_to(tag) || !facts.holds(&rule.when) {
             continue;
         }
         // Rules already followed stay quiet.

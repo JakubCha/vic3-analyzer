@@ -15,7 +15,19 @@ oiko_budget_verdict = {
 		localization_key = oiko_verdict_critical
 	}
 	text = {
-		trigger = { scaled_debt >= 0.5 }
+		# Great powers pay half the loan interest: their safe line is 80% (budget.rs GREAT_POWER_DEBT_SHARE).
+		trigger = {
+			OR = {
+				AND = {
+					country_rank >= rank_value:great_power
+					scaled_debt >= 0.8
+				}
+				AND = {
+					country_rank < rank_value:great_power
+					scaled_debt >= 0.5
+				}
+			}
+		}
 		localization_key = oiko_verdict_danger
 	}
 	text = {

@@ -120,6 +120,21 @@ fn when_triggers(w: &When, levels: &mut BTreeSet<String>) -> Result<Vec<String>,
     if w.infrastructure_short_states_at_least.is_some() {
         return Err("the game has no trigger comparing a state's infrastructure use to its capacity".into());
     }
+    if let Some(r) = &w.rank_at_least {
+        t.push(format!("country_rank >= rank_value:{r}"));
+    }
+    if let Some(r) = &w.rank_below {
+        t.push(format!("country_rank < rank_value:{r}"));
+    }
+    if let Some(l) = &w.tax_level_at_most {
+        t.push(format!("tax_level <= {l}"));
+    }
+    if let Some(l) = &w.tax_level_at_least {
+        t.push(format!("tax_level >= {l}"));
+    }
+    if w.peasant_share_at_least.is_some() {
+        return Err("the game has no trigger for the peasant share of the workforce".into());
+    }
     Ok(t)
 }
 
@@ -250,6 +265,10 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
         if !rule.countries.is_empty() {
             let tags: Vec<String> = rule.countries.iter().map(|c| format!("c:{c} ?= root")).collect();
             when.insert(0, format!("OR = {{ {} }}", tags.join(" ")));
+        }
+        if !rule.exclude_countries.is_empty() {
+            let tags: Vec<String> = rule.exclude_countries.iter().map(|c| format!("c:{c} ?= root")).collect();
+            when.insert(0, format!("NOR = {{ {} }}", tags.join(" ")));
         }
         let done = rule.done.as_ref().and_then(|c| done_trigger(c, &mut needed));
         levels.extend(needed);

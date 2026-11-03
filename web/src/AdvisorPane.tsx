@@ -442,7 +442,7 @@ export function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
         treasury {money(b.treasury)}
         {runway && <> · {runway}</>}
         {b.weeks_to_unhealthy != null && b.risk !== 'critical' ? (
-          <> · debt at half the credit limit in ~{weeks(b.weeks_to_unhealthy)}</>
+          <> · debt at {Math.round((b.unhealthy_share ?? 0.5) * 100)}% of the credit limit in ~{weeks(b.weeks_to_unhealthy)}</>
         ) : (
           b.weeks_to_default != null && <> · credit limit in ~{weeks(b.weeks_to_default)}</>
         )}
@@ -451,7 +451,12 @@ export function BudgetBanner({ budget: b }: { budget: BudgetReport }) {
         <p className="advisor-war" aria-label="War cost">
           At war (whole army mobilised): at least {money(b.war.extra_weekly)} more a week, balance{' '}
           {money(b.war.weekly_balance)}/week
-          {b.war.weeks_to_unhealthy != null && <> · debt at half the credit limit after ~{weeks(b.war.weeks_to_unhealthy)}</>}
+          {b.war.weeks_to_unhealthy != null && (
+            <>
+              {' '}
+              · debt at {Math.round((b.unhealthy_share ?? 0.5) * 100)}% of the credit limit after ~{weeks(b.war.weeks_to_unhealthy)}
+            </>
+          )}
           {b.war.weeks_to_default != null && <> · default after ~{weeks(b.war.weeks_to_default)} of war</>}
         </p>
       )}

@@ -11,10 +11,11 @@ goal = "budget"
 phase = "any"
 title = "Debt is over half the credit limit: freeze new state spending"
 detail = "Start no new government construction or military units until debt is back under half the credit limit."
-why = "The game treats debt at or above 50% of the credit limit as an unhealthy economy. The credit limit is about 100K plus building cash reserves plus half of GDP, so a recession shrinks it at the same moment interest grows. That is how a slow deficit turns into a sudden default."
+why = "The game treats debt at or above 50% of the credit limit as an unhealthy economy. The credit limit is about 100K plus building cash reserves plus half of GDP, so a recession shrinks it at the same moment interest grows. That is how a slow deficit turns into a default. Great powers pay half the loan interest and can go further (see the great-power rule)."
 sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/defines (CREDIT_RATIO_HEALTH_THRESHOLD = 0.5)"]
-patch = "1.13"
+patch = "1.13.9"
 [rule.when]
+rank_below = "great_power"
 debt_share_of_limit_at_least = 0.5
 debt_share_of_limit_below = 0.85
 
@@ -25,10 +26,11 @@ priority = 1
 goal = "budget"
 phase = "any"
 title = "Default is close: act this week"
-detail = "Raise the tax level one step, lower government and military wages one step, and pause the most expensive construction."
-why = "At the credit limit the country defaults. Construction stops, and throughput, offense and defense take -5% at once, worsening by -1% a week down to -50%. Declaring bankruptcy wipes the debt, but it resets institutions, empties building cash, radicalises 10% of pops, and adds -75% prestige and +50% interest that decay over 10 years. Avoiding default is always cheaper than recovering from it."
-sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/defines (DECLARE_BANKRUPTCY_*)"]
-patch = "1.13"
+detail = "Raise the tax level one step and lower Government Wages one step (not Military Wages). Do not cancel all construction: remove Construction Sector levels one at a time, Downsize government buildings you can spare (universities first) and demobilise."
+why = "At the credit limit the country defaults. Construction stops, and throughput, offense and defense take -5% at once, worsening by -1% a week down to -50%. Lowering Military Wages to Low cuts the training rate by 50% (Very Low by 75%), so battalions empty out; Government Wages cost only a little approval and prestige. Stopping all construction at once throws its workers out of work and deepens the slump."
+sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/static_modifiers/00_code_static_modifiers.txt (military_wages_low, government_wages_low)", "Generalist Gaming: The Most Common MISTAKE Intermediate Players Make"]
+patch = "1.13.9"
+how = ["Budget panel: raise the tax level one step and set Government Wages one step lower. Leave Military Wages at Medium.", "Open a Construction Sector and press Downsize once; repeat a week later only if the balance is still falling.", "Open your University (and other government buildings you can spare) and press Downsize.", "Military panel: Demobilize all armies if you are mobilised in peace."]
 done = { type = "weekly_balance", at_least = 0.0 }
 [rule.when]
 debt_share_of_limit_at_least = 0.85
@@ -42,44 +44,47 @@ goal = "budget"
 phase = "any"
 title = "Debt is nearing half the credit limit: raise taxes one level as a bridge"
 detail = "Raise the tax level one step in the Budget panel now, and plan to lower it again once spending is cut or new industry pays taxes."
-why = "An empty treasury alone is no reason: the state then borrows cheaply. Once debt approaches half the credit limit, the game's unhealthy line, interest starts to bite and a tax bridge buys time. Under per-capita taxation, going from Medium to High raises the per-capita rate from 0.70 to 0.85 and the land rate from 0.35 to 0.425, about +20% on poll taxes. It costs -10% legitimacy, +50% radicals from movements and squeezes the poorest pops, so it is a bridge, not a policy."
+why = "An empty treasury alone is no reason: the state then borrows cheaply. Once debt approaches half the credit limit, the game's unhealthy line, interest starts to bite and a tax bridge buys time. Great powers have more room (half the interest)."
 sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/laws/00_taxation.txt, common/defines (CREDIT_RATIO_HEALTH_THRESHOLD = 0.5)"]
-patch = "1.13"
+patch = "1.13.9"
 done = { type = "weekly_balance", at_least = 0.0 }
 [rule.when]
+rank_below = "great_power"
 balance_below = 0.0
 debt_share_of_limit_at_least = 0.35
 debt_share_of_limit_below = 0.85
 
 [[rule]]
-id = "gen.keep-per-capita"
+id = "gen.proportional-tax"
 domain = "laws"
 goal = "reforms"
 phase = "early"
-title = "Do not switch to Proportional Taxation yet"
-detail = "Most of your income is poll tax; Proportional Taxation would delete that line. Switch only once wage income outweighs subsistence pops."
-why = "law_proportional_taxation has no per-capita or land tax at all; it only taxes consumption, income (20% at Medium instead of 10%) and dividends. While poll tax is your largest income line, switching roughly doubles income tax but loses the whole poll tax."
-sources = ["game files: common/laws/00_taxation.txt", "https://vic3.paradoxwikis.com/Budget"]
-patch = "1.13"
-how = ["Nothing to press now: keep Per-Capita Based Taxation (Politics panel, Laws, Taxation group).", "Press Enact on Proportional Taxation only once the Budget panel shows income taxes larger than poll taxes."]
+title = "Move from Per-Capita to Proportional Taxation"
+detail = "Per-capita taxes fall hardest on the poor. Enact Proportional Taxation; if it cannot pass (often only the Trade Unions support going straight there), enact Land-Based Taxation first and Proportional after it."
+why = "Per-capita taxation takes the same from every pop, so it pushes the poorest below their expected standard of living and breeds radicals, while income tax under Proportional grows with the wages your new industry pays. Generalist Gaming's guides call Per-Capita the tax law to leave first; Graduated Taxation (socialism) is the later step once peasants run out."
+sources = ["game files: common/laws/00_taxation.txt (law_proportional_taxation: egalitarianism)", "Generalist Gaming: BEST Economic Laws", "Generalist Gaming: Why Taxing the Rich is So Strong"]
+patch = "1.13.9"
+how = ["Politics panel, Laws, Taxation group: find Proportional Taxation and press Enact.", "If its chance of success is low, enact Land-Based Taxation first, then Proportional Taxation.", "While it is enacted, the tax level may need one step up to keep the balance: check the Budget panel."]
+done = { type = "law_inactive", law = "law_per_capita_based_taxation" }
 [rule.when]
 laws = ["law_per_capita_based_taxation"]
-income_share_at_least = { poll_taxes = 0.45 }
+techs = ["egalitarianism"]
 
 [[rule]]
-id = "gen.lower-taxes-when-rich"
+id = "gen.surplus-to-construction"
 domain = "economy"
-goal = "reforms"
+goal = "industry"
 phase = "any"
-title = "Lower the tax level instead of hoarding gold"
-detail = "You have no debt and a large surplus: lower the tax level one step."
-why = "A lower tax level leaves money with pops, which raises their standard of living, gives +5% legitimacy at Low (+10% at Very Low) and -10%/-20% radicals from movements. A treasury above about 20% of annual GDP has diminishing returns anyway; if you still have unused money, build instead."
-sources = ["https://vic3.paradoxwikis.com/Budget", "game files: common/defines (GOLD_RESERVE_LIMIT_FACTOR = 0.2)"]
-patch = "1.13"
-how = ["Budget panel: set the tax level one step lower.", "A few weeks later check the weekly balance in the Budget panel: it should still be positive."]
+title = "Turn the surplus into construction, not a lower tax level"
+detail = "You have no debt and a large surplus: add a Construction Sector level and keep the queue full. Lower the tax level only when peasants run out, legitimacy sits just under a threshold, or your poorest pops fall below their expected standard of living."
+why = "Money kept in the treasury is taken out of the economy: pops buy less, prices fall, buildings earn less. In Victoria 3 taxes are for moving money from consumption into construction, which builds the factories that pay wages and taxes later. A small deficit while building is normal."
+sources = ["Generalist Gaming: Understanding Victoria 3's Economics & Budget", "Generalist Gaming: How to TAX Pops (In Depth Guide)"]
+patch = "1.13.9"
+how = ["Construction panel: queue one more Construction Sector level in a state with iron, wood and free workers.", "Queue the expansions the analyzer ranks with the shortest payback until the weekly balance is close to zero."]
 [rule.when]
 in_debt = false
 balance_share_of_income_at_least = 0.15
+
 
 # --- Military without bankruptcy --------------------------------------------
 
@@ -153,19 +158,20 @@ patch = "1.13.9"
 price_above_base = { grain = 0.15 }
 
 [[rule]]
-id = "gen.military-wages"
-domain = "war"
-goal = "military"
+id = "gen.government-wages"
+domain = "economy"
+goal = "budget"
 phase = "any"
-title = "Set military wages to Low while the Armed Forces are out of government"
-detail = "You are losing money and the Armed Forces are not in government: lower military wages one step in the Budget panel."
-why = "Low wages cut the military wage bill by 15% (Very Low by 30%) but cost Armed Forces approval, army prestige and training rate. With the Armed Forces out of government their displeasure does not destabilise your coalition; with them in government, keep Normal."
-sources = ["https://vic3.paradoxwikis.com/Budget"]
-patch = "1.13"
+title = "Cut Government Wages, never Military Wages"
+detail = "You are losing money: set Government Wages one step lower. Keep Military Wages at Medium or higher."
+why = "In 1.13.9 Low Government Wages cost -1 approval for the Intelligentsia and Petty Bourgeoisie and -10% prestige; Low Military Wages cost -50% training rate (Very Low -75%), so battalions lose their soldiers and stop being an army."
+sources = ["game files: common/static_modifiers/00_code_static_modifiers.txt (government_wages_low, military_wages_low)", "Generalist Gaming: Understanding Victoria 3's Economics & Budget"]
+patch = "1.13.9"
+how = ["Budget panel: set Government Wages one step lower.", "Leave Military Wages at Medium; to cut army costs open an army, its Buildings tab, a Barracks, and press Downsize instead."]
 [rule.when]
 balance_below = 0.0
-igs_not_in_government = ["ig_armed_forces"]
-expense_share_at_least = { military_wages = 0.15 }
+expense_share_at_least = { government_wages = 0.05 }
+
 
 # --- Industry ----------------------------------------------------------------
 
@@ -260,17 +266,18 @@ debt_share_of_limit_below = 0.25
 id = "gen.laissez-faire"
 domain = "laws"
 goal = "industry"
-phase = "mid"
-title = "Consider Laissez-Faire once private investment can carry construction"
-detail = "The Industrialists are strong enough to back it: Laissez-Faire moves building costs off the state budget."
-why = "Laissez-Faire gives -25% loan interest, a larger private construction share and +25% investment efficiency for shopkeepers and capitalists. The price is less direct control over what gets built."
-sources = ["game files: common/laws/00_economic_system.txt (unlocked by international_trade)"]
+phase = "early"
+title = "Enact Laissez-Faire as early as possible"
+detail = "Move from Interventionism (or Traditionalism) straight to Laissez-Faire as soon as you have International Trade; never Command Economy."
+why = "Laissez-Faire gives -25% loan interest and +25% investment-pool efficiency for shopkeepers and capitalists: money the investment pool gets on top of what owners pay in, so private construction grows for free. Generalist Gaming's guides call it the best economic law without conditions; Interventionism is a trap."
+sources = ["game files: common/laws/00_economic_system.txt (law_laissez_faire: international_trade)", "Generalist Gaming: Interventionism is a TRAP, Laissez Faire is Just BETTER", "Generalist Gaming: BEST Economic Laws"]
 patch = "1.13.9"
+exclude_countries = ["CHI", "JAP", "BIC"]
 done = { type = "law_active", law = "law_laissez_faire" }
 [rule.when]
-laws = ["law_interventionism"]
 techs = ["international_trade"]
-ig_clout_at_least = { ig_industrialists = 0.15 }
+laws_missing = ["law_laissez_faire", "law_command_economy", "law_cooperative_ownership"]
+
 
 # --- Reforms and stability ---------------------------------------------------
 
@@ -446,7 +453,7 @@ domain = "economy"
 goal = "industry"
 phase = "mid"
 title = "Build a university"
-detail = "You have academia and no university: build one in your most literate state."
+detail = "You have academia and no university: build one in your capital and expand it there, rather than spreading small ones."
 why = "Universities add innovation (research speed) and are the first building that turns the budget into faster technology. Later technologies are what make each worker more productive."
 sources = ["game files: building_university (unlocked by academia)"]
 patch = "1.13.9"
@@ -642,3 +649,97 @@ patch = "1.13.9"
 [rule.when]
 infrastructure_short_states_at_least = 1
 techs_missing = ["railways"]
+
+[[rule]]
+id = "gen.debt-great-power"
+domain = "economy"
+goal = "budget"
+phase = "any"
+title = "Great power: debt is past 80% of the credit limit, stop it growing"
+detail = "As a great power you can borrow to build up to about 80% of the credit limit while GDP grows with it; past that, start no new government construction and no new units until debt falls."
+why = "Great powers get -50% loan interest from their rank (Laissez-Faire adds -25%), so debt that pays for construction costs them little; Generalist Gaming's guides run great powers at 80-90% of the credit limit. Past that, a dip in GDP shrinks the limit (about half of GDP plus building cash reserves) and pushes you into default."
+sources = ["game files: common/country_ranks/00_country_ranks.txt (great_power: country_loan_interest_rate_mult = -0.5)", "Generalist Gaming: How to Make FREE MONEY in Victoria 3", "Generalist Gaming: The Most Common MISTAKE Intermediate Players Make"]
+patch = "1.13.9"
+how = ["Construction panel: queue no new government buildings until debt falls under 80% of the credit limit (the Budget panel shows debt and credit).", "Keep the construction already queued: remove Construction Sector levels one at a time (open the building, Downsize) only if debt keeps rising."]
+[rule.when]
+rank_at_least = "great_power"
+debt_share_of_limit_at_least = 0.8
+debt_share_of_limit_below = 0.9
+
+[[rule]]
+id = "gen.minor-no-deficit"
+domain = "economy"
+priority = 1
+goal = "budget"
+phase = "any"
+title = "Not a major power: stop borrowing"
+detail = "You are losing money and already in debt. Below major-power rank your loans carry no rank discount: balance the budget instead of borrowing to build."
+why = "Great powers pay half the loan interest from their rank alone; smaller countries pay full interest, and their credit limit is small, so a deficit compounds fast. The guides' rule: great and major powers may run deficits to build, minor and unrecognised countries should not."
+sources = ["game files: common/country_ranks/00_country_ranks.txt", "Generalist Gaming: How to Make FREE MONEY in Victoria 3"]
+patch = "1.13.9"
+how = ["Budget panel: set Government Wages one step lower.", "Budget panel: raise the tax level one step (to High at most while your poorest pops stay above their expected standard of living).", "Construction panel: queue only buildings the analyzer ranks with a short payback until the balance is positive."]
+done = { type = "weekly_balance", at_least = 0.0 }
+[rule.when]
+rank_below = "major_power"
+in_debt = true
+balance_below = 0.0
+
+[[rule]]
+id = "gen.agrarianism-first"
+domain = "laws"
+goal = "industry"
+phase = "early"
+countries = ["CHI", "JAP", "BIC"]
+title = "Enact Agrarianism before Laissez-Faire"
+detail = "Your private investment comes mostly from landowners, not capitalists: Agrarianism pays off first; move to Laissez-Faire once capitalists supply a quarter of the investment pool."
+why = "Laissez-Faire's bonus goes to shopkeepers' and capitalists' investment. Where aristocrats own most buildings (Qing, Japan, the East India Company in 1836), Agrarianism boosts the owners you actually have."
+sources = ["game files: common/laws/00_economic_system.txt (law_agrarianism: romanticism)", "Generalist Gaming: BEST Economic Laws"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_agrarianism" }
+[rule.when]
+techs = ["romanticism"]
+laws_missing = ["law_agrarianism", "law_laissez_faire"]
+
+[[rule]]
+id = "gen.tax-level-high"
+domain = "economy"
+goal = "budget"
+phase = "early"
+title = "Raise the tax level to High while peasants remain"
+detail = "A third or more of your workforce are peasants and the tax level is Medium or lower: set it to High and spend the money on construction. Very High only while your poorest pops stay clearly above their expected standard of living and legitimacy stays at 50 or more."
+why = "Peasants buy almost nothing, so taxing the rest moves money from consumption into construction that gives peasants jobs. The limits are the expected standard of living (below it, pops turn radical; the average hides that about half are below it) and the legitimacy threshold at 50."
+sources = ["Generalist Gaming: Understanding Victoria 3's Economics & Budget", "Generalist Gaming: How to TAX Pops (In Depth Guide)"]
+patch = "1.13.9"
+how = ["Budget panel: set the tax level to High.", "Watch the standard-of-living tooltip of your lower strata: an exclamation mark means many pops are below expected; then go one step back."]
+[rule.when]
+tax_level_at_most = "medium"
+peasant_share_at_least = 0.33
+
+[[rule]]
+id = "gen.tax-level-too-high"
+domain = "economy"
+goal = "stability"
+phase = "any"
+title = "Very High taxes are breeding radicals"
+detail = "The tax level is Very High and over 10% of the population is radical: set it to High."
+why = "Very High taxes push the poorest below their expected standard of living, which is the main source of radicals; it also lowers legitimacy, and below 50 laws pass more slowly."
+sources = ["Generalist Gaming: Understanding Victoria 3's Economics & Budget"]
+patch = "1.13.9"
+how = ["Budget panel: set the tax level to High."]
+[rule.when]
+tax_level_at_least = "very_high"
+radicals_share_at_least = 0.1
+
+[[rule]]
+id = "gen.peasants-first"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Give peasants jobs first: labour-heavy, cheap buildings"
+detail = "Over 40% of your workforce are subsistence peasants: build what employs many people per construction point - Logging Camps, Iron Mines, Fishing Wharves, farms - before labour-saving upgrades."
+why = "A peasant produces almost nothing for the market and buys almost nothing. Every peasant who takes a factory or mine job starts earning wages that are taxed and spent, which raises prices and profits elsewhere. Labour-saving production methods do the opposite while peasants remain: fired workers go back to subsistence."
+sources = ["Generalist Gaming: I Was WRONG About Peasants", "Generalist Gaming: How to INDUSTRIALIZE in the EARLY Game"]
+patch = "1.13.9"
+how = ["Construction panel: queue Logging Camps, Iron Mines or Fishing Wharves in the states with the most peasants (the analyzer's States tab lists the peasant share).", "Leave labour-saving production methods off in those states; the analyzer warns when a building runs one."]
+[rule.when]
+peasant_share_at_least = 0.4

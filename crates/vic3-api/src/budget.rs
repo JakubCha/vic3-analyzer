@@ -56,6 +56,19 @@ pub struct BudgetReport {
     pub deficit_kind: Option<DeficitKind>,
     pub expenses: Vec<BudgetGroup>,
     pub incomes: Vec<BudgetGroup>,
+    /// Debt over credit limit where borrowing stops being cheap: 0.5 (the game's
+    /// health line), [`GREAT_POWER_DEBT_SHARE`] for great powers.
+    #[serde(default = "half")]
+    pub unhealthy_share: f64,
+    /// The player's power rank, when the save records it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rank: Option<String>,
+    /// Tax level; `None` = medium.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tax_level: Option<String>,
+    /// Goods under a consumption tax.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub taxed_goods: Vec<String>,
     /// What a war with the whole army mobilised would do to this budget.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub war: Option<WarEstimate>,
@@ -83,6 +96,20 @@ pub enum DeficitKind {
     /// Running costs (army, administration) are the gap.
     Upkeep,
 }
+
+fn half() -> f64 {
+    0.5
+}
+
+/// Debt share a great power can carry while it builds: rank gives -50% loan interest
+/// (common/country_ranks, 1.13.9); Generalist Gaming's guides run great powers at 80-90%.
+pub const GREAT_POWER_DEBT_SHARE: f64 = 0.8;
+
+/// Goods the upper strata buy most: consumption taxes there spare the poor
+/// (Generalist Gaming: How to TAX Pops, Why Taxing the Rich is So Strong).
+pub const RICH_GOODS: &[&str] = &["services", "transportation", "luxury_clothes", "luxury_furniture", "porcelain", "wine", "tobacco"];
+/// Staples of the lower strata: a consumption tax here pushes the poorest under their expected standard of living.
+pub const POOR_GOODS: &[&str] = &["liquor", "grain", "opium"];
 
 /// Share of spending above which a deficit counts as investment.
 pub const INVESTMENT_SHARE: f64 = 0.3;
@@ -192,12 +219,21 @@ pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
     };
     let losing = balance.is_some_and(|b| b < 0.0);
     let weeks_to_debt = balance.filter(|b| *b < 0.0).map(|b| (treasury / -b).max(0.0));
-    let (weeks_to_default, weeks_to_unhealthy) = (weeks_to(1.0), weeks_to(0.5));
+    let rank = country.rank.as_deref().and_then(|r| crate::playbook::RANK_VALUES.iter().find(|(k, _)| *k == r)).map(|(_, v)| *v);
+    let great = rank.is_some_and(|v| v >= 7);
+    // Below major-power rank, loans carry no rank discount and the guides advise no deficit at all.
+    let small = rank.is_some_and(|v| v < 6);
+    let unhealthy_share = if great { GREAT_POWER_DEBT_SHARE } else { 0.5 };
+    let (weeks_to_default, weeks_to_unhealthy) = (weeks_to(1.0), weeks_to(unhealthy_share));
     let debt_share = limit.filter(|l| *l > 0.0).map_or(0.0, |l| debt / l);
     // An empty treasury only means borrowing starts; urgency comes from the credit limit.
     let risk = if over_limit || weeks_to_default.is_some_and(|w| w < 26.0) {
         Risk::Critical
-    } else if debt_share >= 0.5 || weeks_to_default.is_some_and(|w| w < 104.0) || weeks_to_unhealthy.is_some_and(|w| w < 52.0) {
+    } else if debt_share >= unhealthy_share
+        || weeks_to_default.is_some_and(|w| w < 104.0)
+        || weeks_to_unhealthy.is_some_and(|w| w < 52.0)
+        || (small && losing && debt > 0.0)
+    {
         Risk::Danger
     } else if losing {
         Risk::Deficit
@@ -206,7 +242,7 @@ pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
     };
     let expenses = groups(defs, country, false, country.weekly_expenses);
     let construction: f64 = expenses.iter().filter(|g| g.group == "construction_goods").map(|g| g.share).sum();
-    let deficit_kind = losing.then_some(if construction >= INVESTMENT_SHARE && debt_share < 0.5 {
+    let deficit_kind = losing.then_some(if construction >= INVESTMENT_SHARE && debt_share < unhealthy_share && !(small && debt > 0.0) {
         DeficitKind::Investment
     } else {
         DeficitKind::Upkeep
@@ -215,7 +251,7 @@ pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
         let extra: f64 = expenses.iter().filter(|g| g.group == "military_goods").map(|g| g.amount).sum();
         let at_war = b - extra;
         let weeks = |fraction: f64| limit.filter(|_| at_war < 0.0).map(|l| ((treasury + l * fraction - debt) / -at_war).max(0.0));
-        WarEstimate { extra_weekly: extra, weekly_balance: at_war, weeks_to_unhealthy: weeks(0.5), weeks_to_default: weeks(1.0) }
+        WarEstimate { extra_weekly: extra, weekly_balance: at_war, weeks_to_unhealthy: weeks(unhealthy_share), weeks_to_default: weeks(1.0) }
     });
     Some(BudgetReport {
         risk,
@@ -232,6 +268,10 @@ pub fn report(defs: &GameDefs, country: &WorldCountry) -> Option<BudgetReport> {
         expenses,
         incomes: groups(defs, country, true, country.weekly_income),
         war,
+        unhealthy_share,
+        rank: country.rank.clone(),
+        tax_level: country.tax_level.clone(),
+        taxed_goods: country.taxed_goods.clone(),
     })
 }
 
@@ -293,7 +333,7 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
         detail += &format!("The {} treasury lasts about {}, then the state borrows. ", money(r.treasury), weeks(w));
     }
     if let Some(w) = r.weeks_to_unhealthy.filter(|_| r.risk < Risk::Critical) {
-        detail += &format!("Debt reaches half the credit limit in about {}. ", weeks(w));
+        detail += &format!("Debt reaches {:.0}% of the credit limit in about {}. ", r.unhealthy_share * 100.0, weeks(w));
     } else if let Some(w) = r.weeks_to_default {
         detail += &format!("At this rate the credit limit is reached in about {}. ", weeks(w));
     }
@@ -329,12 +369,13 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             ]
         } else {
             let mut s = vec![
-                "Budget panel: set Military Wages and Government Wages one step lower.".into(),
+                "Budget panel: set Government Wages one step lower. Leave Military Wages at Medium: Low costs -50% training rate.".into(),
                 ARMY_DOWNSIZE.into(),
             ];
             if urgent {
                 s.push("Budget panel: raise the tax level one step.".into());
-                s.push("Construction panel: press Cancel Construction on the most expensive item in the queue.".into());
+                s.push("Do not cancel all construction: open a Construction Sector and press Downsize once; repeat a week later only if the balance is still falling.".into());
+                s.push("Near default: Downsize government buildings you can spare, universities first, and Demobilize all armies.".into());
             }
             s
         },
@@ -372,7 +413,7 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             detail: format!("{}.", lines(&["military_goods", "military_wages"])),
             steps: vec![
                 format!("{ARMY_DOWNSIZE} Cavalry and artillery battalions use the most goods."),
-                "Budget panel: set Military Wages one step lower.".into(),
+                "Leave Military Wages at Medium or higher: Low costs -50% training rate (Very Low -75%) and empties battalions.".into(),
                 "Keep the conscription centers: they cost almost nothing until you raise conscripts for a war.".into(),
             ],
             why_now: Vec::new(),
@@ -409,7 +450,8 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             detail: format!("{}.", lines(&["government_goods", "government_wages"])),
             steps: vec![
                 "Construction panel: queue Paper Mills in a state with Logging Camps: paper is the main good government buildings buy.".into(),
-                "Budget panel: set Government Wages one step lower, only while bureaucracy shows a surplus (Budget panel, Bureaucracy).".into(),
+                "Budget panel: set Government Wages one step lower (costs only -1 Intelligentsia and Petty Bourgeoisie approval and -10% prestige).".into(),
+                "Build Government Administrations only while bureaucracy is negative (Budget panel, Bureaucracy), and then in incorporated states with the highest GDP per capita: with bureaucracy in surplus, the tax they save costs more than they do.".into(),
             ],
             why_now: Vec::new(),
             why: Some("Government administrations produce bureaucracy, which laws, institutions and taxes consume; cutting below what you use brings penalties, so cut the price instead of the buildings. Government goods are mostly paper: a cheap local supply (paper mills, wood) lowers this line. Government wages can be lowered in the Budget panel at the cost of bureaucrats' standard of living.".into()),
@@ -449,13 +491,55 @@ pub fn budget_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
         detail: format!("Income: {}.", describe(&r.incomes, 4)),
         steps: vec![
             "Budget panel: raise the tax level one step.".into(),
-            "Budget panel, Consumption Taxes: if the option is available, tax a good your pops buy a lot of (liquor, tobacco, wine).".into(),
+            "Budget panel, Consumption Taxes: tax what the upper strata buy (Services, Transportation, Luxury Clothes, Luxury Furniture, Porcelain, Wine, Tobacco), never Liquor, Grain or Opium.".into(),
         ],
         why_now: Vec::new(),
         why: Some("The tax level in the Budget panel scales income and poll taxes: one step up is the quickest fix, but it lowers pops' standard of living and grows radicals. Consumption taxes on goods your pops buy a lot of add income without touching the tax level. In the long run revenue follows the economy: profitable, well-paid buildings pay income tax, and taxation laws decide who pays.".into()),
         goal: None,
         check: Some(Check::WeeklyBalance { at_least: 0.0 }),
     });
+}
+
+/// Consumption taxes: off the poor's staples, onto what the rich buy.
+pub fn consumption_tax_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
+    let label = |g: &&str| vic3_defs::pretty_id(g);
+    let poor: Vec<&str> = POOR_GOODS.iter().copied().filter(|g| r.taxed_goods.iter().any(|t| t == g)).collect();
+    let rich_taxed = RICH_GOODS.iter().filter(|g| r.taxed_goods.iter().any(|t| t == *g)).count();
+    let why = "A consumption tax adds to the price of one good for everyone who buys it. On the poor's staples it pushes the lower strata under their expected standard of living, the main source of radicals; the upper strata have a margin to lose, and raising a rich pop's standard of living costs far more money than a poor one's, so taxing their goods costs your average standard of living least. Each tax costs Authority.";
+    let src = " Sources: Generalist Gaming, How to TAX Pops and Why Taxing the Rich is So Strong.";
+    if !poor.is_empty() {
+        out.push(Advice {
+            id: "budget:consumption-poor".into(),
+            domain: Domain::Economy,
+            priority: 2,
+            title: format!("Remove the consumption tax on {}", poor.iter().map(label).collect::<Vec<_>>().join(", ")),
+            detail: "The lower strata buy these staples: the tax costs them standard of living and makes radicals. Tax the goods of the rich instead.".into(),
+            steps: vec![
+                format!("Budget panel, Consumption Taxes: remove the tax on {}.", poor.iter().map(label).collect::<Vec<_>>().join(", ")),
+                "Spend the freed Authority on taxes on Services, Transportation, Luxury Clothes, Luxury Furniture, Porcelain, Wine or Tobacco.".into(),
+            ],
+            why_now: Vec::new(),
+            why: Some(format!("{why}{src}")),
+            goal: None,
+            check: None,
+        });
+    }
+    if r.risk != Risk::Safe && rich_taxed < 2 {
+        out.push(Advice {
+            id: "budget:consumption-rich".into(),
+            domain: Domain::Economy,
+            priority: 2,
+            title: "Tax what the rich buy".into(),
+            detail: format!("You tax {rich_taxed} of the goods the upper strata buy most. Each consumption tax on Services, Transportation, Luxury Clothes, Luxury Furniture, Porcelain, Wine or Tobacco adds income while sparing the poor."),
+            steps: vec![
+                "Budget panel, Consumption Taxes: add taxes on Services and Transportation first, then Luxury Furniture, Luxury Clothes, Porcelain, Wine or Tobacco, as far as Authority allows.".into(),
+            ],
+            why_now: Vec::new(),
+            why: Some(format!("{why}{src}")),
+            goal: None,
+            check: None,
+        });
+    }
 }
 
 #[cfg(test)]
@@ -537,6 +621,40 @@ mod tests {
         let mut out = Vec::new();
         budget_advice(&r, &mut out);
         assert_eq!(out[0].check, Some(Check::Solvent));
+    }
+
+    #[test]
+    fn great_powers_borrow_further_and_small_countries_not_at_all() {
+        let defs = GameDefs::default();
+        let mut c = prussia();
+        c.debt_principal = Some(0.6 * 17_058_032.0);
+        // Unknown rank: the game's 50% health line.
+        assert_eq!(report(&defs, &c).expect("report").risk, Risk::Danger);
+        c.rank = Some("great_power".into());
+        let r = report(&defs, &c).expect("report");
+        assert_eq!((r.risk, r.unhealthy_share), (Risk::Deficit, GREAT_POWER_DEBT_SHARE));
+        c.rank = Some("minor_power".into());
+        c.debt_principal = Some(100_000.0);
+        let r = report(&defs, &c).expect("report");
+        assert_eq!(r.risk, Risk::Danger, "a minor power in debt and losing money");
+    }
+
+    #[test]
+    fn consumption_taxes_leave_the_poor_and_target_the_rich() {
+        let defs = GameDefs::default();
+        let mut c = prussia();
+        c.taxed_goods = vec!["liquor".into(), "luxury_furniture".into(), "wine".into()];
+        let r = report(&defs, &c).expect("report");
+        let mut out = Vec::new();
+        consumption_tax_advice(&r, &mut out);
+        let ids: Vec<&str> = out.iter().map(|a| a.id.as_str()).collect();
+        // Liquor is the poor's; two rich goods are already taxed.
+        assert_eq!(ids, ["budget:consumption-poor"]);
+        assert!(out[0].title.contains("Liquor") && out[0].steps.iter().all(|s| !s.is_empty()));
+        c.taxed_goods.clear();
+        let mut out = Vec::new();
+        consumption_tax_advice(&report(&defs, &c).expect("report"), &mut out);
+        assert_eq!(out.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(), ["budget:consumption-rich"]);
     }
 
     #[test]

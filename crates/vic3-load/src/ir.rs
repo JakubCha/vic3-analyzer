@@ -275,6 +275,9 @@ pub struct Meta {
     pub game_date: Option<Vic3Date>,
     #[serde(default)]
     pub name: Option<String>,
+    /// The player country's power rank (`great_power`, `major_power`, …).
+    #[serde(default)]
+    pub rank: Option<String>,
 }
 
 /// A country definition in `country_manager.database`.
@@ -312,6 +315,12 @@ pub struct Country {
     pub is_main_tag: Option<bool>,
     #[serde(default, deserialize_with = "optional_flex_str")]
     pub country_type: Option<String>,
+    /// `low` | `high` | `very_high` …; absent = medium.
+    #[serde(default, deserialize_with = "optional_flex_str")]
+    pub tax_level: Option<String>,
+    /// Goods under a consumption tax.
+    #[serde(default)]
+    pub taxed_goods: Vec<String>,
     /// Direct overlord country id when this country is a subject.
     #[serde(default, deserialize_with = "optional_id")]
     pub overlord: Option<u32>,
