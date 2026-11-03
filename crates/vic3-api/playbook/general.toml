@@ -59,16 +59,16 @@ id = "gen.proportional-tax"
 domain = "laws"
 goal = "reforms"
 phase = "early"
-title = "Move from Per-Capita to Proportional Taxation"
-detail = "Per-capita taxes fall hardest on the poor. Enact Proportional Taxation; if it cannot pass (often only the Trade Unions support going straight there), enact Land-Based Taxation first and Proportional after it."
+title = "Enact Proportional Taxation"
+detail = "Per-capita and land taxes fall hardest on the poor. Enact Proportional Taxation; if it cannot pass from Per-Capita (often only the Trade Unions support that step), go through Land-Based Taxation only as a short stop on the way."
 why = "Per-capita taxation takes the same from every pop, so it pushes the poorest below their expected standard of living and breeds radicals, while income tax under Proportional grows with the wages your new industry pays. Generalist Gaming's guides call Per-Capita the tax law to leave first; Graduated Taxation (socialism) is the later step once peasants run out."
 sources = ["game files: common/laws/00_taxation.txt (law_proportional_taxation: egalitarianism)", "Generalist Gaming: BEST Economic Laws", "Generalist Gaming: Why Taxing the Rich is So Strong"]
 patch = "1.13.9"
 how = ["Politics panel, Laws, Taxation group: find Proportional Taxation and press Enact.", "If its chance of success is low, enact Land-Based Taxation first, then Proportional Taxation.", "While it is enacted, the tax level may need one step up to keep the balance: check the Budget panel."]
-done = { type = "law_inactive", law = "law_per_capita_based_taxation" }
+done = { type = "law_active", law = "law_proportional_taxation" }
 [rule.when]
-laws = ["law_per_capita_based_taxation"]
 techs = ["egalitarianism"]
+laws_missing = ["law_proportional_taxation", "law_graduated_taxation"]
 
 [[rule]]
 id = "gen.surplus-to-construction"

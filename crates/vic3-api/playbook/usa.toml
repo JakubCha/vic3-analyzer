@@ -25,10 +25,10 @@ domain = "economy"
 goal = "budget"
 phase = "opening"
 title = "Tax luxuries before raising the general tax level"
-detail = "Put consumption taxes on luxury goods (tobacco, liquor, wine, services, luxury furniture) in the Budget panel."
+detail = "Put consumption taxes on Services and Transportation in the Budget panel: the wealthy buy most of them, and in 1.13.9 tobacco, liquor, wine and luxury goods cannot be taxed at all."
 why = "The USA starts at a Low tax level with very wealthy pops, so luxury consumption taxes mostly hit middle and upper strata who can afford them. Per-capita tax hits every pop equally, so raising the general level pushes poor workers into lower standard of living and radicalism. Consumption taxes cost authority, not money."
-sources = ["https://vic3.paradoxwikis.com/Strategy:_America"]
-patch = "1.10"
+sources = ["https://vic3.paradoxwikis.com/Strategy:_America", "game files: common/goods/00_goods.txt (consumption_tax_cost only on 15 goods), common/goods/goods.md"]
+patch = "1.13.9"
 [rule.when]
 until_year = 1840
 laws = ["law_per_capita_based_taxation"]

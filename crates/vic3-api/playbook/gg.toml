@@ -1,0 +1,527 @@
+# Rules from Generalist Gaming's Victoria 3 playlist (31 videos, patches 1.1-1.13), each
+# checked against the 1.13.9 game files; videos whose advice changed since are left out
+# or corrected. Schema: crates/vic3-api/src/playbook.rs. Unknown keys fail the tests.
+
+[[rule]]
+id = "gg.rice-farms"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Build Rice Farms where rice grows: twice the jobs per construction"
+detail = "A quarter or more of your workforce are peasants and grain is at or above its base price: queue Rice Farms in your states that list rice among their arable resources. Stop adding levels once grain drops below its base price."
+why = "In 1.13.9 a Rice Farm on Simple Farming employs 10,000 per level (8,000 laborers, 2,000 farmers), a Wheat or Rye Farm 5,000, and all three cost the same 200 construction. Every peasant moved into a wage job pays income tax and buys from the market, while a peasant's buy orders reach the market at only 5%. The farm's value depends on grain staying dear, so do not flood the grain market."
+sources = ["Generalist Gaming: I Was WRONG About Peasants", "game files: common/production_methods/02_agro.txt (pm_simple_farming_building_rice_farm: laborers 8000, farmers 2000; pm_simple_farming: 4000 + 1000)", "game files: common/buildings/02_agro.txt (building_rice_farm: construction_cost_low = 200)", "game files: common/pop_types/peasants.txt (consumption_mult = 0.05)"]
+patch = "1.13.9"
+how = ["Construction panel: choose Rice Farms. Only states with rice among their arable resources can build it.", "Queue levels in the states with the most peasants (the analyzer's States tab lists the peasant share).", "Market panel: once Grain is below its base price, stop queuing Rice Farms and build factories instead."]
+[rule.when]
+techs = ["enclosure"]
+peasant_share_at_least = 0.25
+price_above_base = { grain = 0.0 }
+
+[[rule]]
+id = "gg.university-scale-cap"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Grow your University in one state up to the economies-of-scale cap"
+detail = "You have a University and money to spare: add levels to the University you already have, in the same state, until it reaches 20 levels (30 after Mechanized Workshops, 50 after Shift Work), instead of building small ones elsewhere."
+why = "Universities are government buildings with economies of scale: +1% throughput for each level above the first, capped at 20 levels by default, +10 with Mechanized Workshops and +20 with Shift Work. A level costs 400 construction and mostly wages (500 clerks and laborers) plus 5-15 paper, so the bonus lowers the cost of each point of innovation. Universities are also the first government building to Downsize if default comes close."
+sources = ["Generalist Gaming: Liberalizing and Increasing Standard of Living", "Generalist Gaming: EMPIRE Building as a Major Power", "game files: common/static_modifiers/00_code_static_modifiers.txt (base_values: building_economy_of_scale_level_cap_add = 20; economy_of_scale: building_throughput_add = 0.01)", "game files: common/technology/technologies/10_production.txt (mechanized_workshops +10, shift_work +20)", "game files: common/building_groups/00_building_groups.txt (bg_government: economy_of_scale = yes)", "game files: common/production_methods/07_government.txt (pm_scholastic_education)"]
+patch = "1.13.9"
+how = ["Open the state that has your University, click the University building and press Expand (or queue it from the Construction panel in that state).", "Keep one level queued at a time until it reaches 20 levels; after Mechanized Workshops the cap is 30, after Shift Work 50.", "Build a second University only in another state once the first is at the cap."]
+done = { type = "building_levels", building_type = "building_university", at_least = 20.0 }
+[rule.when]
+levels_at_least = { building_university = 1.0 }
+levels_below = { building_university = 20.0 }
+balance_at_least = 0.0
+debt_share_of_limit_below = 0.5
+
+[[rule]]
+id = "gg.public-health-insurance"
+domain = "laws"
+goal = "reforms"
+phase = "late"
+title = "Enact Public Health Insurance while the budget allows"
+detail = "You have Pharmaceuticals, a surplus and little debt: enact Public Health Insurance, not Private Health Insurance or Charity Hospitals."
+why = "Each health-institution level under Public Health Insurance gives every pop +0.5 standard of living and -5% mortality. Private Health Insurance is 40% cheaper but gives the +0.5 only to the upper strata. More standard of living means fewer radicals and more loyalists; the institution cost scales with population, so enact it from a surplus."
+sources = ["Generalist Gaming: LAWS & Interest Groups Overview", "game files: common/laws/00_health_system.txt (law_public_health_insurance: state_standard_of_living_add = 0.5, state_mortality_mult = -0.05; law_private_health_insurance: upper strata only, cost -0.4)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Health System group: find Public Health Insurance and press Enact.", "Once it passes, raise the Health System institution one level at a time while the weekly balance stays positive."]
+done = { type = "law_active", law = "law_public_health_insurance" }
+[rule.when]
+techs = ["pharmaceuticals"]
+laws_missing = ["law_public_health_insurance"]
+balance_share_of_income_at_least = 0.05
+debt_share_of_limit_below = 0.3
+
+[[rule]]
+id = "gg.free-trade"
+domain = "laws"
+goal = "industry"
+phase = "mid"
+title = "Move from Mercantilism or Protectionism to Free Trade"
+detail = "Tariffs bring under a tenth of your income: enact Free Trade."
+why = "Free Trade drops the tariff surcharges (Mercantilism and Protectionism add +50% on imports) and adds +25% trade advantage, so your exporters win more trade and your pops and factories buy imports cheaper. When tariffs are a small part of income, the lost revenue is less than what cheaper inputs and larger exports return."
+sources = ["Generalist Gaming: LAWS & Interest Groups Overview", "game files: common/laws/00_trade_policy.txt (law_free_trade: international_trade, state_trade_advantage_mult = 0.25; law_mercantilism / law_protectionism: state_tariff_import_add = 0.50)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Trade Policy group: find Free Trade and press Enact.", "Enact it while the Industrialists or Petty Bourgeoisie are in government (Reform Government, Add To Government)."]
+exclude_countries = ["GBR"]
+done = { type = "law_active", law = "law_free_trade" }
+[rule.when]
+techs = ["international_trade"]
+laws_missing = ["law_free_trade", "law_isolationism", "law_canton_system", "law_sakoku", "law_command_economy"]
+income_share_below = { tariffs = 0.1 }
+
+[[rule]]
+id = "gg.dedicated-police"
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Replace Local Police Force with Dedicated Police Force"
+detail = "You have Law Enforcement and still run the Local Police Force: enact Dedicated Police Force."
+why = "Local Police Force gives the Landowners +5% clout per police level; Dedicated Police Force drops that, lowers radicals from political movements by 5% per level and raises the police institution's maximum by 2. Weaker Landowners make land reform and the other economic reforms easier to pass."
+sources = ["Generalist Gaming: LAWS & Interest Groups Overview", "game files: common/laws/00_policing.txt (law_local_police: interest_group_ig_landowners_pol_str_mult = 0.05; law_dedicated_police: law_enforcement, state_radicals_from_political_movements_mult = -0.05)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Policing group: find Dedicated Police Force and press Enact."]
+exclude_countries = ["USA"]
+done = { type = "law_active", law = "law_dedicated_police" }
+[rule.when]
+laws = ["law_local_police"]
+techs = ["law_enforcement"]
+
+[[rule]]
+id = "gg.restricted-child-labor"
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Move from Child Labor Allowed to Restricted Child Labor"
+detail = "You have Labor Movement and a school system: enact Restricted Child Labor."
+why = "Child Labor Allowed adds +5% mortality to laborers, machinists, farmers and peasants; Restricted Child Labor cuts that to +2% and raises the schools institution's maximum by one level, so literacy can climb further. It also halves the dependents' wage bonus (+30% to +15%): the trade is a little household income for more pops and more literate workers."
+sources = ["Generalist Gaming: LAWS & Interest Groups Overview", "game files: common/laws/00_childrens_rights.txt (law_child_labor_allowed: mortality +0.05, dependent wage +0.30; law_restricted_child_labor: labor_movement, mortality +0.02, dependent wage +0.15, schools max investment +1)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Children's Rights group: find Restricted Child Labor and press Enact."]
+done = { type = "law_inactive", law = "law_child_labor_allowed" }
+[rule.when]
+laws = ["law_child_labor_allowed"]
+techs = ["labor_movement"]
+laws_missing = ["law_no_schools"]
+
+[[rule]]
+id = "gg.no-migration-controls"
+domain = "laws"
+goal = "industry"
+phase = "any"
+title = "Drop Migration Controls: enact No Migration Controls"
+detail = "Migration Controls keeps out every migrant whose culture has less than 60 acceptance with you: enact No Migration Controls."
+why = "Migration Controls adds 60 migration restrictiveness, so only well-accepted cultures can move in. Immigrants arrive as working adults who fill the jobs your construction creates, without the 15-20 years a newborn needs."
+sources = ["Generalist Gaming: LAWS & Interest Groups Overview", "game files: common/laws/00_migration.txt (law_migration_controls: country_migration_restrictiveness_add = 60)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Migration group: find No Migration Controls and press Enact."]
+done = { type = "law_active", law = "law_no_migration_controls" }
+[rule.when]
+laws = ["law_migration_controls"]
+
+[[rule]]
+id = "gg.leave-hereditary-bureaucrats"
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Replace Hereditary Bureaucrats with Appointed or Elected Bureaucrats"
+detail = "Enact Appointed Bureaucrats (more tax capacity); once you run several institutions, Elected Bureaucrats (cheaper institutions) is the better step."
+why = "Hereditary Bureaucrats gives the aristocrats +25% clout for a -25% population bureaucracy cost. Appointed Bureaucrats gives +25% tax capacity in every state; Elected Bureaucrats cuts the bureaucracy cost of institution levels by 15%. Both take clout away from the Landowners, who block most economic reforms."
+sources = ["Generalist Gaming: LAWS & Interest Groups Overview", "game files: common/laws/00_bureaucracy.txt (law_hereditary_bureaucrats: country_aristocrats_pol_str_mult = 0.25; law_appointed_bureaucrats: state_tax_capacity_mult = 0.25; law_elected_bureaucrats: country_bureaucracy_investment_cost_factor_mult = -0.15)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Bureaucracy group: find Appointed Bureaucrats and press Enact.", "If you already run three or more institutions above level 1, pick Elected Bureaucrats instead."]
+exclude_countries = ["AUS"]
+done = { type = "law_inactive", law = "law_hereditary_bureaucrats" }
+[rule.when]
+laws = ["law_hereditary_bureaucrats"]
+
+[[rule]]
+id = "gg.naval-administration"
+domain = "war"
+goal = "military"
+phase = "any"
+title = "Ships need sailors: build a Naval Administration"
+detail = "You have Shipyards but no Naval Administration: if you own warships or plan to build them, build one Naval Administration level in a coastal state."
+why = "In 1.13 sailors come only from Naval Administration buildings (recruits_sailors). Warships without sailors stay in port and add nothing to fleets, naval presence or diplomatic interest. A level costs only 100 construction."
+sources = ["Generalist Gaming: The GREAT Wave 1.13 Meta Update", "game files: common/buildings/05_military.txt (building_naval_administration: recruits_sailors = yes, admiralty, construction_cost_very_low)"]
+patch = "1.13.9"
+how = ["Construction panel: choose Naval Administration and queue one level in a coastal state with free workers.", "Add more levels only as the fleet panel shows ships short of sailors."]
+exclude_countries = ["GBR"]
+done = { type = "building_levels", building_type = "building_naval_administration", at_least = 1.0 }
+[rule.when]
+techs = ["admiralty"]
+levels_at_least = { building_shipyard = 1.0 }
+levels_below = { building_naval_administration = 1.0 }
+
+[[rule]]
+id = "gg.ironclads"
+domain = "war"
+goal = "military"
+phase = "mid"
+title = "Research Ironclad before your next naval war"
+detail = "You keep a navy and have Screw Frigate: put Ironclad first in the military research queue, and avoid fleet battles against ironclads until you have it."
+why = "Ironclad unlocks the Early Ironclad and Monitor. An Early Ironclad has 35 armor, a Ship of the Line 12, so older fleets barely damage it. The ships need iron (2,500) and engines (800) each, so plan iron mines and a Motor Industry before you queue them."
+sources = ["Generalist Gaming: The GREAT Wave 1.13 Meta Update", "game files: common/ship_types/00_ship_types.txt (ship_type_ship_of_the_line: ship_armor_add = 12; ship_type_early_ironclad: ship_armor_add = 35, unlocking_technologies = { ironclad_tech })", "game files: common/technology/technologies/20_military.txt (ironclad_tech, requires screw_frigate)"]
+patch = "1.13.9"
+how = ["Technology panel, Military tab: put Ironclad first in the queue.", "Until it is researched, keep fleets out of battles with ironclad navies (use them for convoys and troop transport)."]
+exclude_countries = ["GBR"]
+[rule.when]
+techs = ["screw_frigate"]
+techs_missing = ["ironclad_tech"]
+levels_at_least = { building_naval_administration = 3.0 }
+
+[[rule]]
+id = "gg.subsidize-railways"
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Subsidize your Railways"
+detail = "A state is short of infrastructure and you have Railways: open the Railway building in each short state and press Subsidize before queuing more railway levels."
+why = "Railways only start the game subsidized; levels built later are not. An unprofitable Railway lowers wages, loses workers and with them infrastructure, which cuts market access for every building in the state. A subsidy pays the shortfall from the treasury so the Railway stays staffed."
+sources = ["Generalist Gaming: EMPIRE Building as a Major Power", "game files: common/building_groups/00_building_groups.txt (bg_private_infrastructure: subsidized = yes, which only applies at game start)", "game files: localization/english/tutorial_l_english.yml (lesson_market_access_with_railways_how_4_desc)"]
+patch = "1.13.9"
+how = ["Open each state the analyzer lists as short of infrastructure, click its Railway building and press Subsidize.", "Then queue new Railway levels there if it is still short."]
+[rule.when]
+techs = ["railways"]
+levels_at_least = { building_railway = 1.0 }
+infrastructure_short_states_at_least = 1
+
+[[rule]]
+id = "gg.iron-research-pump"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Research Atmospheric Engine before you dig more iron"
+detail = "Iron is over 15% above base price and you lack Atmospheric Engine: put it first in the Technology panel (it needs Shaft Mining). Iron mines built before it run Picks and Shovels and make half the iron per level."
+why = "In 1.13.9 an Iron Mine on Picks and Shovels turns 5 tools into 20 iron per level (net 600 at base prices); on Atmospheric Engine Pump it turns 10 tools and 10 coal into 40 iron (net 900) with the same 5,000 jobs. Every 400-point mine level built before the technology gives half the iron, so research first and build after."
+sources = ["Generalist Gaming: Construction & Buildings (beginner)", "game files: common/production_methods/03_mines.txt:217-266 (pm_picks_and_shovels_building_iron_mine, pm_atmospheric_engine_pump_building_iron_mine)", "game files: common/technology/technologies/10_production.txt:249-258 (atmospheric_engine needs shaft_mining)", "game files: common/goods/00_goods.txt (iron 40, tools 40, coal 30)"]
+patch = "1.13.9"
+how = ["Open the Technology panel, Production tab, and put Atmospheric Engine first in the queue (research Shaft Mining first if it is locked).", "Until it finishes, queue no new Iron Mine levels; buy the iron you need from the market.", "When it finishes, follow the rule that switches Iron Mines to Atmospheric Engine Pump."]
+[rule.when]
+techs_missing = ["atmospheric_engine"]
+price_above_base = { iron = 0.15 }
+
+[[rule]]
+id = "gg.public-trams"
+domain = "economy"
+goal = "stability"
+phase = "mid"
+title = "Transportation is dear: switch Urban Centers to Public Trams"
+detail = "You have Railways and transportation is over 15% above base price: set the Public Transport production method of your Urban Centers to Public Trams."
+why = "Personal Transportation Only makes 2 transportation per level; Public Trams make 4 for 0.5 engines, so each level adds 60 worth of transportation (base 30) for 30 of engines (base 60) and needs 200 fewer workers. Transportation is a pop need, so cheaper transportation raises standard of living. It adds 10 pollution per level, so skip states that are already heavily polluted."
+sources = ["Generalist Gaming: How to Build TALL (beginner) (calls it Public Trains)", "game files: common/production_methods/06_urban_center.txt:144-179 (pm_no_public_transport, pm_public_trams: railways)", "game files: common/goods/00_goods.txt (transportation 30, engines 60)"]
+patch = "1.13.9"
+how = ["Open your capital's state panel and click the Urban Center.", "In Production Methods, Public Transport group, pick Public Trams; repeat in your other large cities."]
+[rule.when]
+techs = ["railways"]
+price_above_base = { transportation = 0.15 }
+price_ratio_at_most = { engines = 1.2 }
+
+[[rule]]
+id = "gg.privatize"
+domain = "economy"
+goal = "budget"
+phase = "any"
+title = "Losing money: put government-owned buildings up for privatization"
+detail = "You are not on Laissez-Faire and run a deficit: press Enable Privatization on the factories, mines and farms the state owns, so the investment pool buys them."
+why = "Investors buy the levels from the state at a price per level, which goes into the treasury, and then the investment pool, not the budget, carries them. Under Laissez-Faire this is forced; under Command Economy it is banned. Administrations, universities and Construction Sectors cannot be privatized."
+sources = ["Generalist Gaming: Construction & Buildings (beginner)", "Generalist Gaming: How to Build TALL (beginner)", "game files: localization/english/concepts_l_english.yml:238 (concept_privatize_desc), interfaces_l_english.yml:133-137 (Enable Privatization)", "game files: common/laws/00_economic_system.txt:484 (law_laissez_faire: country_force_privatization_bool), :662 (law_command_economy: country_disable_non_company_privatization_bool)"]
+patch = "1.13.9"
+how = ["Open a state with a state-owned factory, mine or farm and click the building; its ownership section shows the levels your government owns.", "Press Enable Privatization on it. Repeat for the other state-owned buildings, largest first.", "Leave Government Administrations, Universities and Construction Sectors alone: they cannot be sold."]
+[rule.when]
+balance_below = 0.0
+laws_missing = ["law_laissez_faire", "law_command_economy", "law_cooperative_ownership"]
+
+[[rule]]
+id = "gg.leave-command-economy"
+domain = "laws"
+goal = "industry"
+phase = "any"
+title = "Leave Command Economy: enact Laissez-Faire"
+detail = "You run Command Economy and know International Trade: enact Laissez-Faire (Interventionism if Laissez-Faire cannot pass)."
+why = "Command Economy turns off the investment pool (and seizes it on enactment), so the budget has to pay for every new building, and part of every government dividend is still lost (its +40% dividend efficiency does not reach 100%). Laissez-Faire reinvests 100% of government dividends, gives +25% investment-pool efficiency to capitalists and shopkeepers and -25% loan interest. In the guide's models Command Economy lost to Laissez-Faire in every case."
+sources = ["Generalist Gaming: Low Prices and Command Economy are TERRIBLE", "game files: common/laws/00_economic_system.txt:641-662 (law_command_economy: seize_investment_pool, country_disable_investment_pool_bool, country_government_dividends_efficiency_add = 0.4)", "game files: common/laws/00_economic_system.txt:469-484 (law_laissez_faire: international_trade)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws, Economic System group: find Laissez-Faire and press Enact.", "If its chance of success is low, enact Interventionism instead and try Laissez-Faire later.", "Before you press Enact, check the Budget panel: you will have to fund construction from the budget until the investment pool fills again."]
+done = { type = "law_inactive", law = "law_command_economy" }
+[rule.when]
+laws = ["law_command_economy"]
+techs = ["international_trade"]
+
+[[rule]]
+id = "gg.women-in-workplace"
+domain = "laws"
+goal = "industry"
+phase = "mid"
+title = "Let women work: enact Women in the Workplace or Women's Suffrage"
+detail = "You have Feminism and still keep Legal Guardianship or Propertied Women: enact Women in the Workplace, or Women's Suffrage if you already have a voting law."
+why = "The base working-adult ratio is 25%. Women in the Workplace adds 10 points (35%, about 40% more workers from the same population) and Women's Suffrage adds 15 (40%, about 60% more). That outweighs the +5% birth rate of Legal Guardianship and their -5% birth rate. More workers means more wages and taxes from the same pops."
+sources = ["Generalist Gaming: Population Growth Tutorial", "game files: common/defines/00_defines.txt:1454 (WORKING_ADULT_RATIO_BASE = 0.25)", "game files: common/laws/00_rights_of_women.txt:5-23 (law_no_womens_rights +5% birth), :127-143 (law_women_in_the_workplace: feminism, +0.1), :169-195 (law_womens_suffrage: feminism, needs a voting law, +0.15)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws, Rights of Women group: find Women in the Workplace and press Enact.", "If you have Census, Landed, Wealth or Universal Voting, enact Women's Suffrage instead."]
+[rule.when]
+techs = ["feminism"]
+laws_missing = ["law_women_in_the_workplace", "law_womens_suffrage", "law_women_in_the_fields"]
+
+[[rule]]
+id = "gg.spa-duro-y-compania"
+countries = ["SPA"]
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Build Asturias coal to level 5 and found Duro y Compañía"
+detail = "You have Steelworking: raise the Coal Mine in Asturias to level 5, then establish Duro y Compañía in the Companies panel."
+why = "Duro y Compañía covers coal mines, iron mines and steel mills, the construction-goods chain, and in 1.13.9 it needs Steelworking and a level-5 Coal Mine in an incorporated Asturias (older guides say level 3). A company's buildings get extra throughput, so iron and steel get cheaper and your construction costs fall."
+sources = ["Generalist Gaming: How to Build TALL (beginner)", "game files: common/company_types/00_companies_europe.txt:1293-1344 (company_duro_y_compania possible: steelworking, Asturias incorporated, coal mine level >= 5)"]
+patch = "1.13.9"
+how = ["Construction panel: choose Coal Mine and queue levels in Asturias until it has 5.", "Open the Companies panel and establish Duro y Compañía.", "Put its new coal, iron and steel levels in Asturias and the nearby states."]
+[rule.when]
+techs = ["steelworking"]
+levels_below = { building_coal_mine = 5.0 }
+
+[[rule]]
+id = "gg.leave-industry-banned"
+domain = "laws"
+priority = 1
+goal = "industry"
+phase = "any"
+title = "Repeal Industry Banned"
+detail = "Industry Banned is active: enact Agrarianism (or Interventionism, or Laissez-Faire once you have International Trade) to replace it."
+why = "Industry Banned cuts production research speed and production tech spread by 25%, lowers expected standard of living by 10%, removes 10% of peasant education access, and on enactment demolishes every steel mill, motor industry, chemical plant, power plant and munition plant. Its one economic upside, +25% aristocrat contribution to the investment pool, takes the money out of the owners' pockets instead of adding to it."
+sources = ["Generalist Gaming: BEST Economic Laws", "Generalist Gaming: Private Ownership & the Investment Pool", "game files: common/laws/00_economic_system.txt:241-346 (law_industry_banned: modifiers at 313-329, demolitions at 256-310)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Economic System group: find Agrarianism (or Interventionism, or Laissez-Faire if available) and press Enact.", "Hover the law to see which interest groups support it; if the chance of success is low, add one of them to the government with Reform Government."]
+done = { type = "law_inactive", law = "law_industry_banned" }
+[rule.when]
+laws = ["law_industry_banned"]
+
+[[rule]]
+id = "gg.stock-exchange"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Research Stock Exchange next"
+detail = "International Trade is done and Stock Exchange is not: put Stock Exchange at the front of the Society research queue."
+why = "Stock Exchange adds +0.1 market access price impact in every state, on a base of 0.75. Market access price impact is how much of the national market price a state's buildings see instead of the local one, so it raises the earnings of every building that sells into a state with a local glut and cuts the cost where inputs are locally scarce. It is an era 1 technology, so it is cheap now."
+sources = ["Generalist Gaming: How to INDUSTRIALIZE in the EARLY Game", "game files: common/technology/technologies/30_society.txt:297-308 (stock_exchange: state_market_access_price_impact = 0.1, requires international_trade)", "game files: common/static_modifiers/00_code_static_modifiers.txt:49 (state_market_access_price_impact = 0.75)"]
+patch = "1.13.9"
+how = ["Open the Technology panel, Society tab, and click Stock Exchange to put it first in the queue."]
+[rule.when]
+techs = ["international_trade"]
+techs_missing = ["stock_exchange"]
+
+[[rule]]
+id = "gg.leave-serfdom"
+domain = "laws"
+goal = "reforms"
+phase = "opening"
+title = "Abolish Serfdom: enact Tenant Farmers"
+detail = "Serfdom is active: enact Tenant Farmers before any other land reform."
+why = "Serfdom blocks Interventionism, Laissez-Faire and Command Economy, so it locks you into Traditionalism or Agrarianism. It also forbids peasants to move inside the country or emigrate, reserves 75% of arable land for subsistence farms and gives subsistence farms 3 output instead of the 4 they get under Tenant Farmers, so peasants are poorer, less literate and cannot leave for your new factories."
+sources = ["Generalist Gaming: BEST Economic Laws", "Generalist Gaming: How to INDUSTRIALIZE in the EARLY Game", "game files: common/laws/00_land_reform.txt:1-56 (law_serfdom: disallowing_laws 24-28, modifiers 51-56), :140-158 (law_tenant_farmers)", "game files: common/production_methods/12_subsistence.txt:48-60 (pm_serfdom_no: output 4), :132-143 (pm_serfdom: output 3)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws tab, Land Reform group: find Tenant Farmers and press Enact.", "The Landowners usually oppose it: add the Industrialists or the Rural Folk (both dislike Serfdom) to the government with Reform Government before enacting."]
+done = { type = "law_inactive", law = "law_serfdom" }
+[rule.when]
+laws = ["law_serfdom"]
+
+[[rule]]
+id = "gg.road-maintenance"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Issue Road Maintenance in the state short of infrastructure"
+detail = "A state uses more infrastructure than it has and you know Centralization: issue the Road Maintenance decree there, best in your most populous state that is short."
+why = "Road Maintenance adds infrastructure from the state's population (up to +20) and +10% construction efficiency in the state, for 100 Authority (scaled by power rank). It lifts the market-access penalty of an over-capacity state without waiting for railways, and the construction bonus helps if most of your building happens there."
+sources = ["Generalist Gaming: Authority Guide", "Generalist Gaming: How to INDUSTRIALIZE in the EARLY Game", "game files: common/decrees/00_decree.txt:10-20 (decree_road_maintenance: state_infrastructure_from_population_add = 1, _max_add = 20, state_construction_mult = 0.10, cost = 100, requires centralization)"]
+patch = "1.13.9"
+how = ["Find the state short of infrastructure: its state panel shows infrastructure against its use.", "In that state's panel press Issue Decree and pick Road Maintenance (it needs 100 free Authority; the top bar shows how much is left).", "If Authority is short, remove a consumption tax on a cheap good first (Budget panel, Consumption Taxes)."]
+[rule.when]
+techs = ["centralization"]
+infrastructure_short_states_at_least = 1
+
+[[rule]]
+id = "gg.iron-mine-pumps"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Iron is dear: switch iron mines to Atmospheric Engine Pump"
+detail = "Iron is over 10% above base price, coal is not dear and you have Atmospheric Engine: switch every Iron Mine from Picks and Shovels to Atmospheric Engine Pump."
+why = "Picks and Shovels makes 20 iron from 5 tools per 5,000 workers; Atmospheric Engine Pump makes 40 iron from 10 tools and 10 coal with the same 5,000 workers. At base prices that is 900 value added a week per level instead of 600, and twice the iron for construction and tools. It needs 500 machinists and 250 engineers per level, and coal, so open coal mines too if coal turns dear."
+sources = ["Generalist Gaming: How to INDUSTRIALIZE in the EARLY Game", "game files: common/production_methods/03_mines.txt:217-234 (pm_picks_and_shovels_building_iron_mine), :236-266 (pm_atmospheric_engine_pump_building_iron_mine)", "game files: common/goods/00_goods.txt (iron 40, tools 40, coal 30)"]
+patch = "1.13.9"
+how = ["Open a state with Iron Mines and click the Iron Mines building.", "In its Production Methods, Mining Equipment group, pick Atmospheric Engine Pump; repeat in every state with Iron Mines."]
+[rule.when]
+techs = ["atmospheric_engine"]
+levels_at_least = { building_iron_mine = 1.0 }
+price_above_base = { iron = 0.1 }
+price_ratio_at_most = { coal = 1.25 }
+
+[[rule]]
+id = "gg.hardwood-when-dear"
+domain = "economy"
+goal = "industry"
+phase = "any"
+title = "Hardwood is dear: switch some logging camps to Hardwood Production"
+detail = "Hardwood is over 30% above base price while wood is at or below base: switch the Logging Camps in states with furniture, shipyards or arms nearby from Prioritize Softwood Production to Hardwood Production."
+why = "Hardwood Production trades 25 wood for 10 hardwood per 5,000 workers. At base prices (wood 20, hardwood 40) that loses 100 a week, so Prioritize Softwood Production is the right default; once hardwood is 30% above base and wood is not, the trade turns into a gain and it feeds the factories that need hardwood."
+sources = ["Generalist Gaming: How to INDUSTRIALIZE in the EARLY Game", "game files: common/production_methods/09_misc_resource.txt:69-82 (pm_no_hardwood, pm_hardwood: wood -25, hardwood +10)", "game files: common/goods/00_goods.txt:128 (wood 20), :316 (hardwood 40)"]
+patch = "1.13.9"
+how = ["Open a state with Logging Camps and click the Logging Camps building.", "In its Production Methods, Hardwood Production group, pick Hardwood Production; switch back to Prioritize Softwood Production when hardwood falls back to base price."]
+[rule.when]
+levels_at_least = { building_logging_camp = 1.0 }
+price_above_base = { hardwood = 0.3 }
+price_ratio_at_most = { wood = 1.0 }
+
+[[rule]]
+id = "gg.saw-mills"
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Switch Logging Camps to Saw Mills while tools are cheap"
+detail = "You have Steelworking and tools are at most 10% above base price: set every Logging Camps building to the Saw Mills production method."
+why = "Saw Mills doubles a Logging Camp level's wood from 30 to 60 for only 5 tools and moves 500 laborers into machinist jobs. At base prices that is 600 more wood value for 200 of tools. While tools are dear the gain shrinks, and every new buyer drives tools up further, so switch while they are cheap."
+sources = ["Generalist Gaming: BEGINNER ECONOMICS Guide: Mastering Buildings", "game files: common/production_methods/09_misc_resource.txt:17-39 (pm_saw_mills: steelworking, 5 tools, 60 wood; pm_simple_forestry 30 wood)", "common/goods/00_goods.txt (wood 20, tools 40)"]
+patch = "1.13.9"
+how = ["Open a state with Logging Camps and click the Logging Camps building.", "Production Methods: in the base group (Simple Forestry) pick Saw Mills.", "Repeat in every state with Logging Camps; if tools then rise over 25% above base, build a Tooling Workshop before switching more."]
+[rule.when]
+techs = ["steelworking"]
+levels_at_least = { building_logging_camp = 1.0 }
+price_ratio_at_most = { tools = 1.1 }
+price_above_base = { wood = -0.2 }
+
+[[rule]]
+id = "gg.no-chainsaws"
+domain = "economy"
+goal = "industry"
+phase = "late"
+title = "Keep Logging Camps on Steam Donkey, not Chainsaws"
+detail = "You have Combustion Engine: leave the Special Equipment group of your Logging Camps on Steam Donkey. Use Chainsaws only where the state has no laborers left to hire."
+why = "Against Steam Donkey, Chainsaws burn 4 oil instead of 4 coal (oil 40, coal 30 at base) and replace 500 more laborers (wage weight 1) with 250 engineers (wage weight 3). The wage bill goes up, the goods bill goes up, and the camp makes the same wood: it only saves 250 workers per level."
+sources = ["Generalist Gaming: BEGINNER ECONOMICS Guide: Mastering Buildings", "game files: common/production_methods/09_misc_resource.txt:105-150 (pm_steam_donkey_building_logging_camp, pm_chainsaws)", "common/pop_types/laborers.txt, engineers.txt (wage_weight 1 and 3)"]
+patch = "1.13.9"
+how = ["Open each state with Logging Camps and click the Logging Camps building.", "Production Methods, Special Equipment group: if it shows Chainsaws, pick Steam Donkey instead."]
+[rule.when]
+techs = ["combustion_engine"]
+levels_at_least = { building_logging_camp = 1.0 }
+
+[[rule]]
+id = "gg.hardwood-glut"
+domain = "economy"
+goal = "industry"
+phase = "any"
+title = "Hardwood is cheap: set Logging Camps to Prioritize Softwood Production"
+detail = "Hardwood is at least 25% below base while wood is not: in the Hardwood Production group of your Logging Camps pick Prioritize Softwood Production."
+why = "Hardwood Production trades 25 wood for 10 hardwood; it pays only while hardwood costs over 2.5 times wood (base ratio is 2, 40 against 20). Focused Hardwood Production (-40 wood, +20 hardwood) breaks even at 2. With hardwood under 75% of base and wood over 75%, the ratio is under 2, so both lose money on every level."
+sources = ["Generalist Gaming: BEGINNER ECONOMICS Guide: Mastering Buildings", "game files: common/production_methods/09_misc_resource.txt:69-99 (pm_no_hardwood, pm_hardwood, pm_increased_hardwood)", "common/goods/00_goods.txt (wood 20, hardwood 40)"]
+patch = "1.13.9"
+how = ["Open each state with Logging Camps and click the Logging Camps building.", "Production Methods, Hardwood Production group: pick Prioritize Softwood Production.", "Switch back once hardwood is at or above base price (the Market panel shows it)."]
+[rule.when]
+levels_at_least = { building_logging_camp = 1.0 }
+price_ratio_at_most = { hardwood = 0.75 }
+price_above_base = { wood = -0.25 }
+
+[[rule]]
+id = "gg.wood-glut"
+domain = "economy"
+goal = "industry"
+phase = "any"
+title = "Wood is near its price floor: stop building Logging Camps"
+detail = "Wood is 60% or more below base price: queue no new Logging Camps. Build what burns wood instead: a Construction Sector level, Furniture Manufactories or Paper Mills."
+why = "A good's price cannot fall below 25% of base, reached when sell orders are twice the buy orders. Near that floor each extra camp adds wood nobody pays for, so it earns almost nothing. Construction Sectors, Furniture Manufactories (30 wood per level) and Paper Mills (30 wood) turn the cheap wood into goods worth more."
+sources = ["Generalist Gaming: How to Create VALUE (FREE Money & a Common Price MISTAKE)", "game files: common/defines/00_defines.txt:416-417 (PRICE_RANGE = 0.75, BUY_SELL_DIFF_AT_MAX_FACTOR = 2)", "common/production_methods/01_industry.txt:488-498 (pm_handcrafted_furniture), 1099-1108 (pm_pulp_pressing)"]
+patch = "1.13.9"
+how = ["Construction Queue: press Cancel Construction on any Logging Camps level not yet started.", "Construction panel: queue one Construction Sector level, or a Furniture Manufactory or Paper Mill in a state with Logging Camps."]
+[rule.when]
+techs = ["manufacturies"]
+levels_at_least = { building_logging_camp = 1.0 }
+price_ratio_at_most = { wood = 0.4 }
+
+[[rule]]
+id = "gg.decree-manufacturing"
+domain = "economy"
+goal = "industry"
+phase = "opening"
+title = "Spend spare Authority on Encourage Manufacturing Industry in your factory state"
+detail = "Issue the Encourage Manufacturing Industry decree in the state with the most factories (usually the capital). With Shaft Mining, put Encourage Resource Industry on your best iron or coal state."
+why = "Encourage Manufacturing Industry gives +20% throughput to manufacturing and service buildings in the state; Encourage Resource Industry gives +20% to mines, logging camps and fishing. Throughput raises output and inputs but not wages, so a profitable building earns more for the same workers. Each costs 100 Authority (scaled by rank), and a state can hold only one of the three Encourage decrees."
+sources = ["Generalist Gaming: How to Start a Game: Evaluating Nations & Pre-Unpause Actions", "game files: common/decrees/00_decree.txt:576-591 (decree_encourage_manufacturing_industry: manufacturies), 726-745 (decree_encourage_resource_industry: shaft_mining)"]
+patch = "1.13.9"
+how = ["Open the map's Decrees tab (or right-click the state, Issue Decree) on the state with the most factories.", "Pick Encourage Manufacturing Industry and confirm.", "If Authority is left and you have Shaft Mining, do the same with Encourage Resource Industry on the state with the most mines."]
+[rule.when]
+techs = ["manufacturies"]
+until_year = 1845
+
+[[rule]]
+id = "gg.land-to-per-capita"
+domain = "laws"
+goal = "budget"
+phase = "early"
+title = "Move from Land-Based to Per-Capita Taxation"
+detail = "Enact Per-Capita Taxation: it halves the land tax peasants and farmers pay and starts taxing town workers instead."
+why = "Land tax falls on peasants and farmers in farms; at Medium it is 0.70 under Land-Based but 0.35 under Per-Capita. Per-Capita adds a poll tax on every pop except peasants (and those who already pay land tax) plus a 10% income tax, so revenue grows with each factory job rather than with the peasant count. Traditionalism blocks it."
+sources = ["Generalist Gaming: How to TAX Pops (In Depth Guide)", "game files: common/laws/00_taxation.txt:52-82 (land based), 99-147 (per capita: currency_standards)", "localization/english/concepts_l_english.yml:1882, 1890 (land and per-capita tax payers)"]
+patch = "1.13.9"
+exclude_countries = ["AUS"]
+how = ["Politics panel, Laws, Taxation group: find Per-Capita Taxation and press Enact.", "If you already have Egalitarianism and peasants are under a third of your workforce, enact Proportional Taxation instead and skip this step."]
+done = { type = "law_inactive", law = "law_land_based_taxation" }
+[rule.when]
+techs_missing = ["egalitarianism"]
+laws = ["law_land_based_taxation"]
+techs = ["currency_standards"]
+laws_missing = ["law_traditionalism"]
+
+[[rule]]
+id = "gg.leave-traditionalism"
+domain = "laws"
+goal = "industry"
+phase = "early"
+title = "Leave Traditionalism: enact Interventionism now"
+detail = "You have Manufacturies but not International Trade: enact Interventionism. Once International Trade is researched, go on to Laissez-Faire. If International Trade is only months away, research it first and enact Laissez-Faire directly."
+why = "Traditionalism halves the investment-pool efficiency of every owner class, cuts tax capacity by 25% and forbids Per-Capita, Proportional and Graduated Taxation. Interventionism has none of these maluses and unblocks the tax laws. The guide's advice is to skip Interventionism when Laissez-Faire is reachable, so this rule only fires while it is not."
+sources = ["Generalist Gaming: How to Start a Game: Evaluating Nations & Pre-Unpause Actions", "Generalist Gaming: Interventionism is a TRAP, Laissez Faire is Just BETTER", "game files: common/laws/00_economic_system.txt:5-40 (law_traditionalism), 57-85 (law_interventionism: manufacturies; disallowed by law_serfdom)"]
+patch = "1.13.9"
+exclude_countries = ["CHI", "JAP", "BIC"]
+how = ["Politics panel, Laws, Economic System group: find Interventionism and press Enact.", "Technology panel: queue International Trade next, for Laissez-Faire."]
+done = { type = "law_inactive", law = "law_traditionalism" }
+[rule.when]
+laws = ["law_traditionalism"]
+laws_missing = ["law_serfdom"]
+techs = ["manufacturies"]
+techs_missing = ["international_trade"]
+
+[[rule]]
+id = "gg.leave-isolationism"
+domain = "laws"
+goal = "industry"
+phase = "early"
+priority = 1
+title = "Leave Isolationism: enact Free Trade"
+detail = "You have International Trade and still run Isolationism: enact Free Trade (or Mercantilism if Free Trade cannot pass)."
+why = "Isolationism forbids all trade, cuts technology spread by 15% and blocks Laissez-Faire. Its +50% Authority and +25% tax capacity do not make up for a market that cannot import what it lacks or sell what it overproduces."
+sources = ["Generalist Gaming: How to Start a Game: Evaluating Nations & Pre-Unpause Actions", "game files: common/laws/00_trade_policy.txt:159-203 (law_isolationism: country_disallow_trade_bool, country_tech_spread_mult -0.15), 96-108 (law_free_trade: international_trade)", "common/laws/00_economic_system.txt:462 (law_laissez_faire disallowed by law_isolationism)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws, Trade Policy group: find Free Trade and press Enact.", "If its chance of success is low, enact Mercantilism instead; it needs the same technology."]
+done = { type = "law_inactive", law = "law_isolationism" }
+[rule.when]
+laws = ["law_isolationism"]
+techs = ["international_trade"]
+
+[[rule]]
+id = "gg.graduated-tax"
+domain = "laws"
+goal = "budget"
+phase = "late"
+title = "Shift tax from wages to dividends: enact Graduated Taxation"
+detail = "You have Socialism, run Proportional Taxation and average standard of living is under 15: enact Graduated Taxation and keep the tax level where it is."
+why = "At the same tax level Graduated Taxation takes less from wages and more from dividends: at High, income tax 17.5% instead of 25% and dividends tax 25% instead of 15%. Wages feed the many low-wealth pops whose standard of living moves with every penny; dividends go to the few rich pops whose standard of living barely changes. The guide judges tax laws by who pays, not by the revenue line."
+sources = ["Generalist Gaming: How to TAX Pops (In Depth Guide)", "game files: common/laws/00_taxation.txt:187-230 (law_proportional_taxation), 256-290 (law_graduated_taxation: socialism)"]
+patch = "1.13.9"
+how = ["Politics panel, Laws, Taxation group: find Graduated Taxation and press Enact.", "After it passes, check the weekly balance in the Budget panel; if revenue fell, raise the tax level one step rather than going back."]
+done = { type = "law_active", law = "law_graduated_taxation" }
+[rule.when]
+laws = ["law_proportional_taxation"]
+techs = ["socialism"]
+sol_below = 15.0

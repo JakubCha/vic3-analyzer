@@ -39,6 +39,8 @@ oiko_pb_active = {
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_before_1848 } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_dual_monarchy_blocks_germany } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_no_war_on_credit } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_leave_industry_banned } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_leave_isolationism } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_proportional_tax } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_gen_surplus_to_construction } add = 1 }
@@ -131,6 +133,32 @@ oiko_pb_active = {
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_pan_nationalism } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_venetia_sulfur } add = 1 }
 	if = { limit = { has_journal_entry = je_oiko_pb_aus_citizenship } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_university_scale_cap } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_public_health_insurance } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_dedicated_police } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_restricted_child_labor } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_no_migration_controls } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_leave_hereditary_bureaucrats } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_naval_administration } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_ironclads } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_iron_research_pump } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_public_trams } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_privatize } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_leave_command_economy } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_women_in_workplace } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_spa_duro_y_compania } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_stock_exchange } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_leave_serfdom } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_iron_mine_pumps } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_hardwood_when_dear } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_saw_mills } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_no_chainsaws } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_hardwood_glut } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_wood_glut } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_decree_manufacturing } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_land_to_per_capita } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_leave_traditionalism } add = 1 }
+	if = { limit = { has_journal_entry = je_oiko_pb_gg_graduated_tax } add = 1 }
 }
 
 oiko_pb_free_slots = {
@@ -174,6 +202,14 @@ oiko_lvl_building_iron_mine = {
 	value = 0
 	every_scope_building = {
 		limit = { is_building_type = building_iron_mine }
+		add = this.level
+	}
+}
+
+oiko_lvl_building_logging_camp = {
+	value = 0
+	every_scope_building = {
+		limit = { is_building_type = building_logging_camp }
 		add = this.level
 	}
 }

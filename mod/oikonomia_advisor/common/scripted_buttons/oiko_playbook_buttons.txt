@@ -190,6 +190,24 @@ je_oiko_pb_aus_no_war_on_credit_skip = {
 	effect = { set_variable = je_oiko_pb_aus_no_war_on_credit_skipped }
 }
 
+je_oiko_pb_gg_leave_industry_banned_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_leave_industry_banned }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_leave_industry_banned_skipped }
+}
+
+je_oiko_pb_gg_leave_isolationism_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_leave_isolationism }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_leave_isolationism_skipped }
+}
+
 je_oiko_pb_gen_debt_unhealthy_skip = {
 	name = "oiko_pb_skip_button"
 	desc = "oiko_pb_skip_button_desc"
@@ -1016,5 +1034,239 @@ je_oiko_pb_aus_citizenship_skip = {
 	visible = { has_journal_entry = je_oiko_pb_aus_citizenship }
 	possible = { always = yes }
 	effect = { set_variable = je_oiko_pb_aus_citizenship_skipped }
+}
+
+je_oiko_pb_gg_university_scale_cap_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_university_scale_cap }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_university_scale_cap_skipped }
+}
+
+je_oiko_pb_gg_public_health_insurance_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_public_health_insurance }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_public_health_insurance_skipped }
+}
+
+je_oiko_pb_gg_dedicated_police_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_dedicated_police }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_dedicated_police_skipped }
+}
+
+je_oiko_pb_gg_restricted_child_labor_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_restricted_child_labor }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_restricted_child_labor_skipped }
+}
+
+je_oiko_pb_gg_no_migration_controls_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_no_migration_controls }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_no_migration_controls_skipped }
+}
+
+je_oiko_pb_gg_leave_hereditary_bureaucrats_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_leave_hereditary_bureaucrats }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_leave_hereditary_bureaucrats_skipped }
+}
+
+je_oiko_pb_gg_naval_administration_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_naval_administration }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_naval_administration_skipped }
+}
+
+je_oiko_pb_gg_ironclads_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_ironclads }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_ironclads_skipped }
+}
+
+je_oiko_pb_gg_iron_research_pump_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_iron_research_pump }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_iron_research_pump_skipped }
+}
+
+je_oiko_pb_gg_public_trams_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_public_trams }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_public_trams_skipped }
+}
+
+je_oiko_pb_gg_privatize_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_privatize }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_privatize_skipped }
+}
+
+je_oiko_pb_gg_leave_command_economy_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_leave_command_economy }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_leave_command_economy_skipped }
+}
+
+je_oiko_pb_gg_women_in_workplace_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_women_in_workplace }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_women_in_workplace_skipped }
+}
+
+je_oiko_pb_gg_spa_duro_y_compania_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_spa_duro_y_compania }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_spa_duro_y_compania_skipped }
+}
+
+je_oiko_pb_gg_stock_exchange_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_stock_exchange }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_stock_exchange_skipped }
+}
+
+je_oiko_pb_gg_leave_serfdom_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_leave_serfdom }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_leave_serfdom_skipped }
+}
+
+je_oiko_pb_gg_iron_mine_pumps_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_iron_mine_pumps }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_iron_mine_pumps_skipped }
+}
+
+je_oiko_pb_gg_hardwood_when_dear_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_hardwood_when_dear }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_hardwood_when_dear_skipped }
+}
+
+je_oiko_pb_gg_saw_mills_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_saw_mills }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_saw_mills_skipped }
+}
+
+je_oiko_pb_gg_no_chainsaws_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_no_chainsaws }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_no_chainsaws_skipped }
+}
+
+je_oiko_pb_gg_hardwood_glut_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_hardwood_glut }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_hardwood_glut_skipped }
+}
+
+je_oiko_pb_gg_wood_glut_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_wood_glut }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_wood_glut_skipped }
+}
+
+je_oiko_pb_gg_decree_manufacturing_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_decree_manufacturing }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_decree_manufacturing_skipped }
+}
+
+je_oiko_pb_gg_land_to_per_capita_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_land_to_per_capita }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_land_to_per_capita_skipped }
+}
+
+je_oiko_pb_gg_leave_traditionalism_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_leave_traditionalism }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_leave_traditionalism_skipped }
+}
+
+je_oiko_pb_gg_graduated_tax_skip = {
+	name = "oiko_pb_skip_button"
+	desc = "oiko_pb_skip_button_desc"
+	ai_chance = { value = 0 }
+	visible = { has_journal_entry = je_oiko_pb_gg_graduated_tax }
+	possible = { always = yes }
+	effect = { set_variable = je_oiko_pb_gg_graduated_tax_skipped }
 }
 

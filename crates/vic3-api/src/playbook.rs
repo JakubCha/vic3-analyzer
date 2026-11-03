@@ -22,6 +22,7 @@ const FILES: &[(&str, &str)] = &[
     ("ita", include_str!("../playbook/ita.toml")),
     ("fra", include_str!("../playbook/fra.toml")),
     ("aus", include_str!("../playbook/aus.toml")),
+    ("gg", include_str!("../playbook/gg.toml")),
 ];
 
 #[derive(Debug, Deserialize)]
@@ -726,7 +727,7 @@ mod tests {
         for id in ["playbook:pru.opening-army", "playbook:pru.opening-plan", "playbook:gen.army-share", "playbook:gen.goods-hungry-units"] {
             assert!(ids.contains(id), "{id} missing from {ids:?}");
         }
-        assert!(ids.iter().all(|id| id.starts_with("playbook:pru.") || id.starts_with("playbook:gen.")), "{ids:?}");
+        assert!(ids.iter().all(|id| ["playbook:pru.", "playbook:gen.", "playbook:gg."].iter().any(|p| id.starts_with(p))), "{ids:?}");
         let army = out.iter().find(|a| a.id == "playbook:pru.opening-army").expect("army");
         assert_eq!(army.priority, 1);
         assert!(army.why.as_deref().is_some_and(|w| w.contains("Sources (1.13.9)")));

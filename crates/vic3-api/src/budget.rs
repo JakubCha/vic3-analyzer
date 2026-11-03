@@ -105,11 +105,14 @@ fn half() -> f64 {
 /// (common/country_ranks, 1.13.9); Generalist Gaming's guides run great powers at 80-90%.
 pub const GREAT_POWER_DEBT_SHARE: f64 = 0.8;
 
-/// Goods the upper strata buy most: consumption taxes there spare the poor
-/// (Generalist Gaming: How to TAX Pops, Why Taxing the Rich is So Strong).
-pub const RICH_GOODS: &[&str] = &["services", "transportation", "luxury_clothes", "luxury_furniture", "porcelain", "wine", "tobacco"];
-/// Staples of the lower strata: a consumption tax here pushes the poorest under their expected standard of living.
-pub const POOR_GOODS: &[&str] = &["liquor", "grain", "opium"];
+/// Taxable goods (a `consumption_tax_cost` in common/goods, 1.13.9) the upper strata buy
+/// most: taxes there spare the poor (Generalist Gaming: How to TAX Pops). Luxury goods,
+/// wine, liquor, tobacco and opium have no tax cost in 1.13.9: the player cannot tax them.
+pub const RICH_GOODS: &[&str] = &["services", "transportation"];
+/// Taxable staples of the lower strata: a tax here pushes the poorest under their expected
+/// standard of living. Start-of-game taxes from history (Prussia: liquor, wine, luxury
+/// furniture) are on untaxable goods and are left alone.
+pub const POOR_GOODS: &[&str] = &["grain", "fish", "groceries", "clothes", "furniture", "meat", "fruit"];
 
 /// Share of spending above which a deficit counts as investment.
 pub const INVESTMENT_SHARE: f64 = 0.3;
@@ -516,7 +519,7 @@ pub fn consumption_tax_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             detail: "The lower strata buy these staples: the tax costs them standard of living and makes radicals. Tax the goods of the rich instead.".into(),
             steps: vec![
                 format!("Budget panel, Consumption Taxes: remove the tax on {}.", poor.iter().map(label).collect::<Vec<_>>().join(", ")),
-                "Spend the freed Authority on taxes on Services, Transportation, Luxury Clothes, Luxury Furniture, Porcelain, Wine or Tobacco.".into(),
+                "Spend the freed Authority on taxes on Services and Transportation, which the upper strata buy most.".into(),
             ],
             why_now: Vec::new(),
             why: Some(format!("{why}{src}")),
@@ -530,9 +533,10 @@ pub fn consumption_tax_advice(r: &BudgetReport, out: &mut Vec<Advice>) {
             domain: Domain::Economy,
             priority: 2,
             title: "Tax what the rich buy".into(),
-            detail: format!("You tax {rich_taxed} of the goods the upper strata buy most. Each consumption tax on Services, Transportation, Luxury Clothes, Luxury Furniture, Porcelain, Wine or Tobacco adds income while sparing the poor."),
+            detail: format!("You tax {rich_taxed} of Services and Transportation, the taxable goods the upper strata buy most. Each adds income while sparing the poor."),
             steps: vec![
-                "Budget panel, Consumption Taxes: add taxes on Services and Transportation first, then Luxury Furniture, Luxury Clothes, Porcelain, Wine or Tobacco, as far as Authority allows.".into(),
+                "Budget panel, Consumption Taxes: add the taxes on Services and Transportation (200 Authority each before law modifiers).".into(),
+                "Leave staples (Grain, Clothes, Furniture, Groceries) untaxed: the poorest buy them.".into(),
             ],
             why_now: Vec::new(),
             why: Some(format!("{why}{src}")),
@@ -643,14 +647,19 @@ mod tests {
     fn consumption_taxes_leave_the_poor_and_target_the_rich() {
         let defs = GameDefs::default();
         let mut c = prussia();
+        // Prussia 1836 starts with history taxes on untaxable goods: left alone.
         c.taxed_goods = vec!["liquor".into(), "luxury_furniture".into(), "wine".into()];
+        let mut out = Vec::new();
+        consumption_tax_advice(&report(&defs, &c).expect("report"), &mut out);
+        assert_eq!(out.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(), ["budget:consumption-rich"]);
+        c.taxed_goods = vec!["grain".into(), "services".into(), "transportation".into()];
         let r = report(&defs, &c).expect("report");
         let mut out = Vec::new();
         consumption_tax_advice(&r, &mut out);
         let ids: Vec<&str> = out.iter().map(|a| a.id.as_str()).collect();
-        // Liquor is the poor's; two rich goods are already taxed.
+        // Grain is the poor's; both rich goods are already taxed.
         assert_eq!(ids, ["budget:consumption-poor"]);
-        assert!(out[0].title.contains("Liquor") && out[0].steps.iter().all(|s| !s.is_empty()));
+        assert!(out[0].title.contains("Grain") && out[0].steps.iter().all(|s| !s.is_empty()));
         c.taxed_goods.clear();
         let mut out = Vec::new();
         consumption_tax_advice(&report(&defs, &c).expect("report"), &mut out);
