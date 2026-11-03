@@ -12,6 +12,8 @@ Player-only journal entries with live values computed by the game every tick. Th
 
 - **Own journal group** – everything sits in the collapsible group "Oikonomia Advisor"; the Budget Guard and the dashboard show a debt / credit-limit bar and a budget verdict chosen by the game (customizable localization).
 - **How to do it, why now** – every playbook entry lists the steps in the game's interface, links game terms to the game's own concept tooltips (credit limit, default, infrastructure, …) and shows the live values its rule checks (debt share, balance, building levels) against the rule's thresholds.
+- **Ordered by game phase** – every tip's title starts with its phase (Opening 1836-1840, Early game to 1850, Mid game to 1890, Late game, Any time); tips of the current phase come first, a later phase's tips wait for its start year unless they are urgent or need a technology you already have, and the chapter of the current era sits at the top of the group.
+- **Expert tips** – Generalist Gaming's opinions the game files cannot confirm (institution buffer before a default, factories in the capital, one Art Academy, newest production methods, standard of living toward 20, citizenship and labour laws), marked as such in the title and text.
 - **Three tips at a time** – at most three playbook entries are open at once (priority-1 tips always come in); each has a "Skip this tip" button that drops it for the campaign.
 - **Chapters** – one five-item checklist per era for every country: Foundations (to 1850), Industry (to 1885), Modern State.
 - **Construction Is Running Dry** – entry and top-bar alert when the state's construction queue has under two weeks of work.

@@ -102,6 +102,7 @@ mod tests {
             goal: None,
             why: None,
             steps: Vec::new(),
+            phase: None,
             why_now: Vec::new(),
             check: None,
         }];

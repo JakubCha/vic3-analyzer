@@ -41,6 +41,9 @@ pub struct Advice {
     /// How to carry it out in the game's interface, one step per line.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub steps: Vec<String>,
+    /// Game phase a playbook rule belongs to (`opening`, `early`, `mid`, `late`, `any`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
     /// The save's current values behind the advice, against the rule's thresholds.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub why_now: Vec<String>,
@@ -66,6 +69,9 @@ pub struct AdviceResult {
     /// The player's states side by side.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub states: Vec<crate::states::StateRow>,
+    /// Current game phase from the save date (`opening`, `early`, `mid`, `late`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
 }
 
 /// Condition on a later save that means the suggestion was carried out.
@@ -286,6 +292,7 @@ fn law_advice(defs: &GameDefs, country: &WorldCountry, education_short: bool, ou
                 format!("Politics panel, Laws: find {} and press Enact.", label(next)),
                 format!("While it is being enacted, keep its supporters in government ({}): Politics panel, Reform Government, Add To Government.", Support::list(&support.for_)),
             ],
+            phase: None,
             why_now: Vec::new(),
             why: None,
             check: Some(Check::LawActive { law: next.to_string() }),
@@ -666,6 +673,7 @@ impl<'a> Market<'a> {
                 title: format!("Expand {} in {}", site.type_label, self.state_label(site.state_id)),
                 detail,
                 steps: self.expand_steps(site),
+                phase: None,
                 why_now: Vec::new(),
                 why: Some("Ranked by profit per construction point. Construction capacity is the scarce resource early on, so the level that repays its construction soonest compounds growth fastest; its wages and profits are also taxed. Profit is today's, at current prices: a level that floods its own market earns less.".into()),
                 check: Some(Check::BuildingLevels {
@@ -732,6 +740,7 @@ impl<'a> Market<'a> {
                             site.profit_per_level()
                         ),
                         steps: self.expand_steps(site),
+                        phase: None,
                         why_now: Vec::new(),
                         why: None,
                         check: Some(Check::BuildingLevels {
@@ -770,6 +779,7 @@ impl<'a> Market<'a> {
                             format!("Construction panel: choose {type_label}; the map then shows the states where it can be built."),
                             "Pick one with free workers (the overlay lists unemployment by state) and queue a level.".into(),
                         ],
+                        phase: None,
                         why_now: Vec::new(),
                         why: None,
                         check: Some(Check::BuildingLevels {
@@ -813,6 +823,7 @@ impl<'a> Market<'a> {
                 s.push("If wood, iron or tools are dear, the analyzer's Market tab says which building to add for them.".into());
                 s
             },
+            phase: None,
             why_now: Vec::new(),
             why: None,
             check: Some(Check::BuildingLevels {
@@ -850,6 +861,7 @@ impl<'a> Market<'a> {
                     "If it still loses money a few weeks later, press Downsize in the same building panel.".into(),
                     format!("Queue no more levels of {} until it earns again.", site.type_label),
                 ],
+                phase: None,
                 why_now: Vec::new(),
                 why: None,
                 check: None,
@@ -881,6 +893,7 @@ impl<'a> Market<'a> {
                     format!("Queue no more buildings that make {}.", self.good_label(good)),
                     format!("Analyzer, Market tab: build what it lists as using {}, next to where you make it.", self.good_label(good)),
                 ],
+                phase: None,
                 why_now: Vec::new(),
                 why: None,
                 check: None,
@@ -943,6 +956,7 @@ fn labour_saving_advice(defs: &GameDefs, prices: &vic3_prices::PricesResult, sta
                 where_[0],
                 defs.display_label(&base)
             )],
+            phase: None,
             why_now: Vec::new(),
             why: Some("Workers a labour-saving method lets go return to subsistence farming, where they produce almost nothing for the market and buy almost nothing. While peasants remain, jobs are worth more than the saved wages; switch to labour-saving methods once a state runs out of peasants. Source: Generalist Gaming, I Was WRONG About Peasants.".into()),
             check: Some(Check::ProductionMethod { building_id: id, method: base.clone() }),
@@ -993,6 +1007,7 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
             market: Vec::new(),
             outcomes: Vec::new(),
             states: Vec::new(),
+            phase: None,
         };
     };
 
@@ -1052,6 +1067,7 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
                 format!("Construction panel: queue a University in {label}."),
                 "Politics panel, Laws, Education group: if you have No Schools, enact Religious Schools, Private Schools or Public Schools.".into(),
             ],
+            phase: None,
             why_now: Vec::new(),
             why: None,
             check: Some(Check::BuildingLevels {
@@ -1088,14 +1104,18 @@ pub fn advice(world: &World, defs: &GameDefs, prices: &vic3_prices::PricesResult
         Some("playbook") => 1,
         _ => 2,
     };
-    advice.sort_by(|a, b| (a.priority, rank(a), &a.id).cmp(&(b.priority, rank(b), &b.id)));
+    // Playbook items keep the phase order playbook_advice gave them (the sort is stable).
+    advice.sort_by(|a, b| {
+        (a.priority, rank(a)).cmp(&(b.priority, rank(b))).then_with(|| if rank(a) == 1 { std::cmp::Ordering::Equal } else { a.id.cmp(&b.id) })
+    });
     let mut market = crate::market::market_doctor(defs, prices, &states);
     // Steps name game buttons; the Polish game shows them under its own names.
     for step in advice.iter_mut().flat_map(|a| a.steps.iter_mut()).chain(market.iter_mut().flat_map(|c| c.fixes.iter_mut())) {
         *step = crate::playbook::with_polish_labels(step);
     }
     let states = crate::states::state_overview(world, prices, &states, &advice);
-    AdviceResult { advice, limitations, budget, market, outcomes: Vec::new(), states }
+    let phase = world.game_date.map(|d| crate::playbook::phase_of(vic3save::PdsDate::year(&d)).to_string());
+    AdviceResult { advice, limitations, budget, market, outcomes: Vec::new(), states, phase }
 }
 
 /// Whether each check holds on the loaded save. `false` when there is no player.

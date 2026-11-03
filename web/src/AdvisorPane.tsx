@@ -10,6 +10,15 @@ export type View = AdviceDomain | 'now' | 'market' | 'states'
 /** How many items the Now tab shows: a short session's worth. */
 const NOW_LIMIT = 5
 
+/** Playbook phases (vic3_api::playbook::PHASES) and their years. */
+const PHASE_LABEL: Record<string, string> = {
+  opening: "Opening (1836-1840)",
+  early: "Early game (1840-1850)",
+  mid: "Mid game (1850-1890)",
+  late: "Late game (1890-)",
+  any: "Any time",
+}
+
 const DOMAINS: readonly { id: View; label: string }[] = [
   { id: 'now', label: 'Now' },
   { id: 'economy', label: 'Economy' },
@@ -156,7 +165,10 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
   const mine = tracked.filter((item) => item.tag === tag)
   const isTracked = (id: string) => mine.some((item) => item.advice.id === id)
   const inTab = (tab: View) => adviceInTab(result?.advice ?? [], tab, goals)
-  const list = inTab(domain)
+  const [phaseOnly, setPhaseOnly] = useState(false)
+  const current = result?.phase
+  const inPhase = (item: Advice) => !phaseOnly || !item.phase || item.phase === "any" || item.phase === current
+  const list = inTab(domain).filter(inPhase)
   const goalDomain: GoalDomain | undefined = domain === 'economy' || domain === 'laws' ? domain : undefined
   const pickGoal = (target: GoalDomain, next: AdviceGoal) => {
     setGoals((current) => ({ ...current, [target]: next }))
@@ -215,6 +227,14 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
           <span className="alert-severity">{GOALS[goalDomain].hint}</span>
         </label>
       )}
+      {current && (
+        <p className="advisor-phase">
+          Game phase: <strong>{PHASE_LABEL[current] ?? current}</strong>{" "}
+          <label>
+            <input type="checkbox" checked={phaseOnly} onChange={(e) => setPhaseOnly(e.target.checked)} /> This phase only
+          </label>
+        </p>
+      )}
       {domain === 'now' && (
         <p className="alert-severity">
           The {NOW_LIMIT} most important decisions right now, budget first. Uses the goals chosen in the Economy and
@@ -239,6 +259,7 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
         {list.map((item) => (
           <li key={item.id} className={`advisor-item priority-${item.priority}`}>
             <span className="alert-severity">{item.priority === 1 ? 'Urgent' : 'Worthwhile'}</span>{' '}
+            {item.phase && <span className="advisor-phase-badge">{PHASE_LABEL[item.phase] ?? item.phase}</span>}{' '}
             <strong>{item.title}</strong>
             <p>{item.detail}</p>
             <AdviceExtras item={item} />

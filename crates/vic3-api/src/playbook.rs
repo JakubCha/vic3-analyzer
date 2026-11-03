@@ -23,6 +23,7 @@ const FILES: &[(&str, &str)] = &[
     ("fra", include_str!("../playbook/fra.toml")),
     ("aus", include_str!("../playbook/aus.toml")),
     ("gg", include_str!("../playbook/gg.toml")),
+    ("expert", include_str!("../playbook/expert.toml")),
 ];
 
 #[derive(Debug, Deserialize)]
@@ -64,9 +65,58 @@ pub struct Rule {
     /// Country tags the rule does not apply to.
     #[serde(default)]
     pub exclude_countries: Vec<String>,
+    /// An expert's opinion the game files cannot confirm ([`EXPERT_LABEL`]).
+    #[serde(default)]
+    pub expert: bool,
+}
+
+/// Game phases and the year each starts (playbook `phase`; `any` has no year).
+pub const PHASES: &[(&str, i16)] = &[("opening", 1836), ("early", 1840), ("mid", 1850), ("late", 1890)];
+
+/// Label for advice from Generalist Gaming's opinions that the game files cannot confirm.
+pub const EXPERT_LABEL: &str = "Expert tip (Generalist Gaming, an opinion the game files cannot confirm)";
+
+/// The phase a game year falls in.
+pub fn phase_of(year: i16) -> &'static str {
+    PHASES.iter().rev().find(|(_, start)| year >= *start).map_or(PHASES[0].0, |(p, _)| p)
+}
+
+fn phase_index(phase: &str) -> Option<usize> {
+    PHASES.iter().position(|(p, _)| *p == phase)
+}
+
+/// Sort key: the current phase 0, earlier phases next (catch-up), `any`, later phases last.
+fn phase_distance(phase: &str, now: &str) -> u8 {
+    match (phase_index(phase), phase_index(now)) {
+        (Some(p), Some(n)) if p == n => 0,
+        (Some(p), Some(n)) if p < n => 1 + (n - p) as u8,
+        (None, _) => 10,
+        (Some(p), Some(n)) => 20 + (p - n) as u8,
+        _ => 30,
+    }
+}
+
+/// English label of a phase.
+pub fn phase_label(phase: &str) -> &'static str {
+    match phase {
+        "opening" => "Opening",
+        "early" => "Early game",
+        "mid" => "Mid game",
+        "late" => "Late game",
+        _ => "Any time",
+    }
 }
 
 impl Rule {
+    /// Whether the rule shows in phase `now`: rules of a later phase wait for it unless
+    /// they are urgent or already gated by a technology the player has researched.
+    pub fn shown_in(&self, now: &str) -> bool {
+        match (phase_index(&self.phase), phase_index(now)) {
+            (Some(p), Some(n)) if p > n => self.priority == 1 || !self.when.techs.is_empty(),
+            _ => true,
+        }
+    }
+
     /// Whether the rule is meant for the country with `tag`.
     pub fn applies_to(&self, tag: &str) -> bool {
         (self.countries.is_empty() || self.countries.iter().any(|c| c == tag)) && !self.exclude_countries.iter().any(|c| c == tag)
@@ -644,10 +694,14 @@ pub fn steps(rule: &Rule, label: &dyn Fn(&str) -> String) -> Vec<String> {
 /// Matching rules for the played country, as advice.
 pub fn playbook_advice(facts: &Facts<'_>, out: &mut Vec<Advice>) {
     let tag = facts.country.tag.as_str();
-    for rule in rules() {
-        if !rule.applies_to(tag) || !facts.holds(&rule.when) {
-            continue;
-        }
+    let now = facts.world.game_date.map_or(PHASES[0].0, |d| phase_of(d.year()));
+    let mut matching: Vec<&Rule> = rules()
+        .iter()
+        .filter(|rule| rule.applies_to(tag) && rule.shown_in(now) && facts.holds(&rule.when))
+        .collect();
+    // Current phase first, then catch-up from earlier phases, timeless rules, later ones.
+    matching.sort_by_key(|rule| phase_distance(&rule.phase, now));
+    for rule in matching {
         // Rules already followed stay quiet.
         if rule.done.as_ref().is_some_and(|check| crate::advice::checks_done(facts.world, facts.defs, std::slice::from_ref(check)) == [true]) {
             continue;
@@ -662,8 +716,9 @@ pub fn playbook_advice(facts: &Facts<'_>, out: &mut Vec<Advice>) {
             domain: rule.domain,
             priority: rule.priority,
             title: rule.title.clone(),
-            detail: format!("Playbook · {} · {}: {}", rule.goal, rule.phase, rule.detail),
+            detail: format!("{} · {} · {}: {}", if rule.expert { EXPERT_LABEL } else { "Playbook" }, rule.goal, phase_label(&rule.phase), rule.detail),
             steps: steps(rule, &|id| facts.defs.display_label(id)),
+            phase: Some(rule.phase.clone()),
             why_now: facts.why_now(&rule.when),
             why: Some(format!("{}{sources}", rule.why)),
             goal: None,
@@ -727,7 +782,7 @@ mod tests {
         for id in ["playbook:pru.opening-army", "playbook:pru.opening-plan", "playbook:gen.army-share", "playbook:gen.goods-hungry-units"] {
             assert!(ids.contains(id), "{id} missing from {ids:?}");
         }
-        assert!(ids.iter().all(|id| ["playbook:pru.", "playbook:gen.", "playbook:gg."].iter().any(|p| id.starts_with(p))), "{ids:?}");
+        assert!(ids.iter().all(|id| ["playbook:pru.", "playbook:gen.", "playbook:gg.", "playbook:gx."].iter().any(|p| id.starts_with(p))), "{ids:?}");
         let army = out.iter().find(|a| a.id == "playbook:pru.opening-army").expect("army");
         assert_eq!(army.priority, 1);
         assert!(army.why.as_deref().is_some_and(|w| w.contains("Sources (1.13.9)")));
@@ -757,6 +812,23 @@ mod tests {
         // The analyzer's own tab is not a game label.
         assert_eq!(with_polish_labels("the analyzer's Market tab"), "the analyzer's Market tab");
         assert_eq!(with_polish_labels("raise the tax level"), "raise the tax level (PL: Poziom opodatkowania)");
+    }
+
+    #[test]
+    fn later_phases_wait_unless_urgent_or_tech_gated() {
+        assert_eq!((phase_of(1836), phase_of(1845), phase_of(1860), phase_of(1900)), ("opening", "early", "mid", "late"));
+        let rule = |phase: &str, priority: u8, techs: &[&str]| Rule {
+            phase: phase.into(),
+            priority,
+            when: When { techs: techs.iter().map(|t| t.to_string()).collect(), ..When::default() },
+            ..rules()[0].clone()
+        };
+        assert!(rule("early", 2, &[]).shown_in("early") && rule("opening", 2, &[]).shown_in("mid"), "current and earlier phases show");
+        assert!(!rule("late", 2, &[]).shown_in("early"), "a later phase waits");
+        assert!(rule("late", 1, &[]).shown_in("early") && rule("late", 2, &["railways"]).shown_in("early"));
+        assert!(phase_distance("early", "early") < phase_distance("opening", "early"));
+        assert!(phase_distance("any", "early") < phase_distance("mid", "early") && phase_distance("mid", "early") < phase_distance("late", "early"));
+        assert!(rules().iter().filter(|r| r.expert).all(|r| r.id.starts_with("gx.")), "expert tips are labelled");
     }
 
     #[test]

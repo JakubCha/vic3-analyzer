@@ -13,6 +13,220 @@ oiko_playbook_monthly = {
 		set_variable = { name = oiko_pb_slots value = oiko_pb_free_slots }
 		if = {
 			limit = {
+				OR = { c:PRU ?= root }
+				game_date < 1841.1.1
+				military_expenses_share >= 0.45
+				NOT = { has_journal_entry = je_oiko_pb_pru_opening_army }
+				NOT = { has_variable = je_oiko_pb_pru_opening_army_done }
+				NOT = { has_variable = je_oiko_pb_pru_opening_army_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_opening_army }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				game_date < 1839.1.1
+				oiko_lvl_building_construction_sector < 3
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_sar_construction }
+				NOT = { has_variable = je_oiko_pb_sar_construction_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_construction }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				has_law_or_variant = law_type:law_land_based_taxation
+				has_technology_researched = currency_standards
+				NOT = { has_journal_entry = je_oiko_pb_aus_per_capita }
+				NOT = { has_variable = je_oiko_pb_aus_per_capita_done }
+				NOT = { has_variable = je_oiko_pb_aus_per_capita_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_per_capita }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				game_date < 1851.1.1
+				oiko_lvl_building_government_administration < 60
+				NOT = { has_journal_entry = je_oiko_pb_aus_tax_capacity }
+				NOT = { has_variable = je_oiko_pb_aus_tax_capacity_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_tax_capacity }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				has_law_or_variant = law_type:law_protectionism
+				market_capital.market = { mg:grain = { market_goods_pricier >= 0.25 } }
+				NOT = { has_journal_entry = je_oiko_pb_gbr_grain_warning }
+				NOT = { has_variable = je_oiko_pb_gbr_grain_warning_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_grain_warning }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:FRA ?= root }
+				game_date >= 1840.1.1
+				game_date < 1849.1.1
+				has_law_or_variant = law_type:law_wealth_voting
+				has_technology_researched = democracy
+				NOT = { has_journal_entry = je_oiko_pb_fra_census_before_1848 }
+				NOT = { has_variable = je_oiko_pb_fra_census_before_1848_done }
+				NOT = { has_variable = je_oiko_pb_fra_census_before_1848_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_census_before_1848 }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				game_date < 1851.1.1
+				ig:ig_landowners ?= { is_in_government = no }
+				NOT = { has_journal_entry = je_oiko_pb_aus_metternich }
+				NOT = { has_variable = je_oiko_pb_aus_metternich_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_metternich }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				game_date >= 1845.1.1
+				game_date < 1850.1.1
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_aus_before_1848 }
+				NOT = { has_variable = je_oiko_pb_aus_before_1848_done }
+				NOT = { has_variable = je_oiko_pb_aus_before_1848_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_before_1848 }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_law_or_variant = law_type:law_isolationism
+				has_technology_researched = international_trade
+				NOT = { has_journal_entry = je_oiko_pb_gg_leave_isolationism }
+				NOT = { has_variable = je_oiko_pb_gg_leave_isolationism_done }
+				NOT = { has_variable = je_oiko_pb_gg_leave_isolationism_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_leave_isolationism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:PRU ?= root c:NGF ?= root }
+				game_date >= 1845.1.1
+				game_date < 1872.1.1
+				scaled_debt >= 0.3
+				NOT = { has_journal_entry = je_oiko_pb_pru_war_chest }
+				NOT = { has_variable = je_oiko_pb_pru_war_chest_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_war_chest }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				game_date >= 1845.1.1
+				has_law_or_variant = law_type:law_legacy_slavery
+				net_fixed_income >= 0
+				scaled_debt < 0.25
+				ig:ig_landowners ?= { is_in_government = no }
+				NOT = { ig:ig_landowners ?= { ig_clout >= 0.12 } }
+				NOT = { has_journal_entry = je_oiko_pb_usa_abolition_ready }
+				NOT = { has_variable = je_oiko_pb_usa_abolition_ready_done }
+				NOT = { has_variable = je_oiko_pb_usa_abolition_ready_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_abolition_ready }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				game_date < 1881.1.1
+				has_law_or_variant = law_type:law_slavery_banned
+				scaled_debt >= 0.5
+				NOT = { has_journal_entry = je_oiko_pb_usa_debt_during_debate }
+				NOT = { has_variable = je_oiko_pb_usa_debt_during_debate_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_debt_during_debate }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_slavery_banned
+				ig:ig_landowners ?= { is_in_government = yes }
+				NOT = { has_journal_entry = je_oiko_pb_usa_planters_out }
+				NOT = { has_variable = je_oiko_pb_usa_planters_out_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_planters_out }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				game_date >= 1848.1.1
+				has_technology_researched = nationalism
+				scaled_debt >= 0.3
+				NOT = { has_journal_entry = je_oiko_pb_sar_war_chest }
+				NOT = { has_variable = je_oiko_pb_sar_war_chest_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_war_chest }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:FRA ?= root }
+				has_technology_researched = nationalism
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_fra_natural_borders }
+				NOT = { has_variable = je_oiko_pb_fra_natural_borders_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_natural_borders }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				has_law_or_variant = law_type:law_monarchy
+				has_technology_researched = philosophical_pragmatism
+				has_technology_researched = nationalism
+				NOT = { has_journal_entry = je_oiko_pb_aus_dual_monarchy_blocks_germany }
+				NOT = { has_variable = je_oiko_pb_aus_dual_monarchy_blocks_germany_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_dual_monarchy_blocks_germany }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				has_technology_researched = pan-nationalism
+				scaled_debt >= 0.25
+				NOT = { has_journal_entry = je_oiko_pb_aus_no_war_on_credit }
+				NOT = { has_variable = je_oiko_pb_aus_no_war_on_credit_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_no_war_on_credit }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:ITA ?= root }
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_ita_integrate }
+				NOT = { has_variable = je_oiko_pb_ita_integrate_skipped }
+			}
+			add_journal_entry = { type = je_oiko_pb_ita_integrate }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
 				net_fixed_income < 0
 				scaled_debt >= 0.85
 				NOT = { has_journal_entry = je_oiko_pb_gen_near_default }
@@ -58,209 +272,6 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				OR = { c:PRU ?= root }
-				game_date < 1841.1.1
-				military_expenses_share >= 0.45
-				NOT = { has_journal_entry = je_oiko_pb_pru_opening_army }
-				NOT = { has_variable = je_oiko_pb_pru_opening_army_done }
-				NOT = { has_variable = je_oiko_pb_pru_opening_army_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_opening_army }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root c:NGF ?= root }
-				game_date >= 1845.1.1
-				game_date < 1872.1.1
-				scaled_debt >= 0.3
-				NOT = { has_journal_entry = je_oiko_pb_pru_war_chest }
-				NOT = { has_variable = je_oiko_pb_pru_war_chest_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_war_chest }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				has_law_or_variant = law_type:law_protectionism
-				market_capital.market = { mg:grain = { market_goods_pricier >= 0.25 } }
-				NOT = { has_journal_entry = je_oiko_pb_gbr_grain_warning }
-				NOT = { has_variable = je_oiko_pb_gbr_grain_warning_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_grain_warning }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date >= 1845.1.1
-				has_law_or_variant = law_type:law_legacy_slavery
-				net_fixed_income >= 0
-				scaled_debt < 0.25
-				ig:ig_landowners ?= { is_in_government = no }
-				NOT = { ig:ig_landowners ?= { ig_clout >= 0.12 } }
-				NOT = { has_journal_entry = je_oiko_pb_usa_abolition_ready }
-				NOT = { has_variable = je_oiko_pb_usa_abolition_ready_done }
-				NOT = { has_variable = je_oiko_pb_usa_abolition_ready_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_abolition_ready }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date < 1881.1.1
-				has_law_or_variant = law_type:law_slavery_banned
-				scaled_debt >= 0.5
-				NOT = { has_journal_entry = je_oiko_pb_usa_debt_during_debate }
-				NOT = { has_variable = je_oiko_pb_usa_debt_during_debate_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_debt_during_debate }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_slavery_banned
-				ig:ig_landowners ?= { is_in_government = yes }
-				NOT = { has_journal_entry = je_oiko_pb_usa_planters_out }
-				NOT = { has_variable = je_oiko_pb_usa_planters_out_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_planters_out }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date < 1839.1.1
-				oiko_lvl_building_construction_sector < 3
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_sar_construction }
-				NOT = { has_variable = je_oiko_pb_sar_construction_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_construction }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date >= 1848.1.1
-				has_technology_researched = nationalism
-				scaled_debt >= 0.3
-				NOT = { has_journal_entry = je_oiko_pb_sar_war_chest }
-				NOT = { has_variable = je_oiko_pb_sar_war_chest_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_war_chest }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:ITA ?= root }
-				net_fixed_income < 0
-				NOT = { has_journal_entry = je_oiko_pb_ita_integrate }
-				NOT = { has_variable = je_oiko_pb_ita_integrate_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_ita_integrate }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date >= 1840.1.1
-				game_date < 1849.1.1
-				has_law_or_variant = law_type:law_wealth_voting
-				has_technology_researched = democracy
-				NOT = { has_journal_entry = je_oiko_pb_fra_census_before_1848 }
-				NOT = { has_variable = je_oiko_pb_fra_census_before_1848_done }
-				NOT = { has_variable = je_oiko_pb_fra_census_before_1848_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_census_before_1848 }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				has_technology_researched = nationalism
-				net_fixed_income < 0
-				NOT = { has_journal_entry = je_oiko_pb_fra_natural_borders }
-				NOT = { has_variable = je_oiko_pb_fra_natural_borders_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_natural_borders }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				has_law_or_variant = law_type:law_land_based_taxation
-				has_technology_researched = currency_standards
-				NOT = { has_journal_entry = je_oiko_pb_aus_per_capita }
-				NOT = { has_variable = je_oiko_pb_aus_per_capita_done }
-				NOT = { has_variable = je_oiko_pb_aus_per_capita_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_per_capita }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date < 1851.1.1
-				oiko_lvl_building_government_administration < 60
-				NOT = { has_journal_entry = je_oiko_pb_aus_tax_capacity }
-				NOT = { has_variable = je_oiko_pb_aus_tax_capacity_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_tax_capacity }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date < 1851.1.1
-				ig:ig_landowners ?= { is_in_government = no }
-				NOT = { has_journal_entry = je_oiko_pb_aus_metternich }
-				NOT = { has_variable = je_oiko_pb_aus_metternich_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_metternich }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date >= 1845.1.1
-				game_date < 1850.1.1
-				net_fixed_income < 0
-				NOT = { has_journal_entry = je_oiko_pb_aus_before_1848 }
-				NOT = { has_variable = je_oiko_pb_aus_before_1848_done }
-				NOT = { has_variable = je_oiko_pb_aus_before_1848_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_before_1848 }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				has_law_or_variant = law_type:law_monarchy
-				has_technology_researched = philosophical_pragmatism
-				has_technology_researched = nationalism
-				NOT = { has_journal_entry = je_oiko_pb_aus_dual_monarchy_blocks_germany }
-				NOT = { has_variable = je_oiko_pb_aus_dual_monarchy_blocks_germany_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_dual_monarchy_blocks_germany }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				has_technology_researched = pan-nationalism
-				scaled_debt >= 0.25
-				NOT = { has_journal_entry = je_oiko_pb_aus_no_war_on_credit }
-				NOT = { has_variable = je_oiko_pb_aus_no_war_on_credit_skipped }
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_no_war_on_credit }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
 				has_law_or_variant = law_type:law_industry_banned
 				NOT = { has_journal_entry = je_oiko_pb_gg_leave_industry_banned }
 				NOT = { has_variable = je_oiko_pb_gg_leave_industry_banned_done }
@@ -271,25 +282,199 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				has_law_or_variant = law_type:law_isolationism
-				has_technology_researched = international_trade
-				NOT = { has_journal_entry = je_oiko_pb_gg_leave_isolationism }
-				NOT = { has_variable = je_oiko_pb_gg_leave_isolationism_done }
-				NOT = { has_variable = je_oiko_pb_gg_leave_isolationism_skipped }
+				OR = { c:PRU ?= root }
+				game_date < 1839.1.1
+				NOT = { has_journal_entry = je_oiko_pb_pru_opening_plan }
+				NOT = { has_variable = je_oiko_pb_pru_opening_plan_skipped }
+				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gg_leave_isolationism }
+			add_journal_entry = { type = je_oiko_pb_pru_opening_plan }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
 			limit = {
-				scaled_debt >= 0.5
-				scaled_debt < 0.85
-				country_rank < rank_value:great_power
-				NOT = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy }
-				NOT = { has_variable = je_oiko_pb_gen_debt_unhealthy_skipped }
+				OR = { c:GBR ?= root }
+				game_date < 1841.1.1
+				oiko_lvl_building_naval_administration >= 100
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_gbr_no_new_navy }
+				NOT = { has_variable = je_oiko_pb_gbr_no_new_navy_skipped }
 				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gen_debt_unhealthy }
+			add_journal_entry = { type = je_oiko_pb_gbr_no_new_navy }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				game_date < 1841.1.1
+				oiko_lvl_building_construction_sector < 20
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_gbr_construction }
+				NOT = { has_variable = je_oiko_pb_gbr_construction_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_construction }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				game_date < 1841.1.1
+				oiko_lvl_building_construction_sector < 10
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_usa_construction_sectors }
+				NOT = { has_variable = je_oiko_pb_usa_construction_sectors_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_construction_sectors }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				game_date < 1841.1.1
+				has_law_or_variant = law_type:law_per_capita_based_taxation
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_usa_luxury_taxes }
+				NOT = { has_variable = je_oiko_pb_usa_luxury_taxes_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_luxury_taxes }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				game_date < 1846.1.1
+				NOT = { has_journal_entry = je_oiko_pb_usa_texas }
+				NOT = { has_variable = je_oiko_pb_usa_texas_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_texas }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root c:ITA ?= root }
+				has_technology_researched = atmospheric_engine
+				oiko_lvl_building_coal_mine < 1
+				NOT = { has_journal_entry = je_oiko_pb_sar_coal }
+				NOT = { has_variable = je_oiko_pb_sar_coal_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_coal }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				has_technology_researched = mechanical_tools
+				has_technology_researched = atmospheric_engine
+				NOT = { has_technology_researched = railways }
+				NOT = { has_journal_entry = je_oiko_pb_sar_railways_research }
+				NOT = { has_variable = je_oiko_pb_sar_railways_research_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_railways_research }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				game_date < 1841.1.1
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_sar_subventions }
+				NOT = { has_variable = je_oiko_pb_sar_subventions_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_subventions }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:FRA ?= root }
+				game_date < 1846.1.1
+				oiko_lvl_building_iron_mine < 15
+				market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } }
+				NOT = { has_journal_entry = je_oiko_pb_fra_iron }
+				NOT = { has_variable = je_oiko_pb_fra_iron_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_iron }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:FRA ?= root }
+				has_technology_researched = atmospheric_engine
+				oiko_lvl_building_motor_industry < 1
+				market_capital.market = { mg:engines = { market_goods_pricier >= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_fra_engines }
+				NOT = { has_variable = je_oiko_pb_fra_engines_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_engines }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:FRA ?= root }
+				game_date < 1851.1.1
+				net_fixed_income >= 0
+				oiko_pb_balance_share < 0.1
+				NOT = { has_journal_entry = je_oiko_pb_fra_haiti_margin }
+				NOT = { has_variable = je_oiko_pb_fra_haiti_margin_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_haiti_margin }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				game_date < 1841.1.1
+				oiko_lvl_building_construction_sector < 12
+				net_fixed_income >= 0
+				scaled_debt <= 0
+				NOT = { has_journal_entry = je_oiko_pb_aus_construction }
+				NOT = { has_variable = je_oiko_pb_aus_construction_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_construction }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_law_or_variant = law_type:law_serfdom
+				NOT = { has_journal_entry = je_oiko_pb_gg_leave_serfdom }
+				NOT = { has_variable = je_oiko_pb_gg_leave_serfdom_done }
+				NOT = { has_variable = je_oiko_pb_gg_leave_serfdom_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_leave_serfdom }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date < 1846.1.1
+				has_technology_researched = manufacturies
+				NOT = { has_journal_entry = je_oiko_pb_gg_decree_manufacturing }
+				NOT = { has_variable = je_oiko_pb_gg_decree_manufacturing_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_decree_manufacturing }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date < 1846.1.1
+				net_fixed_income < 0
+				NOT = { has_journal_entry = je_oiko_pb_gx_balance_with_pool }
+				NOT = { has_variable = je_oiko_pb_gx_balance_with_pool_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_balance_with_pool }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -307,39 +492,6 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				oiko_pb_balance_share >= 0.15
-				scaled_debt <= 0
-				NOT = { has_journal_entry = je_oiko_pb_gen_surplus_to_construction }
-				NOT = { has_variable = je_oiko_pb_gen_surplus_to_construction_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_surplus_to_construction }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				net_fixed_income < 0
-				military_expenses_share >= 0.45
-				NOT = { has_journal_entry = je_oiko_pb_gen_army_share }
-				NOT = { has_variable = je_oiko_pb_gen_army_share_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_army_share }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = gunsmithing
-				market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.1 } }
-				NOT = { has_journal_entry = je_oiko_pb_gen_small_arms }
-				NOT = { has_variable = je_oiko_pb_gen_small_arms_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_small_arms }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
 				has_technology_researched = percussion_cap
 				market_capital.market = { mg:ammunition = { market_goods_pricier >= 0.1 } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_ammunition }
@@ -351,16 +503,7 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				market_capital.market = { mg:grain = { market_goods_pricier >= 0.15 } }
-				NOT = { has_journal_entry = je_oiko_pb_gen_grain }
-				NOT = { has_variable = je_oiko_pb_gen_grain_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_grain }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
+				game_date >= 1840.1.1
 				oiko_lvl_building_construction_sector >= 1
 				OR = { market_capital.market = { mg:fabric = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:tools = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:wood = { market_goods_pricier >= 0.15 } } }
 				NOT = { has_journal_entry = je_oiko_pb_gen_construction_inputs }
@@ -384,30 +527,6 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				has_technology_researched = steelworking
-				oiko_lvl_building_coal_mine >= 1
-				oiko_lvl_building_iron_mine >= 1
-				market_capital.market = { mg:steel = { market_goods_pricier >= 0.1 } }
-				NOT = { has_journal_entry = je_oiko_pb_gen_steel }
-				NOT = { has_variable = je_oiko_pb_gen_steel_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_steel }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				oiko_pb_balance_share >= 0.05
-				scaled_debt < 0.25
-				NOT = { has_journal_entry = je_oiko_pb_gen_sector_pacing }
-				NOT = { has_variable = je_oiko_pb_gen_sector_pacing_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_sector_pacing }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
 				NOR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
 				NOT = { has_law_or_variant = law_type:law_laissez_faire }
 				NOT = { has_law_or_variant = law_type:law_command_economy }
@@ -423,6 +542,7 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
+				game_date >= 1840.1.1
 				ig:ig_industrialists ?= { is_in_government = no }
 				ig:ig_industrialists ?= { ig_clout >= 0.15 }
 				NOT = { has_journal_entry = je_oiko_pb_gen_industrialists_in }
@@ -430,6 +550,618 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_industrialists_in }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				has_law_or_variant = law_type:law_no_schools
+				literacy_rate < 0.3
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_schools }
+				NOT = { has_variable = je_oiko_pb_gen_early_schools_done }
+				NOT = { has_variable = je_oiko_pb_gen_early_schools_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_schools }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = manufacturies
+				market_capital.market = { mg:tools = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_tools }
+				NOT = { has_variable = je_oiko_pb_gen_early_tools_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_tools }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				market_capital.market = { mg:coal = { market_goods_pricier >= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_coal }
+				NOT = { has_variable = je_oiko_pb_gen_early_coal_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_coal }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				game_date >= 1840.1.1
+				NOT = { has_technology_researched = railways }
+				NOT = { has_journal_entry = je_oiko_pb_gen_early_railways_research }
+				NOT = { has_variable = je_oiko_pb_gen_early_railways_research_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_early_railways_research }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
+				NOT = { has_law_or_variant = law_type:law_agrarianism }
+				NOT = { has_law_or_variant = law_type:law_laissez_faire }
+				has_technology_researched = romanticism
+				NOT = { has_journal_entry = je_oiko_pb_gen_agrarianism_first }
+				NOT = { has_variable = je_oiko_pb_gen_agrarianism_first_done }
+				NOT = { has_variable = je_oiko_pb_gen_agrarianism_first_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_agrarianism_first }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:PRU ?= root c:NGF ?= root c:GER ?= root }
+				game_date >= 1837.1.1
+				game_date < 1856.1.1
+				oiko_lvl_building_steel_mill < 5
+				NOT = { has_journal_entry = je_oiko_pb_pru_industry_chain }
+				NOT = { has_variable = je_oiko_pb_pru_industry_chain_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_industry_chain }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:PRU ?= root c:NGF ?= root }
+				NOT = { has_law_or_variant = law_type:law_public_schools }
+				NOT = { has_journal_entry = je_oiko_pb_pru_public_schools }
+				NOT = { has_variable = je_oiko_pb_pru_public_schools_done }
+				NOT = { has_variable = je_oiko_pb_pru_public_schools_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_public_schools }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:PRU ?= root }
+				game_date >= 1838.1.1
+				NOT = { has_technology_researched = nationalism }
+				NOT = { has_journal_entry = je_oiko_pb_pru_nationalism }
+				NOT = { has_variable = je_oiko_pb_pru_nationalism_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_nationalism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:PRU ?= root }
+				game_date >= 1840.1.1
+				game_date < 1866.1.1
+				has_technology_researched = nationalism
+				NOT = { has_journal_entry = je_oiko_pb_pru_schleswig_holstein }
+				NOT = { has_variable = je_oiko_pb_pru_schleswig_holstein_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_schleswig_holstein }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				has_law_or_variant = law_type:law_protectionism
+				has_technology_researched = international_trade
+				ig:ig_landowners ?= { is_in_government = no }
+				NOT = { has_journal_entry = je_oiko_pb_gbr_corn_laws }
+				NOT = { has_variable = je_oiko_pb_gbr_corn_laws_done }
+				NOT = { has_variable = je_oiko_pb_gbr_corn_laws_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_corn_laws }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:GBR ?= root }
+				oiko_lvl_building_textile_mill >= 40
+				market_capital.market = { mg:fabric = { market_goods_pricier <= -0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gbr_fabric_glut }
+				NOT = { has_variable = je_oiko_pb_gbr_fabric_glut_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_fabric_glut }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				has_law_or_variant = law_type:law_wealth_voting
+				has_technology_researched = democracy
+				ig:ig_trade_unions ?= { ig_clout >= 0.1 }
+				NOT = { has_journal_entry = je_oiko_pb_gbr_chartism }
+				NOT = { has_variable = je_oiko_pb_gbr_chartism_done }
+				NOT = { has_variable = je_oiko_pb_gbr_chartism_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_chartism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:GBR ?= root }
+				game_date >= 1840.1.1
+				game_date < 1887.1.1
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_gbr_brazil_slave_trade }
+				NOT = { has_variable = je_oiko_pb_gbr_brazil_slave_trade_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_brazil_slave_trade }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_legacy_slavery
+				NOT = { has_journal_entry = je_oiko_pb_usa_build_north }
+				NOT = { has_variable = je_oiko_pb_usa_build_north_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_build_north }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_local_police
+				has_law_or_variant = law_type:law_legacy_slavery
+				has_technology_researched = law_enforcement
+				NOT = { has_journal_entry = je_oiko_pb_usa_dedicated_police }
+				NOT = { has_variable = je_oiko_pb_usa_dedicated_police_done }
+				NOT = { has_variable = je_oiko_pb_usa_dedicated_police_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_dedicated_police }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:USA ?= root }
+				game_date < 1845.1.1
+				has_law_or_variant = law_type:law_legacy_slavery
+				ig:ig_landowners ?= { ig_clout >= 0.15 }
+				NOT = { has_journal_entry = je_oiko_pb_usa_not_yet_abolition }
+				NOT = { has_variable = je_oiko_pb_usa_not_yet_abolition_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_not_yet_abolition }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				game_date < 1851.1.1
+				has_technology_researched = nationalism
+				NOT = { has_journal_entry = je_oiko_pb_usa_manifest_destiny }
+				NOT = { has_variable = je_oiko_pb_usa_manifest_destiny_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_manifest_destiny }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_frontier_colonization
+				NOT = { has_technology_researched = quinine }
+				NOT = { has_journal_entry = je_oiko_pb_usa_quinine }
+				NOT = { has_variable = je_oiko_pb_usa_quinine_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_quinine }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:SAR ?= root c:ITA ?= root }
+				oiko_lvl_building_sulfur_mine < 1
+				market_capital.market = { mg:sulfur = { market_goods_pricier >= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_sar_sulfur }
+				NOT = { has_variable = je_oiko_pb_sar_sulfur_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_sulfur }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:SAR ?= root }
+				game_date < 1851.1.1
+				military_expenses_share >= 0.3
+				NOT = { has_journal_entry = je_oiko_pb_sar_no_early_wars }
+				NOT = { has_variable = je_oiko_pb_sar_no_early_wars_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_no_early_wars }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:SAR ?= root }
+				game_date >= 1837.1.1
+				NOT = { has_technology_researched = nationalism }
+				NOT = { has_journal_entry = je_oiko_pb_sar_nationalism }
+				NOT = { has_variable = je_oiko_pb_sar_nationalism_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_nationalism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				game_date < 1861.1.1
+				has_technology_researched = nationalism
+				ig:ig_devout ?= { is_in_government = yes }
+				ig:ig_landowners ?= { is_in_government = yes }
+				NOT = { has_journal_entry = je_oiko_pb_sar_risorgimento }
+				NOT = { has_variable = je_oiko_pb_sar_risorgimento_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_risorgimento }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:FRA ?= root }
+				game_date < 1856.1.1
+				has_law_or_variant = law_type:law_monarchy
+				ig:ig_industrialists ?= { is_in_government = no }
+				NOT = { has_journal_entry = je_oiko_pb_fra_orleanists }
+				NOT = { has_variable = je_oiko_pb_fra_orleanists_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_orleanists }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:FRA ?= root }
+				game_date < 1851.1.1
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_fra_algeria }
+				NOT = { has_variable = je_oiko_pb_fra_algeria_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_algeria }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:FRA ?= root }
+				has_technology_researched = steelworking
+				oiko_lvl_building_steel_mill < 5
+				market_capital.market = { mg:coal = { market_goods_pricier <= 0.1 } }
+				market_capital.market = { mg:iron = { market_goods_pricier <= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_fra_schneider }
+				NOT = { has_variable = je_oiko_pb_fra_schneider_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_schneider }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:FRA ?= root }
+				oiko_lvl_building_vineyard >= 60
+				market_capital.market = { mg:wine = { market_goods_pricier <= -0.15 } }
+				NOT = { has_journal_entry = je_oiko_pb_fra_vineyards }
+				NOT = { has_variable = je_oiko_pb_fra_vineyards_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_vineyards }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:FRA ?= root }
+				game_date >= 1845.1.1
+				game_date < 1861.1.1
+				OR = { market_capital.market = { mg:artillery = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.1 } } }
+				NOT = { has_journal_entry = je_oiko_pb_fra_egypt_treaty }
+				NOT = { has_variable = je_oiko_pb_fra_egypt_treaty_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_egypt_treaty }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:FRA ?= root }
+				game_date >= 1845.1.1
+				has_law_or_variant = law_type:law_colonial_slavery
+				ig:ig_intelligentsia ?= { is_in_government = yes }
+				NOT = { has_journal_entry = je_oiko_pb_fra_abolition }
+				NOT = { has_variable = je_oiko_pb_fra_abolition_done }
+				NOT = { has_variable = je_oiko_pb_fra_abolition_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_fra_abolition }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				has_technology_researched = railways
+				oiko_lvl_building_motor_industry < 1
+				NOT = { has_journal_entry = je_oiko_pb_aus_engines_first }
+				NOT = { has_variable = je_oiko_pb_aus_engines_first_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_engines_first }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:AUS ?= root }
+				market_capital.market = { mg:coal = { market_goods_pricier >= 0.15 } }
+				NOT = { has_journal_entry = je_oiko_pb_aus_coal }
+				NOT = { has_variable = je_oiko_pb_aus_coal_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_coal }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:AUS ?= root }
+				OR = { market_capital.market = { mg:artillery = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.15 } } }
+				NOT = { has_journal_entry = je_oiko_pb_aus_arms_out_of_lombardy }
+				NOT = { has_variable = je_oiko_pb_aus_arms_out_of_lombardy_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_arms_out_of_lombardy }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:AUS ?= root }
+				game_date < 1851.1.1
+				military_expenses_share >= 0.35
+				NOT = { has_journal_entry = je_oiko_pb_aus_no_army_growth }
+				NOT = { has_variable = je_oiko_pb_aus_no_army_growth_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_no_army_growth }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:AUS ?= root }
+				game_date >= 1840.1.1
+				has_law_or_variant = law_type:law_crownland_diets
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_aus_appointed_bureaucrats }
+				NOT = { has_variable = je_oiko_pb_aus_appointed_bureaucrats_done }
+				NOT = { has_variable = je_oiko_pb_aus_appointed_bureaucrats_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_appointed_bureaucrats }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:AUS ?= root }
+				game_date < 1849.1.1
+				has_law_or_variant = law_type:law_crownland_diets
+				NOT = { has_journal_entry = je_oiko_pb_aus_hungary_later }
+				NOT = { has_variable = je_oiko_pb_aus_hungary_later_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_hungary_later }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				OR = { c:AUS ?= root }
+				market_capital.market = { mg:sulfur = { market_goods_pricier >= 0.15 } }
+				NOT = { has_journal_entry = je_oiko_pb_aus_venetia_sulfur }
+				NOT = { has_variable = je_oiko_pb_aus_venetia_sulfur_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_venetia_sulfur }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				NOR = { c:AUS ?= root }
+				has_law_or_variant = law_type:law_hereditary_bureaucrats
+				NOT = { has_journal_entry = je_oiko_pb_gg_leave_hereditary_bureaucrats }
+				NOT = { has_variable = je_oiko_pb_gg_leave_hereditary_bureaucrats_done }
+				NOT = { has_variable = je_oiko_pb_gg_leave_hereditary_bureaucrats_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_leave_hereditary_bureaucrats }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				NOT = { has_technology_researched = atmospheric_engine }
+				market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } }
+				NOT = { has_journal_entry = je_oiko_pb_gg_iron_research_pump }
+				NOT = { has_variable = je_oiko_pb_gg_iron_research_pump_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_iron_research_pump }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SPA ?= root }
+				has_technology_researched = steelworking
+				oiko_lvl_building_coal_mine < 5
+				NOT = { has_journal_entry = je_oiko_pb_gg_spa_duro_y_compania }
+				NOT = { has_variable = je_oiko_pb_gg_spa_duro_y_compania_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_spa_duro_y_compania }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = international_trade
+				NOT = { has_technology_researched = stock_exchange }
+				NOT = { has_journal_entry = je_oiko_pb_gg_stock_exchange }
+				NOT = { has_variable = je_oiko_pb_gg_stock_exchange_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_stock_exchange }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = atmospheric_engine
+				oiko_lvl_building_iron_mine >= 1
+				market_capital.market = { mg:iron = { market_goods_pricier >= 0.1 } }
+				market_capital.market = { mg:coal = { market_goods_pricier <= 0.25 } }
+				NOT = { has_journal_entry = je_oiko_pb_gg_iron_mine_pumps }
+				NOT = { has_variable = je_oiko_pb_gg_iron_mine_pumps_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_iron_mine_pumps }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = steelworking
+				oiko_lvl_building_logging_camp >= 1
+				market_capital.market = { mg:wood = { market_goods_pricier >= -0.2 } }
+				market_capital.market = { mg:tools = { market_goods_pricier <= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_gg_saw_mills }
+				NOT = { has_variable = je_oiko_pb_gg_saw_mills_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_saw_mills }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				NOR = { c:AUS ?= root }
+				has_law_or_variant = law_type:law_land_based_taxation
+				NOT = { has_law_or_variant = law_type:law_traditionalism }
+				has_technology_researched = currency_standards
+				NOT = { has_technology_researched = egalitarianism }
+				NOT = { has_journal_entry = je_oiko_pb_gg_land_to_per_capita }
+				NOT = { has_variable = je_oiko_pb_gg_land_to_per_capita_done }
+				NOT = { has_variable = je_oiko_pb_gg_land_to_per_capita_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_land_to_per_capita }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				NOR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
+				has_law_or_variant = law_type:law_traditionalism
+				NOT = { has_law_or_variant = law_type:law_serfdom }
+				has_technology_researched = manufacturies
+				NOT = { has_technology_researched = international_trade }
+				NOT = { has_journal_entry = je_oiko_pb_gg_leave_traditionalism }
+				NOT = { has_variable = je_oiko_pb_gg_leave_traditionalism_done }
+				NOT = { has_variable = je_oiko_pb_gg_leave_traditionalism_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_leave_traditionalism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date < 1871.1.1
+				has_technology_researched = manufacturies
+				NOT = { has_journal_entry = je_oiko_pb_gx_manufacturing_capital }
+				NOT = { has_variable = je_oiko_pb_gx_manufacturing_capital_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_manufacturing_capital }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				market_capital.market = { mg:clothes = { market_goods_pricier >= 0.1 } }
+				market_capital.market = { mg:furniture = { market_goods_pricier >= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_gx_clothes_before_furniture }
+				NOT = { has_variable = je_oiko_pb_gx_clothes_before_furniture_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_clothes_before_furniture }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1840.1.1
+				NOR = { c:AUS ?= root }
+				has_law_or_variant = law_type:law_national_supremacy
+				NOT = { has_journal_entry = je_oiko_pb_gx_citizenship_supremacy }
+				NOT = { has_variable = je_oiko_pb_gx_citizenship_supremacy_done }
+				NOT = { has_variable = je_oiko_pb_gx_citizenship_supremacy_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_citizenship_supremacy }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = steelworking
+				oiko_lvl_building_coal_mine >= 1
+				oiko_lvl_building_iron_mine >= 1
+				market_capital.market = { mg:steel = { market_goods_pricier >= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_steel }
+				NOT = { has_variable = je_oiko_pb_gen_steel_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_steel }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -466,64 +1198,6 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_assembly }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_law_or_variant = law_type:law_no_social_security
-				has_technology_researched = democracy
-				oiko_pb_balance_share >= 0.1
-				scaled_debt < 0.2
-				NOT = { has_journal_entry = je_oiko_pb_gen_welfare_when_solvent }
-				NOT = { has_variable = je_oiko_pb_gen_welfare_when_solvent_done }
-				NOT = { has_variable = je_oiko_pb_gen_welfare_when_solvent_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_welfare_when_solvent }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_law_or_variant = law_type:law_no_schools
-				literacy_rate < 0.3
-				NOT = { has_journal_entry = je_oiko_pb_gen_early_schools }
-				NOT = { has_variable = je_oiko_pb_gen_early_schools_done }
-				NOT = { has_variable = je_oiko_pb_gen_early_schools_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_early_schools }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = manufacturies
-				market_capital.market = { mg:tools = { market_goods_pricier >= 0.2 } }
-				NOT = { has_journal_entry = je_oiko_pb_gen_early_tools }
-				NOT = { has_variable = je_oiko_pb_gen_early_tools_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_early_tools }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				market_capital.market = { mg:coal = { market_goods_pricier >= 0.2 } }
-				NOT = { has_journal_entry = je_oiko_pb_gen_early_coal }
-				NOT = { has_variable = je_oiko_pb_gen_early_coal_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_early_coal }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				game_date >= 1840.1.1
-				NOT = { has_technology_researched = railways }
-				NOT = { has_journal_entry = je_oiko_pb_gen_early_railways_research }
-				NOT = { has_variable = je_oiko_pb_gen_early_railways_research_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_early_railways_research }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -577,6 +1251,289 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_mid_public_schools }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:PRU ?= root }
+				has_technology_researched = nationalism
+				net_fixed_income >= 0
+				scaled_debt < 0.3
+				NOT = { has_journal_entry = je_oiko_pb_pru_leadership_war }
+				NOT = { has_variable = je_oiko_pb_pru_leadership_war_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_pru_leadership_war }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:PRU ?= root c:NGF ?= root }
+				game_date >= 1855.1.1
+				has_technology_researched = nationalism
+				NOT = { has_technology_researched = pan-nationalism }
+				NOT = { has_journal_entry = je_oiko_pb_ngf_pan_nationalism }
+				NOT = { has_variable = je_oiko_pb_ngf_pan_nationalism_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_ngf_pan_nationalism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				has_law_or_variant = law_type:law_anti_strike_laws
+				has_technology_researched = labor_movement
+				ig:ig_trade_unions ?= { ig_clout >= 0.12 }
+				NOT = { has_journal_entry = je_oiko_pb_gbr_labour_laws }
+				NOT = { has_variable = je_oiko_pb_gbr_labour_laws_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_labour_laws }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				game_date >= 1850.1.1
+				has_technology_researched = civilizing_mission
+				net_fixed_income >= 0
+				NOT = { has_journal_entry = je_oiko_pb_gbr_raj }
+				NOT = { has_variable = je_oiko_pb_gbr_raj_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_raj }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1850.1.1
+				OR = { c:GBR ?= root }
+				game_date >= 1850.1.1
+				NOT = { has_technology_researched = ironclad_tech }
+				oiko_lvl_building_shipyard < 25
+				NOT = { has_journal_entry = je_oiko_pb_gbr_ironclads }
+				NOT = { has_variable = je_oiko_pb_gbr_ironclads_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_ironclads }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:GBR ?= root }
+				game_date < 1881.1.1
+				has_technology_researched = nationalism
+				NOT = { has_journal_entry = je_oiko_pb_gbr_dominions }
+				NOT = { has_variable = je_oiko_pb_gbr_dominions_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gbr_dominions }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1850.1.1
+				OR = { c:USA ?= root }
+				game_date >= 1845.1.1
+				has_law_or_variant = law_type:law_legacy_slavery
+				oiko_lvl_building_arms_industry < 8
+				NOT = { has_journal_entry = je_oiko_pb_usa_war_industry }
+				NOT = { has_variable = je_oiko_pb_usa_war_industry_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_war_industry }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_homesteading
+				has_law_or_variant = law_type:law_slavery_banned
+				has_technology_researched = mutual_funds
+				NOT = { has_journal_entry = je_oiko_pb_usa_commercialized_agriculture }
+				NOT = { has_variable = je_oiko_pb_usa_commercialized_agriculture_done }
+				NOT = { has_variable = je_oiko_pb_usa_commercialized_agriculture_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_commercialized_agriculture }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_racial_segregation
+				has_technology_researched = human_rights
+				NOT = { has_journal_entry = je_oiko_pb_usa_multicultural }
+				NOT = { has_variable = je_oiko_pb_usa_multicultural_done }
+				NOT = { has_variable = je_oiko_pb_usa_multicultural_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_usa_multicultural }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				has_technology_researched = nationalism
+				NOT = { has_journal_entry = je_oiko_pb_sar_two_sicilies }
+				NOT = { has_variable = je_oiko_pb_sar_two_sicilies_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_two_sicilies }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:SAR ?= root }
+				game_date >= 1850.1.1
+				has_technology_researched = nationalism
+				NOT = { has_journal_entry = je_oiko_pb_sar_turin }
+				NOT = { has_variable = je_oiko_pb_sar_turin_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_sar_turin }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				OR = { c:AUS ?= root }
+				game_date >= 1850.1.1
+				has_technology_researched = nationalism
+				NOT = { has_technology_researched = pan-nationalism }
+				NOT = { has_journal_entry = je_oiko_pb_aus_pan_nationalism }
+				NOT = { has_variable = je_oiko_pb_aus_pan_nationalism_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_aus_pan_nationalism }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1850.1.1
+				oiko_lvl_building_university < 20
+				oiko_lvl_building_university >= 1
+				net_fixed_income >= 0
+				scaled_debt < 0.5
+				NOT = { has_journal_entry = je_oiko_pb_gg_university_scale_cap }
+				NOT = { has_variable = je_oiko_pb_gg_university_scale_cap_done }
+				NOT = { has_variable = je_oiko_pb_gg_university_scale_cap_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_university_scale_cap }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				NOR = { c:USA ?= root }
+				has_law_or_variant = law_type:law_local_police
+				has_technology_researched = law_enforcement
+				NOT = { has_journal_entry = je_oiko_pb_gg_dedicated_police }
+				NOT = { has_variable = je_oiko_pb_gg_dedicated_police_done }
+				NOT = { has_variable = je_oiko_pb_gg_dedicated_police_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_dedicated_police }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_law_or_variant = law_type:law_child_labor_allowed
+				NOT = { has_law_or_variant = law_type:law_no_schools }
+				has_technology_researched = labor_movement
+				NOT = { has_journal_entry = je_oiko_pb_gg_restricted_child_labor }
+				NOT = { has_variable = je_oiko_pb_gg_restricted_child_labor_done }
+				NOT = { has_variable = je_oiko_pb_gg_restricted_child_labor_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_restricted_child_labor }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				NOR = { c:GBR ?= root }
+				has_technology_researched = screw_frigate
+				NOT = { has_technology_researched = ironclad_tech }
+				oiko_lvl_building_naval_administration >= 3
+				NOT = { has_journal_entry = je_oiko_pb_gg_ironclads }
+				NOT = { has_variable = je_oiko_pb_gg_ironclads_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_ironclads }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = railways
+				market_capital.market = { mg:transportation = { market_goods_pricier >= 0.15 } }
+				market_capital.market = { mg:engines = { market_goods_pricier <= 0.2 } }
+				NOT = { has_journal_entry = je_oiko_pb_gg_public_trams }
+				NOT = { has_variable = je_oiko_pb_gg_public_trams_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_public_trams }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				NOT = { has_law_or_variant = law_type:law_women_in_the_workplace }
+				NOT = { has_law_or_variant = law_type:law_womens_suffrage }
+				NOT = { has_law_or_variant = law_type:law_women_in_the_fields }
+				has_technology_researched = feminism
+				NOT = { has_journal_entry = je_oiko_pb_gg_women_in_workplace }
+				NOT = { has_variable = je_oiko_pb_gg_women_in_workplace_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_women_in_workplace }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = atmospheric_engine
+				NOT = { has_journal_entry = je_oiko_pb_gx_newest_methods }
+				NOT = { has_variable = je_oiko_pb_gx_newest_methods_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_newest_methods }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				game_date >= 1850.1.1
+				game_date >= 1850.1.1
+				average_sol < 20
+				NOT = { has_journal_entry = je_oiko_pb_gx_sol_for_growth }
+				NOT = { has_variable = je_oiko_pb_gx_sol_for_growth_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_sol_for_growth }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				NOR = { c:GBR ?= root }
+				has_law_or_variant = law_type:law_right_to_associate
+				has_technology_researched = labor_movement
+				NOT = { has_journal_entry = je_oiko_pb_gx_regulatory_bodies }
+				NOT = { has_variable = je_oiko_pb_gx_regulatory_bodies_done }
+				NOT = { has_variable = je_oiko_pb_gx_regulatory_bodies_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gx_regulatory_bodies }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_law_or_variant = law_type:law_no_social_security
+				has_technology_researched = democracy
+				oiko_pb_balance_share >= 0.1
+				scaled_debt < 0.2
+				NOT = { has_journal_entry = je_oiko_pb_gen_welfare_when_solvent }
+				NOT = { has_variable = je_oiko_pb_gen_welfare_when_solvent_done }
+				NOT = { has_variable = je_oiko_pb_gen_welfare_when_solvent_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_welfare_when_solvent }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -666,6 +1623,110 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
+				NOT = { has_law_or_variant = law_type:law_public_health_insurance }
+				has_technology_researched = pharmaceuticals
+				oiko_pb_balance_share >= 0.05
+				scaled_debt < 0.3
+				NOT = { has_journal_entry = je_oiko_pb_gg_public_health_insurance }
+				NOT = { has_variable = je_oiko_pb_gg_public_health_insurance_done }
+				NOT = { has_variable = je_oiko_pb_gg_public_health_insurance_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_public_health_insurance }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = combustion_engine
+				oiko_lvl_building_logging_camp >= 1
+				NOT = { has_journal_entry = je_oiko_pb_gg_no_chainsaws }
+				NOT = { has_variable = je_oiko_pb_gg_no_chainsaws_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_no_chainsaws }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_law_or_variant = law_type:law_proportional_taxation
+				has_technology_researched = socialism
+				average_sol < 15
+				NOT = { has_journal_entry = je_oiko_pb_gg_graduated_tax }
+				NOT = { has_variable = je_oiko_pb_gg_graduated_tax_done }
+				NOT = { has_variable = je_oiko_pb_gg_graduated_tax_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gg_graduated_tax }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				scaled_debt >= 0.5
+				scaled_debt < 0.85
+				country_rank < rank_value:great_power
+				NOT = { has_journal_entry = je_oiko_pb_gen_debt_unhealthy }
+				NOT = { has_variable = je_oiko_pb_gen_debt_unhealthy_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_debt_unhealthy }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				oiko_pb_balance_share >= 0.15
+				scaled_debt <= 0
+				NOT = { has_journal_entry = je_oiko_pb_gen_surplus_to_construction }
+				NOT = { has_variable = je_oiko_pb_gen_surplus_to_construction_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_surplus_to_construction }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				net_fixed_income < 0
+				military_expenses_share >= 0.45
+				NOT = { has_journal_entry = je_oiko_pb_gen_army_share }
+				NOT = { has_variable = je_oiko_pb_gen_army_share_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_army_share }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				has_technology_researched = gunsmithing
+				market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.1 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_small_arms }
+				NOT = { has_variable = je_oiko_pb_gen_small_arms_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_small_arms }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				market_capital.market = { mg:grain = { market_goods_pricier >= 0.15 } }
+				NOT = { has_journal_entry = je_oiko_pb_gen_grain }
+				NOT = { has_variable = je_oiko_pb_gen_grain_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_grain }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
+				oiko_pb_balance_share >= 0.05
+				scaled_debt < 0.25
+				NOT = { has_journal_entry = je_oiko_pb_gen_sector_pacing }
+				NOT = { has_variable = je_oiko_pb_gen_sector_pacing_skipped }
+				var:oiko_pb_slots > 0
+			}
+			add_journal_entry = { type = je_oiko_pb_gen_sector_pacing }
+			change_variable = { name = oiko_pb_slots subtract = 1 }
+		}
+		if = {
+			limit = {
 				game_date >= 1840.1.1
 				OR = { market_capital.market = { mg:clothes = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:furniture = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:grain = { market_goods_pricier >= 0.1 } } }
 				average_sol < 10
@@ -690,20 +1751,6 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				OR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
-				NOT = { has_law_or_variant = law_type:law_agrarianism }
-				NOT = { has_law_or_variant = law_type:law_laissez_faire }
-				has_technology_researched = romanticism
-				NOT = { has_journal_entry = je_oiko_pb_gen_agrarianism_first }
-				NOT = { has_variable = je_oiko_pb_gen_agrarianism_first_done }
-				NOT = { has_variable = je_oiko_pb_gen_agrarianism_first_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gen_agrarianism_first }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
 				radical_fraction = { value >= 0.1 }
 				tax_level >= very_high
 				NOT = { has_journal_entry = je_oiko_pb_gen_tax_level_too_high }
@@ -711,699 +1758,6 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gen_tax_level_too_high }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root }
-				game_date < 1839.1.1
-				NOT = { has_journal_entry = je_oiko_pb_pru_opening_plan }
-				NOT = { has_variable = je_oiko_pb_pru_opening_plan_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_opening_plan }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root c:NGF ?= root c:GER ?= root }
-				game_date >= 1837.1.1
-				game_date < 1856.1.1
-				oiko_lvl_building_steel_mill < 5
-				NOT = { has_journal_entry = je_oiko_pb_pru_industry_chain }
-				NOT = { has_variable = je_oiko_pb_pru_industry_chain_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_industry_chain }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root c:NGF ?= root }
-				NOT = { has_law_or_variant = law_type:law_public_schools }
-				NOT = { has_journal_entry = je_oiko_pb_pru_public_schools }
-				NOT = { has_variable = je_oiko_pb_pru_public_schools_done }
-				NOT = { has_variable = je_oiko_pb_pru_public_schools_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_public_schools }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root }
-				game_date >= 1838.1.1
-				NOT = { has_technology_researched = nationalism }
-				NOT = { has_journal_entry = je_oiko_pb_pru_nationalism }
-				NOT = { has_variable = je_oiko_pb_pru_nationalism_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_nationalism }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root }
-				game_date >= 1840.1.1
-				game_date < 1866.1.1
-				has_technology_researched = nationalism
-				NOT = { has_journal_entry = je_oiko_pb_pru_schleswig_holstein }
-				NOT = { has_variable = je_oiko_pb_pru_schleswig_holstein_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_schleswig_holstein }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root }
-				has_technology_researched = nationalism
-				net_fixed_income >= 0
-				scaled_debt < 0.3
-				NOT = { has_journal_entry = je_oiko_pb_pru_leadership_war }
-				NOT = { has_variable = je_oiko_pb_pru_leadership_war_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_pru_leadership_war }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:PRU ?= root c:NGF ?= root }
-				game_date >= 1855.1.1
-				has_technology_researched = nationalism
-				NOT = { has_technology_researched = pan-nationalism }
-				NOT = { has_journal_entry = je_oiko_pb_ngf_pan_nationalism }
-				NOT = { has_variable = je_oiko_pb_ngf_pan_nationalism_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_ngf_pan_nationalism }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				game_date < 1841.1.1
-				oiko_lvl_building_naval_administration >= 100
-				net_fixed_income < 0
-				NOT = { has_journal_entry = je_oiko_pb_gbr_no_new_navy }
-				NOT = { has_variable = je_oiko_pb_gbr_no_new_navy_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_no_new_navy }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				game_date < 1841.1.1
-				oiko_lvl_building_construction_sector < 20
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_gbr_construction }
-				NOT = { has_variable = je_oiko_pb_gbr_construction_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_construction }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				has_law_or_variant = law_type:law_protectionism
-				has_technology_researched = international_trade
-				ig:ig_landowners ?= { is_in_government = no }
-				NOT = { has_journal_entry = je_oiko_pb_gbr_corn_laws }
-				NOT = { has_variable = je_oiko_pb_gbr_corn_laws_done }
-				NOT = { has_variable = je_oiko_pb_gbr_corn_laws_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_corn_laws }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				oiko_lvl_building_textile_mill >= 40
-				market_capital.market = { mg:fabric = { market_goods_pricier <= -0.2 } }
-				NOT = { has_journal_entry = je_oiko_pb_gbr_fabric_glut }
-				NOT = { has_variable = je_oiko_pb_gbr_fabric_glut_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_fabric_glut }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				has_law_or_variant = law_type:law_wealth_voting
-				has_technology_researched = democracy
-				ig:ig_trade_unions ?= { ig_clout >= 0.1 }
-				NOT = { has_journal_entry = je_oiko_pb_gbr_chartism }
-				NOT = { has_variable = je_oiko_pb_gbr_chartism_done }
-				NOT = { has_variable = je_oiko_pb_gbr_chartism_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_chartism }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				has_law_or_variant = law_type:law_anti_strike_laws
-				has_technology_researched = labor_movement
-				ig:ig_trade_unions ?= { ig_clout >= 0.12 }
-				NOT = { has_journal_entry = je_oiko_pb_gbr_labour_laws }
-				NOT = { has_variable = je_oiko_pb_gbr_labour_laws_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_labour_laws }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				game_date >= 1840.1.1
-				game_date < 1887.1.1
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_gbr_brazil_slave_trade }
-				NOT = { has_variable = je_oiko_pb_gbr_brazil_slave_trade_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_brazil_slave_trade }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				game_date >= 1850.1.1
-				has_technology_researched = civilizing_mission
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_gbr_raj }
-				NOT = { has_variable = je_oiko_pb_gbr_raj_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_raj }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				game_date >= 1850.1.1
-				NOT = { has_technology_researched = ironclad_tech }
-				oiko_lvl_building_shipyard < 25
-				NOT = { has_journal_entry = je_oiko_pb_gbr_ironclads }
-				NOT = { has_variable = je_oiko_pb_gbr_ironclads_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_ironclads }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:GBR ?= root }
-				game_date < 1881.1.1
-				has_technology_researched = nationalism
-				NOT = { has_journal_entry = je_oiko_pb_gbr_dominions }
-				NOT = { has_variable = je_oiko_pb_gbr_dominions_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gbr_dominions }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date < 1841.1.1
-				oiko_lvl_building_construction_sector < 10
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_usa_construction_sectors }
-				NOT = { has_variable = je_oiko_pb_usa_construction_sectors_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_construction_sectors }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date < 1841.1.1
-				has_law_or_variant = law_type:law_per_capita_based_taxation
-				net_fixed_income < 0
-				NOT = { has_journal_entry = je_oiko_pb_usa_luxury_taxes }
-				NOT = { has_variable = je_oiko_pb_usa_luxury_taxes_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_luxury_taxes }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_legacy_slavery
-				NOT = { has_journal_entry = je_oiko_pb_usa_build_north }
-				NOT = { has_variable = je_oiko_pb_usa_build_north_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_build_north }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_local_police
-				has_law_or_variant = law_type:law_legacy_slavery
-				has_technology_researched = law_enforcement
-				NOT = { has_journal_entry = je_oiko_pb_usa_dedicated_police }
-				NOT = { has_variable = je_oiko_pb_usa_dedicated_police_done }
-				NOT = { has_variable = je_oiko_pb_usa_dedicated_police_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_dedicated_police }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date < 1845.1.1
-				has_law_or_variant = law_type:law_legacy_slavery
-				ig:ig_landowners ?= { ig_clout >= 0.15 }
-				NOT = { has_journal_entry = je_oiko_pb_usa_not_yet_abolition }
-				NOT = { has_variable = je_oiko_pb_usa_not_yet_abolition_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_not_yet_abolition }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date >= 1845.1.1
-				has_law_or_variant = law_type:law_legacy_slavery
-				oiko_lvl_building_arms_industry < 8
-				NOT = { has_journal_entry = je_oiko_pb_usa_war_industry }
-				NOT = { has_variable = je_oiko_pb_usa_war_industry_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_war_industry }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date < 1851.1.1
-				has_technology_researched = nationalism
-				NOT = { has_journal_entry = je_oiko_pb_usa_manifest_destiny }
-				NOT = { has_variable = je_oiko_pb_usa_manifest_destiny_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_manifest_destiny }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				game_date < 1846.1.1
-				NOT = { has_journal_entry = je_oiko_pb_usa_texas }
-				NOT = { has_variable = je_oiko_pb_usa_texas_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_texas }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_frontier_colonization
-				NOT = { has_technology_researched = quinine }
-				NOT = { has_journal_entry = je_oiko_pb_usa_quinine }
-				NOT = { has_variable = je_oiko_pb_usa_quinine_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_quinine }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_homesteading
-				has_law_or_variant = law_type:law_slavery_banned
-				has_technology_researched = mutual_funds
-				NOT = { has_journal_entry = je_oiko_pb_usa_commercialized_agriculture }
-				NOT = { has_variable = je_oiko_pb_usa_commercialized_agriculture_done }
-				NOT = { has_variable = je_oiko_pb_usa_commercialized_agriculture_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_commercialized_agriculture }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_racial_segregation
-				has_technology_researched = human_rights
-				NOT = { has_journal_entry = je_oiko_pb_usa_multicultural }
-				NOT = { has_variable = je_oiko_pb_usa_multicultural_done }
-				NOT = { has_variable = je_oiko_pb_usa_multicultural_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_usa_multicultural }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root c:ITA ?= root }
-				has_technology_researched = atmospheric_engine
-				oiko_lvl_building_coal_mine < 1
-				NOT = { has_journal_entry = je_oiko_pb_sar_coal }
-				NOT = { has_variable = je_oiko_pb_sar_coal_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_coal }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				has_technology_researched = mechanical_tools
-				has_technology_researched = atmospheric_engine
-				NOT = { has_technology_researched = railways }
-				NOT = { has_journal_entry = je_oiko_pb_sar_railways_research }
-				NOT = { has_variable = je_oiko_pb_sar_railways_research_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_railways_research }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root c:ITA ?= root }
-				oiko_lvl_building_sulfur_mine < 1
-				market_capital.market = { mg:sulfur = { market_goods_pricier >= 0.1 } }
-				NOT = { has_journal_entry = je_oiko_pb_sar_sulfur }
-				NOT = { has_variable = je_oiko_pb_sar_sulfur_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_sulfur }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date < 1841.1.1
-				net_fixed_income < 0
-				NOT = { has_journal_entry = je_oiko_pb_sar_subventions }
-				NOT = { has_variable = je_oiko_pb_sar_subventions_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_subventions }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date < 1851.1.1
-				military_expenses_share >= 0.3
-				NOT = { has_journal_entry = je_oiko_pb_sar_no_early_wars }
-				NOT = { has_variable = je_oiko_pb_sar_no_early_wars_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_no_early_wars }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date >= 1837.1.1
-				NOT = { has_technology_researched = nationalism }
-				NOT = { has_journal_entry = je_oiko_pb_sar_nationalism }
-				NOT = { has_variable = je_oiko_pb_sar_nationalism_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_nationalism }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date < 1861.1.1
-				has_technology_researched = nationalism
-				ig:ig_devout ?= { is_in_government = yes }
-				ig:ig_landowners ?= { is_in_government = yes }
-				NOT = { has_journal_entry = je_oiko_pb_sar_risorgimento }
-				NOT = { has_variable = je_oiko_pb_sar_risorgimento_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_risorgimento }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				has_technology_researched = nationalism
-				NOT = { has_journal_entry = je_oiko_pb_sar_two_sicilies }
-				NOT = { has_variable = je_oiko_pb_sar_two_sicilies_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_two_sicilies }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SAR ?= root }
-				game_date >= 1850.1.1
-				has_technology_researched = nationalism
-				NOT = { has_journal_entry = je_oiko_pb_sar_turin }
-				NOT = { has_variable = je_oiko_pb_sar_turin_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_sar_turin }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date < 1846.1.1
-				oiko_lvl_building_iron_mine < 15
-				market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } }
-				NOT = { has_journal_entry = je_oiko_pb_fra_iron }
-				NOT = { has_variable = je_oiko_pb_fra_iron_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_iron }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				has_technology_researched = atmospheric_engine
-				oiko_lvl_building_motor_industry < 1
-				market_capital.market = { mg:engines = { market_goods_pricier >= 0.1 } }
-				NOT = { has_journal_entry = je_oiko_pb_fra_engines }
-				NOT = { has_variable = je_oiko_pb_fra_engines_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_engines }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date < 1851.1.1
-				net_fixed_income >= 0
-				oiko_pb_balance_share < 0.1
-				NOT = { has_journal_entry = je_oiko_pb_fra_haiti_margin }
-				NOT = { has_variable = je_oiko_pb_fra_haiti_margin_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_haiti_margin }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date < 1856.1.1
-				has_law_or_variant = law_type:law_monarchy
-				ig:ig_industrialists ?= { is_in_government = no }
-				NOT = { has_journal_entry = je_oiko_pb_fra_orleanists }
-				NOT = { has_variable = je_oiko_pb_fra_orleanists_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_orleanists }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date < 1851.1.1
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_fra_algeria }
-				NOT = { has_variable = je_oiko_pb_fra_algeria_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_algeria }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				has_technology_researched = steelworking
-				oiko_lvl_building_steel_mill < 5
-				market_capital.market = { mg:coal = { market_goods_pricier <= 0.1 } }
-				market_capital.market = { mg:iron = { market_goods_pricier <= 0.1 } }
-				NOT = { has_journal_entry = je_oiko_pb_fra_schneider }
-				NOT = { has_variable = je_oiko_pb_fra_schneider_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_schneider }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				oiko_lvl_building_vineyard >= 60
-				market_capital.market = { mg:wine = { market_goods_pricier <= -0.15 } }
-				NOT = { has_journal_entry = je_oiko_pb_fra_vineyards }
-				NOT = { has_variable = je_oiko_pb_fra_vineyards_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_vineyards }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date >= 1845.1.1
-				game_date < 1861.1.1
-				OR = { market_capital.market = { mg:artillery = { market_goods_pricier >= 0.1 } } market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.1 } } }
-				NOT = { has_journal_entry = je_oiko_pb_fra_egypt_treaty }
-				NOT = { has_variable = je_oiko_pb_fra_egypt_treaty_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_egypt_treaty }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:FRA ?= root }
-				game_date >= 1845.1.1
-				has_law_or_variant = law_type:law_colonial_slavery
-				ig:ig_intelligentsia ?= { is_in_government = yes }
-				NOT = { has_journal_entry = je_oiko_pb_fra_abolition }
-				NOT = { has_variable = je_oiko_pb_fra_abolition_done }
-				NOT = { has_variable = je_oiko_pb_fra_abolition_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_fra_abolition }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date < 1841.1.1
-				oiko_lvl_building_construction_sector < 12
-				net_fixed_income >= 0
-				scaled_debt <= 0
-				NOT = { has_journal_entry = je_oiko_pb_aus_construction }
-				NOT = { has_variable = je_oiko_pb_aus_construction_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_construction }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				has_technology_researched = railways
-				oiko_lvl_building_motor_industry < 1
-				NOT = { has_journal_entry = je_oiko_pb_aus_engines_first }
-				NOT = { has_variable = je_oiko_pb_aus_engines_first_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_engines_first }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				market_capital.market = { mg:coal = { market_goods_pricier >= 0.15 } }
-				NOT = { has_journal_entry = je_oiko_pb_aus_coal }
-				NOT = { has_variable = je_oiko_pb_aus_coal_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_coal }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				OR = { market_capital.market = { mg:artillery = { market_goods_pricier >= 0.15 } } market_capital.market = { mg:small_arms = { market_goods_pricier >= 0.15 } } }
-				NOT = { has_journal_entry = je_oiko_pb_aus_arms_out_of_lombardy }
-				NOT = { has_variable = je_oiko_pb_aus_arms_out_of_lombardy_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_arms_out_of_lombardy }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date < 1851.1.1
-				military_expenses_share >= 0.35
-				NOT = { has_journal_entry = je_oiko_pb_aus_no_army_growth }
-				NOT = { has_variable = je_oiko_pb_aus_no_army_growth_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_no_army_growth }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date >= 1840.1.1
-				has_law_or_variant = law_type:law_crownland_diets
-				net_fixed_income >= 0
-				NOT = { has_journal_entry = je_oiko_pb_aus_appointed_bureaucrats }
-				NOT = { has_variable = je_oiko_pb_aus_appointed_bureaucrats_done }
-				NOT = { has_variable = je_oiko_pb_aus_appointed_bureaucrats_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_appointed_bureaucrats }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date < 1849.1.1
-				has_law_or_variant = law_type:law_crownland_diets
-				NOT = { has_journal_entry = je_oiko_pb_aus_hungary_later }
-				NOT = { has_variable = je_oiko_pb_aus_hungary_later_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_hungary_later }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				game_date >= 1850.1.1
-				has_technology_researched = nationalism
-				NOT = { has_technology_researched = pan-nationalism }
-				NOT = { has_journal_entry = je_oiko_pb_aus_pan_nationalism }
-				NOT = { has_variable = je_oiko_pb_aus_pan_nationalism_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_pan_nationalism }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:AUS ?= root }
-				market_capital.market = { mg:sulfur = { market_goods_pricier >= 0.15 } }
-				NOT = { has_journal_entry = je_oiko_pb_aus_venetia_sulfur }
-				NOT = { has_variable = je_oiko_pb_aus_venetia_sulfur_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_aus_venetia_sulfur }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -1420,60 +1774,6 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				oiko_lvl_building_university < 20
-				oiko_lvl_building_university >= 1
-				net_fixed_income >= 0
-				scaled_debt < 0.5
-				NOT = { has_journal_entry = je_oiko_pb_gg_university_scale_cap }
-				NOT = { has_variable = je_oiko_pb_gg_university_scale_cap_done }
-				NOT = { has_variable = je_oiko_pb_gg_university_scale_cap_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_university_scale_cap }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				NOT = { has_law_or_variant = law_type:law_public_health_insurance }
-				has_technology_researched = pharmaceuticals
-				oiko_pb_balance_share >= 0.05
-				scaled_debt < 0.3
-				NOT = { has_journal_entry = je_oiko_pb_gg_public_health_insurance }
-				NOT = { has_variable = je_oiko_pb_gg_public_health_insurance_done }
-				NOT = { has_variable = je_oiko_pb_gg_public_health_insurance_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_public_health_insurance }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				NOR = { c:USA ?= root }
-				has_law_or_variant = law_type:law_local_police
-				has_technology_researched = law_enforcement
-				NOT = { has_journal_entry = je_oiko_pb_gg_dedicated_police }
-				NOT = { has_variable = je_oiko_pb_gg_dedicated_police_done }
-				NOT = { has_variable = je_oiko_pb_gg_dedicated_police_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_dedicated_police }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_law_or_variant = law_type:law_child_labor_allowed
-				NOT = { has_law_or_variant = law_type:law_no_schools }
-				has_technology_researched = labor_movement
-				NOT = { has_journal_entry = je_oiko_pb_gg_restricted_child_labor }
-				NOT = { has_variable = je_oiko_pb_gg_restricted_child_labor_done }
-				NOT = { has_variable = je_oiko_pb_gg_restricted_child_labor_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_restricted_child_labor }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
 				has_law_or_variant = law_type:law_migration_controls
 				NOT = { has_journal_entry = je_oiko_pb_gg_no_migration_controls }
 				NOT = { has_variable = je_oiko_pb_gg_no_migration_controls_done }
@@ -1481,18 +1781,6 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gg_no_migration_controls }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				NOR = { c:AUS ?= root }
-				has_law_or_variant = law_type:law_hereditary_bureaucrats
-				NOT = { has_journal_entry = je_oiko_pb_gg_leave_hereditary_bureaucrats }
-				NOT = { has_variable = je_oiko_pb_gg_leave_hereditary_bureaucrats_done }
-				NOT = { has_variable = je_oiko_pb_gg_leave_hereditary_bureaucrats_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_leave_hereditary_bureaucrats }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -1507,42 +1795,6 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gg_naval_administration }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				NOR = { c:GBR ?= root }
-				has_technology_researched = screw_frigate
-				NOT = { has_technology_researched = ironclad_tech }
-				oiko_lvl_building_naval_administration >= 3
-				NOT = { has_journal_entry = je_oiko_pb_gg_ironclads }
-				NOT = { has_variable = je_oiko_pb_gg_ironclads_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_ironclads }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				NOT = { has_technology_researched = atmospheric_engine }
-				market_capital.market = { mg:iron = { market_goods_pricier >= 0.15 } }
-				NOT = { has_journal_entry = je_oiko_pb_gg_iron_research_pump }
-				NOT = { has_variable = je_oiko_pb_gg_iron_research_pump_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_iron_research_pump }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = railways
-				market_capital.market = { mg:transportation = { market_goods_pricier >= 0.15 } }
-				market_capital.market = { mg:engines = { market_goods_pricier <= 0.2 } }
-				NOT = { has_journal_entry = je_oiko_pb_gg_public_trams }
-				NOT = { has_variable = je_oiko_pb_gg_public_trams_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_public_trams }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -1572,66 +1824,6 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				NOT = { has_law_or_variant = law_type:law_women_in_the_workplace }
-				NOT = { has_law_or_variant = law_type:law_womens_suffrage }
-				NOT = { has_law_or_variant = law_type:law_women_in_the_fields }
-				has_technology_researched = feminism
-				NOT = { has_journal_entry = je_oiko_pb_gg_women_in_workplace }
-				NOT = { has_variable = je_oiko_pb_gg_women_in_workplace_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_women_in_workplace }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				OR = { c:SPA ?= root }
-				has_technology_researched = steelworking
-				oiko_lvl_building_coal_mine < 5
-				NOT = { has_journal_entry = je_oiko_pb_gg_spa_duro_y_compania }
-				NOT = { has_variable = je_oiko_pb_gg_spa_duro_y_compania_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_spa_duro_y_compania }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = international_trade
-				NOT = { has_technology_researched = stock_exchange }
-				NOT = { has_journal_entry = je_oiko_pb_gg_stock_exchange }
-				NOT = { has_variable = je_oiko_pb_gg_stock_exchange_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_stock_exchange }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_law_or_variant = law_type:law_serfdom
-				NOT = { has_journal_entry = je_oiko_pb_gg_leave_serfdom }
-				NOT = { has_variable = je_oiko_pb_gg_leave_serfdom_done }
-				NOT = { has_variable = je_oiko_pb_gg_leave_serfdom_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_leave_serfdom }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = atmospheric_engine
-				oiko_lvl_building_iron_mine >= 1
-				market_capital.market = { mg:iron = { market_goods_pricier >= 0.1 } }
-				market_capital.market = { mg:coal = { market_goods_pricier <= 0.25 } }
-				NOT = { has_journal_entry = je_oiko_pb_gg_iron_mine_pumps }
-				NOT = { has_variable = je_oiko_pb_gg_iron_mine_pumps_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_iron_mine_pumps }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
 				oiko_lvl_building_logging_camp >= 1
 				market_capital.market = { mg:hardwood = { market_goods_pricier >= 0.3 } }
 				market_capital.market = { mg:wood = { market_goods_pricier <= 0 } }
@@ -1640,30 +1832,6 @@ oiko_playbook_monthly = {
 				var:oiko_pb_slots > 0
 			}
 			add_journal_entry = { type = je_oiko_pb_gg_hardwood_when_dear }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = steelworking
-				oiko_lvl_building_logging_camp >= 1
-				market_capital.market = { mg:wood = { market_goods_pricier >= -0.2 } }
-				market_capital.market = { mg:tools = { market_goods_pricier <= 0.1 } }
-				NOT = { has_journal_entry = je_oiko_pb_gg_saw_mills }
-				NOT = { has_variable = je_oiko_pb_gg_saw_mills_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_saw_mills }
-			change_variable = { name = oiko_pb_slots subtract = 1 }
-		}
-		if = {
-			limit = {
-				has_technology_researched = combustion_engine
-				oiko_lvl_building_logging_camp >= 1
-				NOT = { has_journal_entry = je_oiko_pb_gg_no_chainsaws }
-				NOT = { has_variable = je_oiko_pb_gg_no_chainsaws_skipped }
-				var:oiko_pb_slots > 0
-			}
-			add_journal_entry = { type = je_oiko_pb_gg_no_chainsaws }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
@@ -1692,56 +1860,44 @@ oiko_playbook_monthly = {
 		}
 		if = {
 			limit = {
-				game_date < 1846.1.1
-				has_technology_researched = manufacturies
-				NOT = { has_journal_entry = je_oiko_pb_gg_decree_manufacturing }
-				NOT = { has_variable = je_oiko_pb_gg_decree_manufacturing_skipped }
+				net_fixed_income < 0
+				scaled_debt >= 0.7
+				NOT = { has_journal_entry = je_oiko_pb_gx_institution_buffer }
+				NOT = { has_variable = je_oiko_pb_gx_institution_buffer_skipped }
 				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gg_decree_manufacturing }
+			add_journal_entry = { type = je_oiko_pb_gx_institution_buffer }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
 			limit = {
-				NOR = { c:AUS ?= root }
-				has_law_or_variant = law_type:law_land_based_taxation
-				NOT = { has_law_or_variant = law_type:law_traditionalism }
-				has_technology_researched = currency_standards
-				NOT = { has_technology_researched = egalitarianism }
-				NOT = { has_journal_entry = je_oiko_pb_gg_land_to_per_capita }
-				NOT = { has_variable = je_oiko_pb_gg_land_to_per_capita_done }
-				NOT = { has_variable = je_oiko_pb_gg_land_to_per_capita_skipped }
+				oiko_lvl_building_government_administration >= 2
+				NOT = { has_journal_entry = je_oiko_pb_gx_stack_administration }
+				NOT = { has_variable = je_oiko_pb_gx_stack_administration_skipped }
 				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gg_land_to_per_capita }
+			add_journal_entry = { type = je_oiko_pb_gx_stack_administration }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
 			limit = {
-				NOR = { c:CHI ?= root c:JAP ?= root c:BIC ?= root }
-				has_law_or_variant = law_type:law_traditionalism
-				NOT = { has_law_or_variant = law_type:law_serfdom }
-				has_technology_researched = manufacturies
-				NOT = { has_technology_researched = international_trade }
-				NOT = { has_journal_entry = je_oiko_pb_gg_leave_traditionalism }
-				NOT = { has_variable = je_oiko_pb_gg_leave_traditionalism_done }
-				NOT = { has_variable = je_oiko_pb_gg_leave_traditionalism_skipped }
+				oiko_lvl_building_art_academy >= 2
+				NOT = { has_journal_entry = je_oiko_pb_gx_one_art_academy }
+				NOT = { has_variable = je_oiko_pb_gx_one_art_academy_skipped }
 				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gg_leave_traditionalism }
+			add_journal_entry = { type = je_oiko_pb_gx_one_art_academy }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 		if = {
 			limit = {
-				has_law_or_variant = law_type:law_proportional_taxation
-				has_technology_researched = socialism
-				average_sol < 15
-				NOT = { has_journal_entry = je_oiko_pb_gg_graduated_tax }
-				NOT = { has_variable = je_oiko_pb_gg_graduated_tax_done }
-				NOT = { has_variable = je_oiko_pb_gg_graduated_tax_skipped }
+				has_law_or_variant = law_type:law_ethnostate
+				NOT = { has_journal_entry = je_oiko_pb_gx_citizenship_ethnostate }
+				NOT = { has_variable = je_oiko_pb_gx_citizenship_ethnostate_done }
+				NOT = { has_variable = je_oiko_pb_gx_citizenship_ethnostate_skipped }
 				var:oiko_pb_slots > 0
 			}
-			add_journal_entry = { type = je_oiko_pb_gg_graduated_tax }
+			add_journal_entry = { type = je_oiko_pb_gx_citizenship_ethnostate }
 			change_variable = { name = oiko_pb_slots subtract = 1 }
 		}
 	}

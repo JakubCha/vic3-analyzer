@@ -385,6 +385,8 @@ export interface Advice {
   detail: string
   /** The game mechanism behind the advice. */
   why?: string
+  /** Game phase a playbook rule belongs to: opening | early | mid | late | any. */
+  phase?: string
   /** What to click in the game, one step per line. */
   steps?: string[]
   /** The save's values behind the advice against the rule's thresholds. */
@@ -486,6 +488,8 @@ export interface AdviceResult {
   budget?: BudgetReport
   market?: MarketCase[]
   outcomes?: AdviceOutcome[]
+  /** Current game phase from the save date. */
+  phase?: string
   states?: StateRow[]
 }
 

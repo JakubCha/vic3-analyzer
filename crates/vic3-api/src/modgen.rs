@@ -158,6 +158,17 @@ fn loc_text(s: &str) -> String {
     s.replace('"', "'").replace('[', "(").replace(']', ")").replace(['#', '$', '@'], "").replace('\n', "\\n")
 }
 
+/// Polish label of a playbook phase.
+fn phase_pl(phase: &str) -> &'static str {
+    match phase {
+        "opening" => "Otwarcie",
+        "early" => "Wczesna gra",
+        "mid" => "Środek gry",
+        "late" => "Końcówka",
+        _ => "Zawsze",
+    }
+}
+
 /// Game concepts (common/game_concepts, 1.13.9) linked from rule texts: hovering one
 /// shows the game's own explanation.
 const CONCEPTS: &[(&str, &str)] = &[
@@ -251,7 +262,9 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
     let mut loc = String::new();
     let mut loc_pl = String::new();
     let mut ordered: Vec<&Rule> = rules.iter().collect();
-    ordered.sort_by_key(|r| r.priority);
+    // Urgent first, then by phase (opening → late, timeless last), as the analyzer orders them.
+    let phase_rank = |p: &str| crate::playbook::PHASES.iter().position(|(name, _)| *name == p).unwrap_or(crate::playbook::PHASES.len());
+    ordered.sort_by_key(|r| (r.priority, phase_rank(&r.phase)));
 
     for rule in ordered {
         let mut needed = BTreeSet::new();
@@ -269,6 +282,12 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
         if !rule.exclude_countries.is_empty() {
             let tags: Vec<String> = rule.exclude_countries.iter().map(|c| format!("c:{c} ?= root")).collect();
             when.insert(0, format!("NOR = {{ {} }}", tags.join(" ")));
+        }
+        // A later phase waits for its start year (Rule::shown_in), unless urgent or tech-gated.
+        if rule.priority != 1 && rule.when.techs.is_empty() {
+            if let Some((_, start)) = crate::playbook::PHASES.iter().skip(1).find(|(p, _)| *p == rule.phase) {
+                when.insert(0, format!("game_date >= {start}.1.1"));
+            }
         }
         let done = rule.done.as_ref().and_then(|c| done_trigger(c, &mut needed));
         levels.extend(needed);
@@ -339,14 +358,21 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
                 .enumerate()
                 .map(|(i, s)| format!("{}. {}", i + 1, if polish { crate::playbook::with_polish_labels(s) } else { s.clone() }))
                 .collect();
-            let _ = writeln!(text, " {name}:0 \"{}\"", loc_text(&format!("Playbook: {}", rule.title)));
+            let (phase, expert) = if polish {
+                (phase_pl(&rule.phase), "Wskazówka eksperta (Generalist Gaming, opinia niesprawdzalna w plikach gry)")
+            } else {
+                (crate::playbook::phase_label(&rule.phase), crate::playbook::EXPERT_LABEL)
+            };
+            let tag = if rule.expert { format!("{phase} · {}", if polish { "Wskazówka eksperta" } else { "Expert tip" }) } else { phase.to_string() };
+            let _ = writeln!(text, " {name}:0 \"{}\"", loc_text(&format!("{tag}: {}", rule.title)));
+            let lead = if rule.expert { format!("{expert}\n\n") } else { String::new() };
             let _ = writeln!(
                 text,
                 " {name}_reason:0 \"{}\"",
                 concept_links(&loc_text(&format!(
-                    "{} · {}\n\n{}\n\nHow to do it:\n{}\n\nHow it works: {}{sources}",
+                    "{lead}{} · {}\n\n{}\n\nHow to do it:\n{}\n\nHow it works: {}{sources}",
                     rule.goal,
-                    rule.phase,
+                    phase,
                     rule.detail,
                     how.join("\n"),
                     rule.why
@@ -471,7 +497,7 @@ price_ratio_at_most = { iron = 1.1 }
         assert!(m2.files.iter().any(|(p, t)| p.ends_with("oiko_playbook_on_actions.txt") && t.contains("var:oiko_pb_slots > 0")));
         assert!(file("oiko_playbook_values.txt").contains("oiko_lvl_building_paper_mill = {"));
         let loc = file("oiko_playbook_l_english.yml");
-        assert!(loc.contains("je_oiko_pb_pru_test_rule:0 \"Playbook: Keep 'Public' (Schools)\""), "{loc}");
+        assert!(loc.contains("je_oiko_pb_pru_test_rule:0 \"Early game: Keep 'Public' (Schools)\""), "{loc}");
     }
 
     #[test]

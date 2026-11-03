@@ -264,3 +264,25 @@ describe('AdvisorPane', () => {
     expect(table).toHaveTextContent('Expand Logging Camps in Brandenburg')
   })
 })
+
+describe('AdvisorPane phases', () => {
+  afterEach(() => cleanup())
+
+  it('shows the game phase and can hide tips from other phases', async () => {
+    const user = userEvent.setup()
+    const tip = (id: string, phase: string) => ({ id, domain: 'economy' as const, priority: 2, title: id, detail: '', phase })
+    const result: AdviceResult = {
+      advice: [tip('Opening tip', 'opening'), tip('Mid tip', 'mid'), tip('Timeless tip', 'any')],
+      limitations: [],
+      phase: 'opening',
+    }
+    const api = { loaded_advice: vi.fn(async () => JSON.stringify(result)), loaded_checks: vi.fn(async () => '[]') } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" date="1836.2.11" />)
+    expect(await screen.findByText(/Game phase:/)).toHaveTextContent('Opening (1836-1840)')
+    expect(screen.getByText('Mid tip')).toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: /This phase only/ }))
+    expect(screen.queryByText('Mid tip')).not.toBeInTheDocument()
+    expect(screen.getByText('Opening tip')).toBeInTheDocument()
+    expect(screen.getByText('Timeless tip')).toBeInTheDocument()
+  })
+})

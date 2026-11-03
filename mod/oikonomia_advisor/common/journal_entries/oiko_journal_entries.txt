@@ -129,7 +129,7 @@ je_oiko_chapter_1 = {
 		game_date >= 1856.1.1
 	}
 
-	weight = 300
+	weight = 990
 }
 
 je_oiko_chapter_2 = {
@@ -148,7 +148,7 @@ je_oiko_chapter_2 = {
 		game_date >= 1891.1.1
 	}
 
-	weight = 300
+	weight = 990
 }
 
 je_oiko_chapter_3 = {
@@ -163,7 +163,7 @@ je_oiko_chapter_3 = {
 		set_variable = oiko_ch3_done
 	}
 
-	weight = 300
+	weight = 990
 }
 
 # Cheat menu (game rule oiko_cheats): buttons in scripted_buttons/oiko_cheat_buttons.txt.

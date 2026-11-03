@@ -681,6 +681,9 @@ h2 > .good-icon { margin-right: .45rem; }
 .advisor-steps { margin: 0 0 .5rem; }
 .advisor-fixes { margin: 0 0 .4rem; padding-left: 1.3rem; }
 .advisor-war { margin: .25rem 0 0; font-size: .9em; }
+.advisor-phase { margin: .25rem 0; }
+.advisor-phase label { margin-left: .75rem; font-weight: normal; }
+.advisor-phase-badge { font-size: .8em; padding: 0 .35rem; border: 1px solid var(--border, #ccc); border-radius: 3px; }
 .advisor-states { border-collapse: collapse; width: 100%; font-size: .9em; }
 .advisor-states th, .advisor-states td { text-align: left; padding: .2rem .5rem; border-bottom: 1px solid var(--border, #ccc); }
 .advisor-short { color: var(--danger, #b03030); font-weight: 600; }

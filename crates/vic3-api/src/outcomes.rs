@@ -177,10 +177,11 @@ mod tests {
             goal: None,
             why: None,
             steps: Vec::new(),
+            phase: None,
             why_now: Vec::new(),
             check: Some(Check::WeeklyBalance { at_least: 1.0e12 }),
         };
-        let result = AdviceResult { advice: vec![item.clone()], limitations: Vec::new(), budget: None, market: Vec::new(), outcomes: Vec::new(), states: Vec::new() };
+        let result = AdviceResult { advice: vec![item.clone()], limitations: Vec::new(), budget: None, market: Vec::new(), outcomes: Vec::new(), states: Vec::new(), phase: None };
         assert!(track(&store, &result, &snap.world, &snap.defs).unwrap().is_empty());
         assert!(track(&store, &result, &snap.world, &snap.defs).unwrap().is_empty());
         assert_eq!(std::fs::read_to_string(&store).unwrap().lines().count(), 1, "tracked once");

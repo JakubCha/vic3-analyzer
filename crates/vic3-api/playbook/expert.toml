@@ -1,0 +1,176 @@
+# Expert tips: Generalist Gaming's opinions from the channel's Victoria 3 playlist that the
+# game files cannot confirm (engine behaviour, AI, strategy). Shown with the expert label;
+# every game id in them was checked against the 1.13.9 files. Exploits are left out.
+# Schema: crates/vic3-api/src/playbook.rs.
+
+[[rule]]
+id = "gx.institution-buffer"
+expert = true
+domain = "economy"
+goal = "budget"
+phase = "any"
+title = "Default may come: lower one institution a level now"
+detail = "Debt is over 70% of the credit limit and still growing: lower the investment level of your least useful institution by one, so a default does not leave you short of bureaucracy."
+why = "A default and the cuts around it squeeze bureaucracy; institutions keep consuming it, and a bureaucracy deficit wastes taxes exactly when you need them. Lowering one institution in advance keeps a buffer."
+sources = ["Generalist Gaming: How to Make FREE MONEY in Victoria 3"]
+patch = "1.13.9"
+how = ["Politics panel, Institutions: pick the institution you need least right now (often Home Affairs or Colonial Affairs in peace) and lower its level by one.", "Raise it again once debt is back under half the credit limit."]
+[rule.when]
+balance_below = 0.0
+debt_share_of_limit_at_least = 0.7
+
+[[rule]]
+id = "gx.balance-with-pool"
+expert = true
+domain = "economy"
+goal = "budget"
+phase = "opening"
+title = "Read the weekly balance together with the investment pool"
+detail = "A deficit while the investment pool keeps growing means private construction is idle: queue buildings for it instead of cutting state spending."
+why = "The investment pool pays for private construction. If it fills up while the state loses money, the economy has money that is not being turned into buildings; spending it is growth, not waste."
+sources = ["Generalist Gaming: Private Ownership & the Investment Pool"]
+patch = "1.13.9"
+how = ["Budget panel: hover the Investment Pool and check its weekly change.", "If it grows, Construction panel: queue private buildings the analyzer ranks with a short payback; the pool pays for them."]
+[rule.when]
+until_year = 1845
+balance_below = 0.0
+
+[[rule]]
+id = "gx.manufacturing-capital"
+expert = true
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Put new factories in your capital and company states"
+detail = "Build Textile Mills, Furniture Manufacturies, Tooling Workshops and other factories in your capital or in states where your companies work, rather than spreading them."
+why = "Large buildings in one state gain economies of scale (+1% throughput per level above the first), capitals carry extra bonuses and companies boost their own building types; spread-out levels miss all three."
+sources = ["Generalist Gaming: Midgame INDUSTRIALIZATION through AUTOMATION", "game files: common/defines (economies of scale)"]
+patch = "1.13.9"
+how = ["Construction panel: choose the factory, then click your capital (or a state named in your company's panel) instead of the first state offered."]
+[rule.when]
+techs = ["manufacturies"]
+until_year = 1870
+
+[[rule]]
+id = "gx.stack-administration"
+expert = true
+domain = "economy"
+goal = "budget"
+phase = "any"
+title = "Grow Government Administrations in one state"
+detail = "You run Government Administrations in several places: add new levels to the largest one instead of starting new ones."
+why = "Throughput from economies of scale raises the bureaucracy each level makes without raising its wages, so one large administration gives more bureaucracy per pound than several small ones."
+sources = ["Generalist Gaming: How to Build TALL in Victoria 3"]
+patch = "1.13.9"
+how = ["Right-click your largest Government Administration and pick Expand, rather than building one in a new state."]
+[rule.when]
+levels_at_least = { building_government_administration = 2.0 }
+
+[[rule]]
+id = "gx.clothes-before-furniture"
+expert = true
+domain = "economy"
+goal = "industry"
+phase = "early"
+title = "Clothes before furniture"
+detail = "Clothes and furniture are both dear: build Textile Mills first, Furniture Manufacturies after."
+why = "Pops spend more on clothes than on furniture, and Textile Mills employ more and pay back sooner, so cheap clothes lift standard of living and the market faster."
+sources = ["Generalist Gaming: Victoria 3: Consumer Goods Strategy"]
+patch = "1.13.9"
+how = ["Construction panel: queue Textile Mills in a state with fabric (Livestock Ranches or Cotton Plantations) before any Furniture Manufactory."]
+[rule.when]
+price_above_base = { clothes = 0.1, furniture = 0.1 }
+
+[[rule]]
+id = "gx.one-art-academy"
+expert = true
+domain = "economy"
+goal = "industry"
+phase = "any"
+title = "Keep Art Academies to one, in the capital"
+detail = "You run more than one Art Academy level: they rarely pay back. Keep one in the capital and Downsize the rest."
+why = "Fine art sells to a handful of very rich pops; an academy is worth it mainly for the Intelligentsia's and academics' clout, which one in the capital gives."
+sources = ["Generalist Gaming: How to Make FREE MONEY in Victoria 3", "Generalist Gaming: How to AUTOMATE Your Economy"]
+patch = "1.13.9"
+how = ["Open each Art Academy outside the capital and press Downsize."]
+[rule.when]
+levels_at_least = { building_art_academy = 2.0 }
+
+[[rule]]
+id = "gx.newest-methods"
+expert = true
+domain = "economy"
+goal = "industry"
+phase = "mid"
+title = "Run the newest production methods unless their input is very dear"
+detail = "Switch each building's main production method to the newest one you have researched, unless its new input sells 75% or more above base price."
+why = "Newer methods make more per worker, which raises wages and profits; the exception is an input so scarce that buying it costs more than the extra output earns."
+sources = ["Generalist Gaming: Midgame INDUSTRIALIZATION through AUTOMATION", "Generalist Gaming: Patch 1.5 Production Method CHANGES"]
+patch = "1.13.9"
+how = ["Open a building, its production methods: pick the newest in the first group.", "Before switching, check the new input's price in the analyzer's Market tab; at +75% or more, leave it."]
+[rule.when]
+techs = ["atmospheric_engine"]
+
+[[rule]]
+id = "gx.sol-for-growth"
+expert = true
+domain = "economy"
+goal = "stability"
+phase = "mid"
+title = "Lift standard of living toward 20 for growth, not beyond"
+detail = "Average standard of living is under 20: population growth peaks around 20, so raising it pays; past about 20-22 stop chasing it."
+why = "Birth rates rise with standard of living up to about 20, and from about 22 qualifications stop being the bottleneck; beyond that, money spent on standard of living buys little."
+sources = ["Generalist Gaming: Victoria 3 Population Growth Tutorial", "Generalist Gaming: Victoria 3 Standard of Living Tutorial"]
+patch = "1.13.9"
+how = ["Construction panel: build what makes the dearest of Grain, Clothes and Furniture (the analyzer's Market tab names building and state).", "With a surplus, enact Poor Laws (Politics panel, Laws, Welfare)."]
+[rule.when]
+from_year = 1850
+sol_below = 20.0
+
+[[rule]]
+id = "gx.regulatory-bodies"
+expert = true
+domain = "laws"
+goal = "reforms"
+phase = "mid"
+title = "Move from Right to Associate to Regulatory Bodies"
+detail = "You have Labor Movement and Right to Associate: enact Regulatory Bodies."
+why = "The guides rate Regulatory Bodies the best labour law for a growing industrial economy: it keeps the Trade Unions content without the costs of the worker-protection laws."
+sources = ["Generalist Gaming: BEST Human Rights Laws", "game files: common/laws (law_regulatory_bodies: labor_movement)"]
+patch = "1.13.9"
+done = { type = "law_active", law = "law_regulatory_bodies" }
+exclude_countries = ["GBR"]
+[rule.when]
+laws = ["law_right_to_associate"]
+techs = ["labor_movement"]
+
+[[rule]]
+id = "gx.citizenship-ethnostate"
+expert = true
+domain = "laws"
+goal = "reforms"
+phase = "any"
+title = "Open citizenship: leave Ethnostate"
+detail = "Enact National Supremacy, then Racial Segregation or Cultural Exclusion, toward Multiculturalism."
+why = "The guides want citizenship as accepting as you can pass: more accepted cultures means more pops who can work every job, vote and live without discrimination radicals, and more migrants."
+sources = ["Generalist Gaming: BEST Human Rights Laws", "game files: common/laws (law_ethnostate, law_multicultural: human_rights)"]
+patch = "1.13.9"
+done = { type = "law_inactive", law = "law_ethnostate" }
+[rule.when]
+laws = ["law_ethnostate"]
+
+[[rule]]
+id = "gx.citizenship-supremacy"
+expert = true
+domain = "laws"
+goal = "reforms"
+phase = "early"
+title = "Open citizenship: from National Supremacy to Racial Segregation or Cultural Exclusion"
+detail = "Enact Racial Segregation or Cultural Exclusion now, and Multiculturalism once you have Human Rights."
+why = "The guides want citizenship as accepting as you can pass: accepted cultures fill skilled jobs, migrate to you and do not radicalise over discrimination."
+sources = ["Generalist Gaming: BEST Human Rights Laws", "game files: common/laws (law_racial_segregation, law_cultural_exclusion)"]
+patch = "1.13.9"
+done = { type = "law_inactive", law = "law_national_supremacy" }
+exclude_countries = ["AUS"]
+[rule.when]
+laws = ["law_national_supremacy"]
