@@ -305,7 +305,9 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
         let _ = writeln!(jes, "# {}", rule.id);
         let _ = writeln!(jes, "{name} = {{");
         let _ = writeln!(jes, "\ticon = \"{icon}\"");
-        let _ = writeln!(jes, "\tgroup = je_group_oikonomia");
+        // Exploits get their own journal group (common/journal_entry_groups/oiko_journal_entry_groups.txt).
+        let group = if rule.exploit { "je_group_oikonomia_exploits" } else { "je_group_oikonomia" };
+        let _ = writeln!(jes, "\tgroup = {group}");
         let _ = writeln!(jes, "\tscripted_button = {button}");
         let when_all = format!("AND = {{ {} }}", when.join(" "));
         // Dropped silently once skipped, or once it no longer applies and was not followed.
@@ -322,7 +324,10 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
             buttons,
             "{button} = {{\n\tname = \"oiko_pb_skip_button\"\n\tdesc = \"oiko_pb_skip_button_desc\"\n\tai_chance = {{ value = 0 }}\n\tvisible = {{ has_journal_entry = {name} }}\n\tpossible = {{ always = yes }}\n\teffect = {{ set_variable = {skip_var} }}\n}}\n"
         );
-        let _ = writeln!(active, "\tif = {{ limit = {{ has_journal_entry = {name} }} add = 1 }}");
+        // Exploits sit in their own group and take none of the three tip slots.
+        if !rule.exploit {
+            let _ = writeln!(active, "\tif = {{ limit = {{ has_journal_entry = {name} }} add = 1 }}");
+        }
         if rule.priority == 1 {
             let _ = writeln!(jes, "\tshould_be_pinned_by_default_uninvolved_or_context = yes");
         }
@@ -336,13 +341,17 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
             limit.push(format!("NOT = {{ has_variable = {done_var} }}"));
         }
         limit.push(format!("NOT = {{ has_variable = {skip_var} }}"));
-        if rule.priority != 1 {
+        if rule.exploit {
+            limit.push("NOT = { has_game_rule = oiko_exploits_off }".into());
+        } else if rule.priority != 1 {
             limit.push("var:oiko_pb_slots > 0".into());
         }
         let _ = writeln!(monthly, "\t\tif = {{");
         block(&mut monthly, "\t\t\t", "limit", &limit);
         let _ = writeln!(monthly, "\t\t\tadd_journal_entry = {{ type = {name} }}");
-        let _ = writeln!(monthly, "\t\t\tchange_variable = {{ name = oiko_pb_slots subtract = 1 }}");
+        if !rule.exploit {
+            let _ = writeln!(monthly, "\t\t\tchange_variable = {{ name = oiko_pb_slots subtract = 1 }}");
+        }
         let _ = writeln!(monthly, "\t\t}}");
 
         let sources = if rule.sources.is_empty() {
@@ -363,7 +372,13 @@ pub fn generate(rules: &[Rule]) -> GeneratedMod {
             } else {
                 (crate::playbook::phase_label(&rule.phase), crate::playbook::EXPERT_LABEL)
             };
-            let tag = if rule.expert { format!("{phase} · {}", if polish { "Wskazówka eksperta" } else { "Expert tip" }) } else { phase.to_string() };
+            let tag = if rule.exploit {
+                format!("{phase} · Exploit")
+            } else if rule.expert {
+                format!("{phase} · {}", if polish { "Wskazówka eksperta" } else { "Expert tip" })
+            } else {
+                phase.to_string()
+            };
             let _ = writeln!(text, " {name}:0 \"{}\"", loc_text(&format!("{tag}: {}", rule.title)));
             let lead = if rule.expert { format!("{expert}\n\n") } else { String::new() };
             let _ = writeln!(

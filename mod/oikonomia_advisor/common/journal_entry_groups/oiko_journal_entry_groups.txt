@@ -3,3 +3,8 @@
 je_group_oikonomia = {
 	context = country
 }
+
+# Exploits: quirks of the game rules, kept apart from the advice (game rule oiko_exploits).
+je_group_oikonomia_exploits = {
+	context = country
+}

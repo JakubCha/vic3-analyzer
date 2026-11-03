@@ -5,7 +5,7 @@ import { invokeTauri } from './tauriApi'
 import type { WasmApi } from './wasm'
 
 /** `now`: the few most important items across every domain; `market`: the market doctor. */
-export type View = AdviceDomain | 'now' | 'market' | 'states'
+export type View = AdviceDomain | 'now' | 'market' | 'states' | 'exploits'
 
 /** How many items the Now tab shows: a short session's worth. */
 const NOW_LIMIT = 5
@@ -26,6 +26,7 @@ const DOMAINS: readonly { id: View; label: string }[] = [
   { id: 'war', label: 'War' },
   { id: 'market', label: 'Market' },
   { id: 'states', label: 'States' },
+  { id: 'exploits', label: 'Exploits' },
 ]
 
 /** A suggestion the player chose to act on, kept across saves. */
@@ -114,7 +115,10 @@ export function loadGoals(): Record<GoalDomain, AdviceGoal> {
  */
 export function adviceInTab(advice: Advice[], tab: View, goals: Record<GoalDomain, AdviceGoal>): Advice[] {
   const inView = (item: Advice) => !item.goal || (item.domain !== 'war' && item.goal === goals[item.domain])
-  const items = advice.filter((item) => (tab === 'now' || item.domain === tab) && inView(item))
+  // Exploits (playbook/exploits.toml) live in their own tab only.
+  const exploit = (item: Advice) => item.id.startsWith('playbook:ex.')
+  if (tab === 'exploits') return advice.filter(exploit)
+  const items = advice.filter((item) => !exploit(item) && (tab === 'now' || item.domain === tab) && inView(item))
   if (tab !== 'now') return items
   const budgetFirst = (item: Advice) => (item.id === 'budget:balance' ? 0 : 1)
   return [...items].sort((a, b) => budgetFirst(a) - budgetFirst(b)).slice(0, NOW_LIMIT)
@@ -233,6 +237,12 @@ export function AdvisorPane({ api, analysisKey, tag, date }: Props) {
           <label>
             <input type="checkbox" checked={phaseOnly} onChange={(e) => setPhaseOnly(e.target.checked)} /> This phase only
           </label>
+        </p>
+      )}
+      {domain === 'exploits' && (
+        <p className="alert-severity">
+          Exploits use quirks of the game rules rather than playing them as intended. Each one lists its costs; they never
+          appear in the other tabs.
         </p>
       )}
       {domain === 'now' && (

@@ -24,6 +24,7 @@ const FILES: &[(&str, &str)] = &[
     ("aus", include_str!("../playbook/aus.toml")),
     ("gg", include_str!("../playbook/gg.toml")),
     ("expert", include_str!("../playbook/expert.toml")),
+    ("exploits", include_str!("../playbook/exploits.toml")),
 ];
 
 #[derive(Debug, Deserialize)]
@@ -68,6 +69,10 @@ pub struct Rule {
     /// An expert's opinion the game files cannot confirm ([`EXPERT_LABEL`]).
     #[serde(default)]
     pub expert: bool,
+    /// Uses a quirk of the game rules rather than playing them as intended ([`EXPLOIT_LABEL`]);
+    /// shown apart from the other advice (analyzer tab, mod journal group).
+    #[serde(default)]
+    pub exploit: bool,
 }
 
 /// Game phases and the year each starts (playbook `phase`; `any` has no year).
@@ -75,6 +80,9 @@ pub const PHASES: &[(&str, i16)] = &[("opening", 1836), ("early", 1840), ("mid",
 
 /// Label for advice from Generalist Gaming's opinions that the game files cannot confirm.
 pub const EXPERT_LABEL: &str = "Expert tip (Generalist Gaming, an opinion the game files cannot confirm)";
+
+/// Label for advice that uses a quirk of the game rules.
+pub const EXPLOIT_LABEL: &str = "Exploit (uses a quirk of the game rules; know the costs before you use it)";
 
 /// The phase a game year falls in.
 pub fn phase_of(year: i16) -> &'static str {
@@ -716,7 +724,7 @@ pub fn playbook_advice(facts: &Facts<'_>, out: &mut Vec<Advice>) {
             domain: rule.domain,
             priority: rule.priority,
             title: rule.title.clone(),
-            detail: format!("{} · {} · {}: {}", if rule.expert { EXPERT_LABEL } else { "Playbook" }, rule.goal, phase_label(&rule.phase), rule.detail),
+            detail: format!("{} · {} · {}: {}", if rule.exploit { EXPLOIT_LABEL } else if rule.expert { EXPERT_LABEL } else { "Playbook" }, rule.goal, phase_label(&rule.phase), rule.detail),
             steps: steps(rule, &|id| facts.defs.display_label(id)),
             phase: Some(rule.phase.clone()),
             why_now: facts.why_now(&rule.when),

@@ -145,3 +145,10 @@
  alert_oiko_tax_waste_alert_hint:0 "Zbuduj Administrację rządową w przyłączonym stanie z wysokim PKB na mieszkańca; przestań, gdy biurokracja wróci powyżej 0."
  alert_oiko_tax_waste_alert_action:0 "Budżet"
  oiko_tax_waste_alert_setting_name:0 "Oikonomia: podatki przepadają"
+
+ je_group_oikonomia_exploits:0 "Oikonomia: exploity"
+ rule_oiko_exploits:0 "Oikonomia: exploity"
+ setting_oiko_exploits_on:0 "Pokazuj"
+ setting_oiko_exploits_on_desc:0 "Exploity (luki w zasadach gry, każda z kosztami) pojawiają się w osobnej grupie dziennika."
+ setting_oiko_exploits_off:0 "Ukryj"
+ setting_oiko_exploits_off_desc:0 "Bez exploitów."

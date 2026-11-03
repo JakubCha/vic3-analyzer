@@ -286,3 +286,20 @@ describe('AdvisorPane phases', () => {
     expect(screen.getByText('Timeless tip')).toBeInTheDocument()
   })
 })
+
+describe('AdvisorPane exploits', () => {
+  afterEach(() => cleanup())
+
+  it('keeps exploits in their own tab', async () => {
+    const user = userEvent.setup()
+    const tip = (id: string) => ({ id, domain: 'economy' as const, priority: 2, title: id, detail: '' })
+    const result: AdviceResult = { advice: [tip('playbook:ex.bankruptcy'), tip('playbook:gen.grain')], limitations: [] }
+    const api = { loaded_advice: vi.fn(async () => JSON.stringify(result)), loaded_checks: vi.fn(async () => '[]') } as unknown as WasmApi
+    render(<AdvisorPane api={api} analysisKey={1} tag="PRU" date="1836.2.11" />)
+    expect(await screen.findByText('playbook:gen.grain')).toBeInTheDocument()
+    expect(screen.queryByText('playbook:ex.bankruptcy')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /Exploits \(1\)/ }))
+    expect(screen.getByText('playbook:ex.bankruptcy')).toBeInTheDocument()
+    expect(screen.queryByText('playbook:gen.grain')).not.toBeInTheDocument()
+  })
+})

@@ -37,3 +37,14 @@ oiko_cheats = {
 		flag = blocks_achievements
 	}
 }
+
+# Exploit tips in their own journal group: quirks of the game rules, each with its costs.
+oiko_exploits = {
+	default = oiko_exploits_on
+
+	oiko_exploits_on = {
+	}
+
+	oiko_exploits_off = {
+	}
+}

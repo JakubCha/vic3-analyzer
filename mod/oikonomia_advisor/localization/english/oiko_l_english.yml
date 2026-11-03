@@ -145,3 +145,10 @@
  alert_oiko_tax_waste_alert_hint:0 "Build a Government Administration in an incorporated state with a high GDP per capita; stop once bureaucracy is above 0."
  alert_oiko_tax_waste_alert_action:0 "Budget"
  oiko_tax_waste_alert_setting_name:0 "Oikonomia: taxes are being lost"
+
+ je_group_oikonomia_exploits:0 "Oikonomia: Exploits"
+ rule_oiko_exploits:0 "Oikonomia: exploit tips"
+ setting_oiko_exploits_on:0 "Shown"
+ setting_oiko_exploits_on_desc:0 "Exploit tips (quirks of the game rules, each with its costs) appear in their own journal group."
+ setting_oiko_exploits_off:0 "Hidden"
+ setting_oiko_exploits_off_desc:0 "No exploit tips."
